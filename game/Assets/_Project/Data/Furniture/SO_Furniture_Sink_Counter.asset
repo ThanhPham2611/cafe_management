@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ba341d98cc92be48b208bac9574fcd8, type: 3}
+  m_Name: SO_Furniture_Sink_Counter
+  m_EditorClassIdentifier: Cafe.Runtime::Cafe.FurnitureDef
+  id: Sink_Counter
+  displayName: "B\u1ED3n r\u1EEDa"
+  prefab: {fileID: 6219366960497825699, guid: fb485cea362c4604a9cc4d8e2ce14f03, type: 3}
+  footprint: {x: 2, y: 1}
+  price: 0
+  kind: 2
+  comfort: 0
+  style: 0
+  seatHeight: 0
+  overhead: 0
+  hangY: 0
+  minTier: 2
+  onlyTier: 0
+  shopVisible: 0
+  icon: {fileID: 21300000, guid: a498862b21c1f5643ab5ba780b258703, type: 3}
+  priceStep: 0
+  maxCount: 0
+  attract: 0

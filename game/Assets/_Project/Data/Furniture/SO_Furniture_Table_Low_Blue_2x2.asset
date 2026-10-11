@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ba341d98cc92be48b208bac9574fcd8, type: 3}
+  m_Name: SO_Furniture_Table_Low_Blue_2x2
+  m_EditorClassIdentifier: Cafe.Runtime::Cafe.FurnitureDef
+  id: Table_Low_Blue_2x2
+  displayName: "B\xE0n th\u1EA5p nh\u1EF1a xanh"
+  prefab: {fileID: 5533467844334620840, guid: 0550f516163cc7f4786c9b5bd2dcd518, type: 3}
+  footprint: {x: 2, y: 2}
+  price: 300
+  kind: 1
+  comfort: 1
+  style: 1
+  seatHeight: 0
+  overhead: 0
+  hangY: 0
+  minTier: 1
+  onlyTier: 0
+  shopVisible: 1
+  icon: {fileID: 21300000, guid: 547d139f9a48e0b41a843f6cb83ced1c, type: 3}
+  priceStep: 0
+  maxCount: 0
+  attract: 0

@@ -1,0 +1,455 @@
+{
+  "version": 1,
+  "grid": 8,
+  "cell_px": 32,
+  "swatches": [
+    {
+      "idx": 0,
+      "row": 0,
+      "col": 0,
+      "name": "Espresso đen",
+      "hex": "#2A1A12"
+    },
+    {
+      "idx": 1,
+      "row": 0,
+      "col": 1,
+      "name": "Cà phê đậm",
+      "hex": "#4A2C1E"
+    },
+    {
+      "idx": 2,
+      "row": 0,
+      "col": 2,
+      "name": "Cà phê phin",
+      "hex": "#6B4026"
+    },
+    {
+      "idx": 3,
+      "row": 0,
+      "col": 3,
+      "name": "Cà phê sữa",
+      "hex": "#A06A42"
+    },
+    {
+      "idx": 4,
+      "row": 0,
+      "col": 4,
+      "name": "Bạc xỉu nhạt",
+      "hex": "#C9976A"
+    },
+    {
+      "idx": 5,
+      "row": 0,
+      "col": 5,
+      "name": "Caramel",
+      "hex": "#D9A441"
+    },
+    {
+      "idx": 6,
+      "row": 0,
+      "col": 6,
+      "name": "Cacao",
+      "hex": "#5A3A2E"
+    },
+    {
+      "idx": 7,
+      "row": 0,
+      "col": 7,
+      "name": "Tóc nâu",
+      "hex": "#3B2A22"
+    },
+    {
+      "idx": 8,
+      "row": 1,
+      "col": 0,
+      "name": "Sữa đặc",
+      "hex": "#FFF4DC"
+    },
+    {
+      "idx": 9,
+      "row": 1,
+      "col": 1,
+      "name": "Kem trứng",
+      "hex": "#FBE29A"
+    },
+    {
+      "idx": 10,
+      "row": 1,
+      "col": 2,
+      "name": "Kem muối",
+      "hex": "#F3E9D2"
+    },
+    {
+      "idx": 11,
+      "row": 1,
+      "col": 3,
+      "name": "Tường kem",
+      "hex": "#F2DDB8"
+    },
+    {
+      "idx": 12,
+      "row": 1,
+      "col": 4,
+      "name": "Be ấm",
+      "hex": "#E6C99A"
+    },
+    {
+      "idx": 13,
+      "row": 1,
+      "col": 5,
+      "name": "Vàng trứng",
+      "hex": "#F2B93B"
+    },
+    {
+      "idx": 14,
+      "row": 1,
+      "col": 6,
+      "name": "Foam trắng",
+      "hex": "#FFFBF0"
+    },
+    {
+      "idx": 15,
+      "row": 1,
+      "col": 7,
+      "name": "Giấy/menu",
+      "hex": "#EFE3C8"
+    },
+    {
+      "idx": 16,
+      "row": 2,
+      "col": 0,
+      "name": "Gỗ sáng",
+      "hex": "#D8A96B"
+    },
+    {
+      "idx": 17,
+      "row": 2,
+      "col": 1,
+      "name": "Gỗ mật ong",
+      "hex": "#B97F45"
+    },
+    {
+      "idx": 18,
+      "row": 2,
+      "col": 2,
+      "name": "Gỗ trung",
+      "hex": "#8F5B31"
+    },
+    {
+      "idx": 19,
+      "row": 2,
+      "col": 3,
+      "name": "Gỗ óc chó",
+      "hex": "#5E3920"
+    },
+    {
+      "idx": 20,
+      "row": 2,
+      "col": 4,
+      "name": "Gỗ tối cũ",
+      "hex": "#3F2616"
+    },
+    {
+      "idx": 21,
+      "row": 2,
+      "col": 5,
+      "name": "Tre/mây",
+      "hex": "#C8A24E"
+    },
+    {
+      "idx": 22,
+      "row": 2,
+      "col": 6,
+      "name": "Gỗ sơn trắng",
+      "hex": "#E8DCC4"
+    },
+    {
+      "idx": 23,
+      "row": 2,
+      "col": 7,
+      "name": "Gỗ xanh sơn cũ",
+      "hex": "#6E8F7A"
+    },
+    {
+      "idx": 24,
+      "row": 3,
+      "col": 0,
+      "name": "Nhựa đỏ",
+      "hex": "#D9362B"
+    },
+    {
+      "idx": 25,
+      "row": 3,
+      "col": 1,
+      "name": "Nhựa đỏ tối",
+      "hex": "#9E2119"
+    },
+    {
+      "idx": 26,
+      "row": 3,
+      "col": 2,
+      "name": "Nhựa xanh dương",
+      "hex": "#2E6FD1"
+    },
+    {
+      "idx": 27,
+      "row": 3,
+      "col": 3,
+      "name": "Nhựa xanh dương tối",
+      "hex": "#1D4A97"
+    },
+    {
+      "idx": 28,
+      "row": 3,
+      "col": 4,
+      "name": "Nhựa xanh lá",
+      "hex": "#2FA05A"
+    },
+    {
+      "idx": 29,
+      "row": 3,
+      "col": 5,
+      "name": "Nhựa xanh lá tối",
+      "hex": "#1D6D3C"
+    },
+    {
+      "idx": 30,
+      "row": 3,
+      "col": 6,
+      "name": "Nhựa vàng",
+      "hex": "#F2C230"
+    },
+    {
+      "idx": 31,
+      "row": 3,
+      "col": 7,
+      "name": "Nhựa trắng",
+      "hex": "#F4F1EA"
+    },
+    {
+      "idx": 32,
+      "row": 4,
+      "col": 0,
+      "name": "Lá sáng",
+      "hex": "#8CC152"
+    },
+    {
+      "idx": 33,
+      "row": 4,
+      "col": 1,
+      "name": "Lá trung",
+      "hex": "#4FA043"
+    },
+    {
+      "idx": 34,
+      "row": 4,
+      "col": 2,
+      "name": "Lá tối",
+      "hex": "#2C6B3A"
+    },
+    {
+      "idx": 35,
+      "row": 4,
+      "col": 3,
+      "name": "Lá bàng/rêu",
+      "hex": "#5B7F3A"
+    },
+    {
+      "idx": 36,
+      "row": 4,
+      "col": 4,
+      "name": "Xanh bạc hà tường",
+      "hex": "#9CD3B5"
+    },
+    {
+      "idx": 37,
+      "row": 4,
+      "col": 5,
+      "name": "Xanh ngọc cửa",
+      "hex": "#3E9E8C"
+    },
+    {
+      "idx": 38,
+      "row": 4,
+      "col": 6,
+      "name": "Xanh dù",
+      "hex": "#2F8F7B"
+    },
+    {
+      "idx": 39,
+      "row": 4,
+      "col": 7,
+      "name": "Xanh rêu tường cũ",
+      "hex": "#7A8F5E"
+    },
+    {
+      "idx": 40,
+      "row": 5,
+      "col": 0,
+      "name": "Gạch bông kem",
+      "hex": "#E9D9B5"
+    },
+    {
+      "idx": 41,
+      "row": 5,
+      "col": 1,
+      "name": "Gạch bông đỏ gạch",
+      "hex": "#B5472F"
+    },
+    {
+      "idx": 42,
+      "row": 5,
+      "col": 2,
+      "name": "Gạch bông xanh",
+      "hex": "#3B6E8F"
+    },
+    {
+      "idx": 43,
+      "row": 5,
+      "col": 3,
+      "name": "Gạch bông vàng",
+      "hex": "#D9A93A"
+    },
+    {
+      "idx": 44,
+      "row": 5,
+      "col": 4,
+      "name": "Gạch men trắng",
+      "hex": "#F1F0EA"
+    },
+    {
+      "idx": 45,
+      "row": 5,
+      "col": 5,
+      "name": "Gạch xám sàn",
+      "hex": "#B9B2A6"
+    },
+    {
+      "idx": 46,
+      "row": 5,
+      "col": 6,
+      "name": "Gạch nung",
+      "hex": "#C4683E"
+    },
+    {
+      "idx": 47,
+      "row": 5,
+      "col": 7,
+      "name": "Vữa/grout",
+      "hex": "#8E877B"
+    },
+    {
+      "idx": 48,
+      "row": 6,
+      "col": 0,
+      "name": "Inox sáng",
+      "hex": "#B8BEC4"
+    },
+    {
+      "idx": 49,
+      "row": 6,
+      "col": 1,
+      "name": "Inox trung",
+      "hex": "#8A939B"
+    },
+    {
+      "idx": 50,
+      "row": 6,
+      "col": 2,
+      "name": "Inox tối",
+      "hex": "#4F575E"
+    },
+    {
+      "idx": 51,
+      "row": 6,
+      "col": 3,
+      "name": "Than/đen",
+      "hex": "#2B2D31"
+    },
+    {
+      "idx": 52,
+      "row": 6,
+      "col": 4,
+      "name": "Da sáng",
+      "hex": "#F6D7BE"
+    },
+    {
+      "idx": 53,
+      "row": 6,
+      "col": 5,
+      "name": "Da trung",
+      "hex": "#E3B48E"
+    },
+    {
+      "idx": 54,
+      "row": 6,
+      "col": 6,
+      "name": "Da nâu",
+      "hex": "#C48B63"
+    },
+    {
+      "idx": 55,
+      "row": 6,
+      "col": 7,
+      "name": "Da sẫm",
+      "hex": "#8D5A3B"
+    },
+    {
+      "idx": 56,
+      "row": 7,
+      "col": 0,
+      "name": "Đỏ cờ",
+      "hex": "#D62828"
+    },
+    {
+      "idx": 57,
+      "row": 7,
+      "col": 1,
+      "name": "Vàng sao",
+      "hex": "#FFD23F"
+    },
+    {
+      "idx": 58,
+      "row": 7,
+      "col": 2,
+      "name": "Hồng sen",
+      "hex": "#F28DB2"
+    },
+    {
+      "idx": 59,
+      "row": 7,
+      "col": 3,
+      "name": "Cam",
+      "hex": "#F4801F"
+    },
+    {
+      "idx": 60,
+      "row": 7,
+      "col": 4,
+      "name": "Teal",
+      "hex": "#2A9D9B"
+    },
+    {
+      "idx": 61,
+      "row": 7,
+      "col": 5,
+      "name": "Tím",
+      "hex": "#7B5EA7"
+    },
+    {
+      "idx": 62,
+      "row": 7,
+      "col": 6,
+      "name": "Tóc đen",
+      "hex": "#1A1514"
+    },
+    {
+      "idx": 63,
+      "row": 7,
+      "col": 7,
+      "name": "Trắng tinh",
+      "hex": "#FFFFFF"
+    }
+  ]
+}

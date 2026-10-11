@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e16b9616788e26e46be96e2601af52c1, type: 3}
+  m_Name: SO_Recipe_ca_phe_sua
+  m_EditorClassIdentifier: Cafe.Runtime::Cafe.RecipeDef
+  id: ca_phe_sua
+  displayName: "C\xE0 ph\xEA s\u1EEFa"
+  price: 100
+  ingredientCost: 35
+  brewSeconds: 5
+  steps: 000000000100000003000000i
+  unlockTier: 1
+  unlockDay: 0
+  orderWeight: 1.6
+  hidden: 0
+  hint: 
+  requiredTools: []
+  hintCostGems: 30

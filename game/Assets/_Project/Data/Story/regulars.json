@@ -1,0 +1,343 @@
+{
+  "regulars": [
+    {
+      "id": "ba_sau",
+      "displayName": "Bà Sáu",
+      "age": 68,
+      "role": "hàng xóm bán vé số",
+      "favoriteRecipe": "tra_da",
+      "unlockTier": 1,
+      "preferredStyle": "vintage",
+      "visitChancePerDay": 0.5,
+      "personality": "Ấm áp, hay kể chuyện, thương người trẻ. Cuối câu hay thêm 'nghen', hay mời vé số 'hên'. Người đầu tiên tin vào quán vỉa hè.",
+      "look": { "customerPrefab": "Elder", "hint": "tóc bạc búi, áo bà ba, xấp vé số cặp nách" },
+      "chapters": [
+        {
+          "id": "ba_sau_1",
+          "requiresBond": 2,
+          "title": "Ly trà đá đầu tiên",
+          "lines": [
+            { "speaker": "narrator", "text": "Bà Sáu ôm xấp vé số, ngó quán một vòng rồi ngồi xuống." },
+            { "speaker": "ba_sau", "text": "Quán {shop} mới mở hả con? Cho bà ly trà đá nghen." },
+            { "speaker": "owner", "text": "Dạ, có liền ạ!" },
+            { "speaker": "ba_sau", "text": "Ừm, mát thấy thương. Bà bán vé số đầu hẻm ba chục năm rồi." },
+            { "speaker": "ba_sau", "text": "Coi mặt là biết quán nào sống. Quán này sống được, {owner} ơi." }
+          ],
+          "reward": { "type": "xu", "id": "xu", "amount": 80 }
+        },
+        {
+          "id": "ba_sau_2",
+          "requiresBond": 4,
+          "title": "Cuộc gọi video",
+          "lines": [
+            { "speaker": "narrator", "text": "Bà Sáu cầm điện thoại, ngó hoài mà không dám bấm." },
+            { "speaker": "ba_sau", "text": "Con Na, cháu bà, qua Úc học ba năm rồi. Nó kêu bà gọi video." },
+            { "speaker": "ba_sau", "text": "Bà sợ bấm trúng cái gì nó... bay mất tiêu nghen." },
+            { "speaker": "owner", "text": "Để con chỉ bà. Bấm nút xanh này nè." },
+            { "speaker": "ba_sau", "text": "Ủa, ra mặt nó liền! Na ơi, bà ngồi quán {shop} nè con!" },
+            { "speaker": "ba_sau", "text": "Cảm ơn {owner}. Bà cho quán chậu cây này, xanh mát mắt nghen." }
+          ],
+          "reward": { "type": "furniture", "id": "Plant_Pot_Small", "amount": 1 }
+        },
+        {
+          "id": "ba_sau_3",
+          "requiresBond": 6,
+          "title": "Chiếc nón lá",
+          "lines": [
+            { "speaker": "ba_sau", "text": "Hồi trẻ bà cũng bán nước vỉa hè, nuôi ba đứa con đó con." },
+            { "speaker": "ba_sau", "text": "Bị đuổi hoài, đẩy xe chạy hộc tốc. Nên thấy quán con là thương." },
+            { "speaker": "owner", "text": "Nên bà ghé quán từ ngày đầu hả bà?" },
+            { "speaker": "ba_sau", "text": "Ừa. Ngồi cho quán đỡ vắng, chứ trà đá nhà bà cũng có nghen." },
+            { "speaker": "ba_sau", "text": "Nè, tờ vé số hên. Trúng thì chia con nửa tờ thôi nghen." },
+            { "speaker": "ba_sau", "text": "Còn nón lá này, bà đội từ hồi bán nước. Con đội cho mát." }
+          ],
+          "reward": { "type": "hat", "id": "Hat_NonLa", "amount": 1 }
+        },
+        {
+          "id": "ba_sau_4",
+          "requiresBond": 8,
+          "title": "Cháu Na về",
+          "lines": [
+            { "speaker": "narrator", "text": "Bà Sáu dắt theo cô gái tóc ngắn kéo vali, cười không khép miệng." },
+            { "speaker": "ba_sau", "text": "Na ơi, đây là {owner}, chủ quán {shop} bà hay khoe nè." },
+            { "speaker": "owner", "text": "Chào Na! Bà kể về Na hoài đó." },
+            { "speaker": "ba_sau", "text": "Xuống máy bay là đòi ghé quán trước. Bà ghen muốn chết nghen." },
+            { "speaker": "ba_sau", "text": "Rồi, bà chỉ con trà chanh kiểu bà: nhiều chanh, ít đường." },
+            { "speaker": "ba_sau", "text": "Thêm cọng sả đập nhẹ. Uống một ly, trúng số cũng không đổi." }
+          ],
+          "reward": { "type": "recipe", "id": "tra_chanh", "amount": 1 }
+        }
+      ]
+    },
+    {
+      "id": "minh",
+      "displayName": "Minh",
+      "age": 21,
+      "role": "sinh viên ôn thi",
+      "favoriteRecipe": "bac_xiu",
+      "unlockTier": 1,
+      "preferredStyle": "modern",
+      "visitChancePerDay": 0.4,
+      "personality": "Hay lo, học tới quên ăn, nói hơi lí nhí nhưng dễ thương. Tự trấn an bằng 'Ổn mà... chắc vậy.' Từ lo lắng tới đậu tốt nghiệp.",
+      "look": { "customerPrefab": "Student", "hint": "áo thun, balo đầy sách, kính cận, quầng thâm mắt" },
+      "chapters": [
+        {
+          "id": "minh_1",
+          "requiresBond": 2,
+          "title": "Gió và bạc xỉu",
+          "lines": [
+            { "speaker": "narrator", "text": "Minh ôm chồng đề thi dày cộp, mắt thâm như gấu trúc." },
+            { "speaker": "minh", "text": "Cho em ly bạc xỉu. Quán có wifi hông ạ?" },
+            { "speaker": "owner", "text": "Wifi thì hông có. Gió thì nhiều." },
+            { "speaker": "minh", "text": "Dạ... vậy cũng được. Ổn mà. Chắc vậy." }
+          ],
+          "reward": { "type": "xu", "id": "xu", "amount": 100 }
+        },
+        {
+          "id": "minh_2",
+          "requiresBond": 4,
+          "title": "Nguyện vọng hai",
+          "lines": [
+            { "speaker": "minh", "text": "{owner} biết hông, hồi thi đại học em trượt nguyện vọng một." },
+            { "speaker": "minh", "text": "Giờ năm cuối, sắp thi tốt nghiệp. Em sợ trượt thêm lần nữa." },
+            { "speaker": "owner", "text": "Trượt một lần đâu có nghĩa trượt hoài." },
+            { "speaker": "minh", "text": "Ờ ha... Ly bạc xỉu ngọt quá, bớt run rồi." },
+            { "speaker": "minh", "text": "Mai em dắt bạn qua học nhóm. Nhà em dư cái ghế xanh, em mang qua." }
+          ],
+          "reward": { "type": "furniture", "id": "Stool_Plastic_Blue", "amount": 1 }
+        },
+        {
+          "id": "minh_3",
+          "requiresBond": 6,
+          "title": "Đêm trước kỳ thi",
+          "lines": [
+            { "speaker": "narrator", "text": "Minh tới sớm hơn giờ mở cửa, tay cầm xấp giấy nhăn nhúm." },
+            { "speaker": "minh", "text": "Mai em thi rồi. Em học mà quên hết trơn, quên sạch luôn." },
+            { "speaker": "owner", "text": "Hít thở đã. Uống miếng bạc xỉu trước." },
+            { "speaker": "minh", "text": "Dạ... Ngon quá! Ủa, nhớ lại được một chương rồi!" },
+            { "speaker": "minh", "text": "Một chương trên mười hai chương. Ổn mà... chắc vậy." },
+            { "speaker": "owner", "text": "Một chương cũng là có. Mai cố lên nha!" }
+          ],
+          "reward": { "type": "xu", "id": "xu", "amount": 200 }
+        },
+        {
+          "id": "minh_4",
+          "requiresBond": 8,
+          "title": "Có tên trên bảng",
+          "lines": [
+            { "speaker": "narrator", "text": "Chiều muộn. Minh lao vào quán, thở không ra hơi." },
+            { "speaker": "minh", "text": "{owner}! Đậu rồi! Em đậu tốt nghiệp rồi! Em dò tên ba lần luôn!" },
+            { "speaker": "owner", "text": "Chúc mừng Minh! Ly này quán mời." },
+            { "speaker": "minh", "text": "Dạ hông, để em trả! Lương đầu tiên em trả bù luôn." },
+            { "speaker": "minh", "text": "Hồi ôn thi em lo hoài. Giờ thì ổn thiệt, hổng còn 'chắc vậy' nữa!" },
+            { "speaker": "minh", "text": "Mũ cử nhân của em nè. Treo ở quán, ai ôn thi nhìn vào cho đỡ sợ." }
+          ],
+          "reward": { "type": "hat", "id": "Hat_Graduation", "amount": 1 }
+        }
+      ]
+    },
+    {
+      "id": "chu_tu",
+      "displayName": "Chú Tư",
+      "age": 58,
+      "role": "tài xế xe ôm",
+      "favoriteRecipe": "ca_phe_den",
+      "unlockTier": 1,
+      "preferredStyle": "indochine",
+      "visitChancePerDay": 0.4,
+      "personality": "Trầm, vui tính, thương con. Kể chuyện Sài Gòn xưa bằng 'Hồi đó nè', kết câu bằng 'Dzậy đó'. Có con gái đi du học xa.",
+      "look": { "customerPrefab": "Worker", "hint": "áo sơ mi sờn, nón kết cũ, đậu xe ôm trước quán" },
+      "chapters": [
+        {
+          "id": "chu_tu_1",
+          "requiresBond": 2,
+          "title": "Đắng mới đã",
+          "lines": [
+            { "speaker": "narrator", "text": "Chú Tư dựng xe ôm trước quán, phủi nón, ngồi cái phịch." },
+            { "speaker": "chu_tu", "text": "Cà phê đen đá, đừng đường nghen con. Đắng mới đã. Dzậy đó." },
+            { "speaker": "owner", "text": "Dạ chú, có liền." },
+            { "speaker": "chu_tu", "text": "Hồi đó nè, góc hẻm này có xe cà phê vợt, chú ghé hoài." },
+            { "speaker": "chu_tu", "text": "Giờ có quán {shop}, chú ghé lại. Coi như gặp cố nhân." }
+          ],
+          "reward": { "type": "xu", "id": "xu", "amount": 100 }
+        },
+        {
+          "id": "chu_tu_2",
+          "requiresBond": 4,
+          "title": "Tiếng cải lương",
+          "lines": [
+            { "speaker": "chu_tu", "text": "Hồi đó nè, hẻm này chưa đổ bê tông. Mưa xuống là lội bùn." },
+            { "speaker": "chu_tu", "text": "Mà tối nào cũng có tiếng cải lương từ cái radio ông Hai." },
+            { "speaker": "chu_tu", "text": "Giờ hẻm sạch bóng, hổng ai mở cải lương nữa. Dzậy đó." },
+            { "speaker": "owner", "text": "Chú hát thử một câu đi chú." },
+            { "speaker": "chu_tu", "text": "Thôi thôi! Chú hát là khách chạy hết. Cho thêm ly nữa con." }
+          ],
+          "reward": { "type": "xu", "id": "xu", "amount": 150 }
+        },
+        {
+          "id": "chu_tu_3",
+          "requiresBond": 6,
+          "title": "Con gái nơi xa",
+          "lines": [
+            { "speaker": "narrator", "text": "Chú Tư ngồi lâu hơn mọi bữa, ly cà phê cạn từ hồi nào." },
+            { "speaker": "chu_tu", "text": "Con Thảo, con gái chú, qua Canada học ba năm rồi." },
+            { "speaker": "chu_tu", "text": "Hồi đó nè, chú chạy xe tới tối mịt để đóng tiền học cho nó." },
+            { "speaker": "chu_tu", "text": "Nó kêu ba nghỉ đi. Mà nghỉ rồi chú biết làm gì. Dzậy đó." },
+            { "speaker": "owner", "text": "Chú thương con nên chạy tiếp thôi." },
+            { "speaker": "chu_tu", "text": "Hiểu chú ghê. Nè, cây cau chú trồng hồi Thảo mới sanh, cho quán." }
+          ],
+          "reward": { "type": "furniture", "id": "Plant_Areca_Tall", "amount": 1 }
+        },
+        {
+          "id": "chu_tu_4",
+          "requiresBond": 8,
+          "title": "Ra sân bay",
+          "lines": [
+            { "speaker": "narrator", "text": "Chú Tư mặc áo sơ mi ủi thẳng, râu cạo sạch, cười hoài." },
+            { "speaker": "chu_tu", "text": "Mai con Thảo về! Chú chở nó bằng chính chiếc xe này luôn." },
+            { "speaker": "owner", "text": "Chú ăn diện dữ vậy chú!" },
+            { "speaker": "chu_tu", "text": "Hồi đó nè, nó mới ba tuổi, chú cũng chở nó bằng xe này." },
+            { "speaker": "chu_tu", "text": "Nó nói về là đòi uống ly cà phê đen chú hay khoe. Dzậy đó!" },
+            { "speaker": "chu_tu", "text": "Nè, nón kết chú đội chục năm chạy xe. Con giữ giùm chú nghen." }
+          ],
+          "reward": { "type": "hat", "id": "Hat_Cap", "amount": 1 }
+        }
+      ]
+    },
+    {
+      "id": "chi_lan",
+      "displayName": "Chị Lan",
+      "age": 29,
+      "role": "nhân viên văn phòng",
+      "favoriteRecipe": "ca_phe_muoi",
+      "unlockTier": 2,
+      "preferredStyle": "garden",
+      "visitChancePerDay": 0.35,
+      "personality": "Gấp gáp, nói nhanh, hay liếc đồng hồ. Câu cửa miệng 'Chờ chị xíu' và 'deadline'. Mê nướng bánh, càng về sau càng dịu lại và dám bỏ việc mở tiệm.",
+      "look": { "customerPrefab": "Office", "hint": "sơ mi, thẻ nhân viên, laptop, tóc búi vội" },
+      "chapters": [
+        {
+          "id": "chi_lan_1",
+          "requiresBond": 2,
+          "title": "Mười phút nghỉ trưa",
+          "lines": [
+            { "speaker": "narrator", "text": "Chị Lan bước nhanh, một tay xách laptop, một tay cầm điện thoại." },
+            { "speaker": "chi_lan", "text": "Chờ chị xíu... Rồi. Cho chị ly cà phê muối. Deadline đuổi tới nơi!" },
+            { "speaker": "owner", "text": "Dạ, chị ngồi nghỉ chút, có liền ạ." },
+            { "speaker": "chi_lan", "text": "Ủa? Mặn mặn béo béo... ngon dữ. Thôi, nghỉ mười phút thôi nha!" }
+          ],
+          "reward": { "type": "xu", "id": "xu", "amount": 150 }
+        },
+        {
+          "id": "chi_lan_2",
+          "requiresBond": 4,
+          "title": "Cái bánh nửa đêm",
+          "lines": [
+            { "speaker": "chi_lan", "text": "Chờ chị xíu... Nè, miếng bánh chị nướng tối qua. {owner} ăn thử." },
+            { "speaker": "owner", "text": "Chị tự làm hả? Ngon thiệt!" },
+            { "speaker": "chi_lan", "text": "Đêm nào chị cũng nướng cho đỡ stress. Lương trả tiền, bột trả vui." },
+            { "speaker": "chi_lan", "text": "Quán thiếu bảng menu đúng hông? Để chị viết cho. Chữ chị đẹp lắm." },
+            { "speaker": "chi_lan", "text": "Ủa mà deadline... thôi kệ, viết bảng trước!" }
+          ],
+          "reward": { "type": "furniture", "id": "Board_Menu_A", "amount": 1 }
+        },
+        {
+          "id": "chi_lan_3",
+          "requiresBond": 6,
+          "title": "Tờ đơn gấp tư",
+          "lines": [
+            { "speaker": "narrator", "text": "Chị Lan ngồi im, tờ giấy gấp tư nằm cạnh ly cà phê muối." },
+            { "speaker": "chi_lan", "text": "Đơn xin nghỉ việc. Chị viết ba lần, xóa hai lần." },
+            { "speaker": "owner", "text": "Chị có muốn nghỉ không?" },
+            { "speaker": "chi_lan", "text": "Muốn. Mà sợ. Lỡ tiệm bánh ế, chị đói thì sao." },
+            { "speaker": "owner", "text": "Đói thì ghé quán. Luôn có ly cho chị." },
+            { "speaker": "chi_lan", "text": "Chờ chị xíu... để chị hít thở đã. Mai chị quyết." }
+          ],
+          "reward": { "type": "xu", "id": "xu", "amount": 250 }
+        },
+        {
+          "id": "chi_lan_4",
+          "requiresBond": 8,
+          "title": "Tiệm bánh đầu hẻm",
+          "lines": [
+            { "speaker": "narrator", "text": "Chị Lan mặc tạp dề dính bột, cười toe toét." },
+            { "speaker": "chi_lan", "text": "Chị nộp đơn rồi! Tháng sau chị mở tiệm bánh đầu hẻm." },
+            { "speaker": "owner", "text": "Chúc mừng chị! Hết deadline rồi nha." },
+            { "speaker": "chi_lan", "text": "Hết thiệt! Giờ chỉ còn deadline bánh nở. Cái này chị chịu được." },
+            { "speaker": "chi_lan", "text": "Sáng nào bánh cũng thơm tới quán. Mình bán chung nha." },
+            { "speaker": "chi_lan", "text": "Nè, cà phê cốt dừa ăn kèm bánh hợp lắm. {owner} thử trước đi." }
+          ],
+          "reward": { "type": "recipe", "id": "ca_phe_cot_dua", "amount": 1 }
+        }
+      ]
+    },
+    {
+      "id": "ken",
+      "displayName": "Ken",
+      "age": 27,
+      "role": "du khách Nhật",
+      "favoriteRecipe": "ca_phe_trung",
+      "unlockTier": 2,
+      "preferredStyle": "vintage",
+      "visitChancePerDay": 0.3,
+      "personality": "Lịch sự, tò mò, tiếng Việt còn vấp. Câu cửa miệng 'chút chút'. Càng về sau càng nói giọng miền Nam ('hông', 'nghen'). Đi tìm quán ông nội từng uống.",
+      "look": { "customerPrefab": "Tourist", "hint": "sơ mi trắng, ba lô, máy ảnh film cũ" },
+      "chapters": [
+        {
+          "id": "ken_1",
+          "requiresBond": 2,
+          "title": "Tấm ảnh cũ",
+          "lines": [
+            { "speaker": "narrator", "text": "Một du khách đeo ba lô, ôm máy ảnh film, ngó quán thật lâu." },
+            { "speaker": "ken", "text": "Xin chào. Tôi là Ken. Tôi nói tiếng Việt... chút chút." },
+            { "speaker": "ken", "text": "Cho tôi cà phê trứng. Ông nội tôi rất thích. Hồi xưa." },
+            { "speaker": "owner", "text": "Chào Ken. Bạn ngồi đi, có liền." },
+            { "speaker": "ken", "text": "Cảm ơn nhiều. Ngon! Béo như kem. Ông nội nói đúng." }
+          ],
+          "reward": { "type": "xu", "id": "xu", "amount": 150 }
+        },
+        {
+          "id": "ken_2",
+          "requiresBond": 4,
+          "title": "Cây me, xe đạp",
+          "lines": [
+            { "speaker": "ken", "text": "Tôi tìm một quán. Ông nội ngồi ở đó, năm 1972." },
+            { "speaker": "ken", "text": "Ông chỉ nhớ: có cây me, có xe đạp, có mùi cà phê." },
+            { "speaker": "owner", "text": "Cây me thì Sài Gòn nhiều lắm." },
+            { "speaker": "ken", "text": "Hihi, đúng. Tôi đi bốn ngày, gặp một trăm cây me." },
+            { "speaker": "ken", "text": "Nhưng ghế nhựa vui lắm. Tôi chụp hình được không?" }
+          ],
+          "reward": { "type": "xu", "id": "xu", "amount": 200 }
+        },
+        {
+          "id": "ken_3",
+          "requiresBond": 6,
+          "title": "Chú xe ôm chỉ đường",
+          "lines": [
+            { "speaker": "ken", "text": "Hôm qua tôi hỏi một chú xe ôm. Chú nói: 'Hồi đó nè...'" },
+            { "speaker": "ken", "text": "Đầu hẻm có xe cà phê trứng của bà Hai. Có cây me." },
+            { "speaker": "ken", "text": "Tôi hỏi hẻm nào. Chú chỉ... đúng hẻm này!" },
+            { "speaker": "owner", "text": "Hẻm này luôn hả?" },
+            { "speaker": "ken", "text": "Vâng! Tôi ngồi cả tuần ở đây mà không biết. Buồn cười, nhưng vui." },
+            { "speaker": "ken", "text": "Mai tôi mang ảnh ông nội tới. Mình cùng tìm đúng chỗ xe nha?" }
+          ],
+          "reward": { "type": "xu", "id": "xu", "amount": 250 }
+        },
+        {
+          "id": "ken_4",
+          "requiresBond": 8,
+          "title": "Đúng chỗ ông ngồi",
+          "lines": [
+            { "speaker": "narrator", "text": "Ken đặt tấm ảnh cũ cạnh xe đẩy, ngó qua ngó lại, rồi im lặng." },
+            { "speaker": "ken", "text": "Cột điện này. Góc tường cong này. Giống hệt, {owner} thấy hông?" },
+            { "speaker": "owner", "text": "Giống y chang luôn!" },
+            { "speaker": "ken", "text": "Ông nội ngồi đúng chỗ này. Tôi tìm ba năm, hôm nay thấy rồi." },
+            { "speaker": "ken", "text": "Cảm ơn quán {shop}. Tiếng Việt tôi giờ nhiều nhiều rồi, nghen?" },
+            { "speaker": "ken", "text": "Cái nón này của ông. Tôi cho quán, để ông cũng ghé thăm." }
+          ],
+          "reward": { "type": "hat", "id": "Hat_Bucket", "amount": 1 }
+        }
+      ]
+    }
+  ]
+}

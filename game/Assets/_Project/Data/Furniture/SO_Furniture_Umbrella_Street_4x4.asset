@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ba341d98cc92be48b208bac9574fcd8, type: 3}
+  m_Name: SO_Furniture_Umbrella_Street_4x4
+  m_EditorClassIdentifier: Cafe.Runtime::Cafe.FurnitureDef
+  id: Umbrella_Street_4x4
+  displayName: "D\xF9 che n\u1EAFng"
+  prefab: {fileID: 5734076748512151372, guid: 941215b55d4cefa4b8f0aa76065fe99f, type: 3}
+  footprint: {x: 4, y: 4}
+  price: 1200
+  kind: 2
+  comfort: 2
+  style: 2
+  seatHeight: 0
+  overhead: 0
+  hangY: 0
+  minTier: 1
+  onlyTier: 0
+  shopVisible: 1
+  icon: {fileID: 21300000, guid: 8bccfc25c74a2974fbde5b62c91a73d7, type: 3}
+  priceStep: 0
+  maxCount: 0
+  attract: 0

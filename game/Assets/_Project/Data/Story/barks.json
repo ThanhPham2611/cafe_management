@@ -1,0 +1,88 @@
+{
+  "barks": {
+    "order": [
+      "Cho tui một ly nghen!",
+      "Ly nào mát mát đi chủ quán.",
+      "Gì cũng được, miễn lạnh!",
+      "Cho em ly cà phê nha.",
+      "Ê, cho ly nhiều đá nghen.",
+      "Chủ quán ơi, order nè!",
+      "Hôm nay thèm ly này quá.",
+      "Làm ly như hôm trước nha.",
+      "Cho một ly, ít ngọt thôi.",
+      "Nóng quá, cho ly đá liền nha!",
+      "Ghé đây cho đỡ buồn miệng.",
+      "Ly nào ngon nhất quán đi!"
+    ],
+    "waiting": [
+      "Chưa tới hả chủ quán?",
+      "Chờ xíu cũng được...",
+      "Ngồi ngó xe chạy cũng vui.",
+      "Sao nắng quá trời vậy...",
+      "Ly của tui tới chưa ta?",
+      "Hơi khát rồi nha.",
+      "Thơm quá, chắc sắp tới.",
+      "Hmm, hơi lâu à nha.",
+      "Tui xem điện thoại xíu.",
+      "Ráng nhanh nhanh nghen.",
+      "Khát khô cổ luôn rồi.",
+      "Có ai nhớ ly của tui hông?"
+    ],
+    "served_happy": [
+      "Ngon dữ thần luôn!",
+      "Đúng gu tui luôn!",
+      "Ôi mát quá, đã ghê!",
+      "Ly này đáng tiền nha.",
+      "Ngon hơn hôm bữa nữa!",
+      "Phê ghê, cảm ơn nghen!",
+      "Hết sảy luôn!",
+      "Chủ quán pha khéo ghê.",
+      "Thơm lừng, uống đã thiệt.",
+      "Nhất quán này rồi!",
+      "Mai tui ghé nữa nha.",
+      "Ừm! Vừa miệng luôn.",
+      "Sảng khoái!"
+    ],
+    "served_meh": [
+      "Cũng được... cũng được.",
+      "Hơi nhạt xíu nha.",
+      "Ừm, uống cũng ổn.",
+      "Lần sau ngọt hơn xíu nghen.",
+      "Tạm được, không tệ.",
+      "Hơi nhiều đá rồi đó."
+    ],
+    "leaving_angry": [
+      "Thôi, tui đi chỗ khác nha!",
+      "Chờ hoài, hết nổi rồi!",
+      "Lâu quá, tui đi đây nghen.",
+      "Hổng chờ nổi nữa, thôi!",
+      "Hơi bực nha, tui đi đây.",
+      "Hừ, để lần sau tính."
+    ],
+    "tip": [
+      "Giữ lại tiền thối nghen!",
+      "Cho em tiền uống nước.",
+      "Tip nhỏ cho chủ quán nè.",
+      "Ly này ngon, thưởng chút!",
+      "Lấy luôn, khỏi thối!",
+      "Quán dễ thương quá, nè!"
+    ],
+    "dirty_table": [
+      "Bàn này còn ly hả trời?",
+      "Ơ, bàn chưa dọn nè.",
+      "Dọn giùm cái bàn nha.",
+      "Ngồi sao nổi, bàn dơ quá.",
+      "Bàn dính hết rồi nè.",
+      "Cho tui chỗ sạch xíu nha."
+    ],
+    "regular_arrives": [
+      "{name} tới rồi kìa!",
+      "Ủa, {name} ghé nữa hả?",
+      "Chào {name}, ngồi chỗ cũ nha!",
+      "Có {name} là quán vui liền.",
+      "{name} ơi, đợi xíu ly ra liền!",
+      "Ô, {name} đó hả? Nay sớm vậy!",
+      "{name} ghé thăm quán nè!"
+    ]
+  }
+}

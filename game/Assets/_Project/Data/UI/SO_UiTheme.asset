@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79c24c91a763e084ba02123a52f10ba5, type: 3}
+  m_Name: SO_UiTheme
+  m_EditorClassIdentifier: Cafe.Runtime::Cafe.UiTheme
+  heading: {fileID: 12800000, guid: 1c4c6fbbc53761f4080ddd88f8638f7f, type: 3}
+  body: {fileID: 12800000, guid: 409a4728613f71f4b9066c8b050a12a7, type: 3}
+  panel: {fileID: 21300000, guid: f4c265acdde5396489fa86ec989404e4, type: 3}
+  chip: {fileID: 21300000, guid: 0c815514e6a09fe4c8b7c716cccbddae, type: 3}
+  card: {fileID: 21300000, guid: 7658b01590ceea147a68774a4b19c694, type: 3}
+  barTrack: {fileID: 21300000, guid: bf23681df61df5a42b5f6de0a13954b3, type: 3}
+  barFill: {fileID: 21300000, guid: 4a07e03040615cf4a997ef7a607b1b9f, type: 3}
+  ringBg: {fileID: 21300000, guid: d47b4fdcc67ccd745b3a8cfdd34bc34b, type: 3}
+  ringFill: {fileID: 21300000, guid: a1830e6402366e941b2e273d13858caa, type: 3}
+  disc: {fileID: 21300000, guid: a6b5df264afd34d40b64aa99eb3e56e7, type: 3}
+  bubble: {fileID: 21300000, guid: fab6b33c762805a4c91123f78b8870ed, type: 3}
+  bubbleTail: {fileID: 21300000, guid: 8165378cc0129ab46bf2087a84abd77d, type: 3}
+  dim: {fileID: 21300000, guid: 290f52678e8042545b4e844da14a984d, type: 3}
+  btnRed: {fileID: 21300000, guid: 1cea09d9715d73140b5d5b90438f7347, type: 3}
+  btnRedPressed: {fileID: 21300000, guid: bfb35671b47fc004b8dd0270fdf00c7e, type: 3}
+  btnGreen: {fileID: 21300000, guid: 04ee1df90fc6f5d46b59f6fc6379e6a5, type: 3}
+  btnGreenPressed: {fileID: 21300000, guid: 506416de64f981347887a42031361fca, type: 3}
+  btnGold: {fileID: 21300000, guid: b349470c724e7af42abb6c2e81a366f5, type: 3}
+  btnGoldPressed: {fileID: 21300000, guid: 454fb54149c84204c9cbae69102ae44e, type: 3}
+  btnCream: {fileID: 21300000, guid: 907131d4ae4dbc64ba10c77b6d9ccea9, type: 3}
+  btnCreamPressed: {fileID: 21300000, guid: 29a217ff4a1794c489163ce650c8ae43, type: 3}
+  btnCoffee: {fileID: 21300000, guid: 3059b19afc22f784e904c43937862819, type: 3}
+  btnCoffeePressed: {fileID: 21300000, guid: 9419c3b4b65068346976365469ef1b39, type: 3}
+  iconCoin: {fileID: 21300000, guid: 123499a2055759c41b2e76ee26f2f267, type: 3}
+  iconStar: {fileID: 21300000, guid: 422564562747db640916dc218035417b, type: 3}
+  iconClock: {fileID: 21300000, guid: 389b62b06b3747548bc21454512fe4ce, type: 3}
+  iconCup: {fileID: 21300000, guid: 2c7a5b8041ca8b14c8ad7b47ad0061f4, type: 3}
+  iconPhin: {fileID: 21300000, guid: 9968835df470cc448ba0a9390696312b, type: 3}
+  iconSuaDac: {fileID: 21300000, guid: a5cde4c4dc454a54486a2504cc7c054b, type: 3}
+  iconSuaTuoi: {fileID: 21300000, guid: be3d3f34ddf30cf4ca35e32345f58dc2, type: 3}
+  iconDa: {fileID: 21300000, guid: aea9b191a46a1a14abb4b8269b0585d9, type: 3}
+  iconTra: {fileID: 21300000, guid: 3652ef616ea52824abc49ab70dca3369, type: 3}
+  iconCheck: {fileID: 21300000, guid: 399cea9a8e8a9e1418c824baaa2fa4be, type: 3}
+  iconCross: {fileID: 21300000, guid: 61d123dfc8b20b447b3188333117fe92, type: 3}
+  iconHeart: {fileID: 21300000, guid: f15be25140a10ca419459f5d2070117c, type: 3}
+  iconBroom: {fileID: 0}
+  cream: {r: 1, g: 0.95686275, b: 0.8627451, a: 1}
+  creamDark: {r: 0.9372549, g: 0.8901961, b: 0.78431374, a: 1}
+  coffee: {r: 0.2901961, g: 0.17254902, b: 0.11764706, a: 1}
+  coffeeMid: {r: 0.41960785, g: 0.2509804, b: 0.14901961, a: 1}
+  red: {r: 0.8509804, g: 0.21176471, b: 0.16862746, a: 1}
+  green: {r: 0.18431373, g: 0.627451, b: 0.3529412, a: 1}
+  gold: {r: 0.9490196, g: 0.7254902, b: 0.23137255, a: 1}
+  mint: {r: 0.6117647, g: 0.827451, b: 0.70980394, a: 1}
+  danger: {r: 0.8392157, g: 0.15686275, b: 0.15686275, a: 1}

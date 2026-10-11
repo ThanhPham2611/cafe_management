@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ba341d98cc92be48b208bac9574fcd8, type: 3}
+  m_Name: SO_Furniture_Chair_Wood
+  m_EditorClassIdentifier: Cafe.Runtime::Cafe.FurnitureDef
+  id: Chair_Wood
+  displayName: "Gh\u1EBF g\u1ED7"
+  prefab: {fileID: 5163815710940584938, guid: 7134c2d76c1c4fd44bb0f76803da8123, type: 3}
+  footprint: {x: 1, y: 1}
+  price: 300
+  kind: 0
+  comfort: 3
+  style: 2
+  seatHeight: 0.45
+  overhead: 0
+  hangY: 0
+  minTier: 2
+  onlyTier: 0
+  shopVisible: 1
+  icon: {fileID: 21300000, guid: c90d301ccec98d2488afcc354f98003f, type: 3}
+  priceStep: 0
+  maxCount: 0
+  attract: 0

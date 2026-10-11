@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ba341d98cc92be48b208bac9574fcd8, type: 3}
+  m_Name: SO_Furniture_Table_Low_Inox_2x2
+  m_EditorClassIdentifier: Cafe.Runtime::Cafe.FurnitureDef
+  id: Table_Low_Inox_2x2
+  displayName: "B\xE0n th\u1EA5p inox"
+  prefab: {fileID: 1272636585616483177, guid: ffc2d34455c39ec4ca8f9b80e59aa336, type: 3}
+  footprint: {x: 2, y: 2}
+  price: 450
+  kind: 1
+  comfort: 1
+  style: 1
+  seatHeight: 0
+  overhead: 0
+  hangY: 0
+  minTier: 1
+  onlyTier: 0
+  shopVisible: 1
+  icon: {fileID: 21300000, guid: 98f9fd07b9e4d3f4ba5ac6c2bb56be68, type: 3}
+  priceStep: 0
+  maxCount: 0
+  attract: 0

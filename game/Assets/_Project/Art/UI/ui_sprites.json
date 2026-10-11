@@ -1,0 +1,335 @@
+{
+  "pixelsPerUnit": 100,
+  "sprites": [
+    {
+      "file": "ui_panel.png",
+      "border": [
+        40,
+        52,
+        40,
+        40
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_btn_red.png",
+      "border": [
+        40,
+        52,
+        40,
+        40
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_btn_red_p.png",
+      "border": [
+        40,
+        52,
+        40,
+        40
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_btn_green.png",
+      "border": [
+        40,
+        52,
+        40,
+        40
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_btn_green_p.png",
+      "border": [
+        40,
+        52,
+        40,
+        40
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_btn_gold.png",
+      "border": [
+        40,
+        52,
+        40,
+        40
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_btn_gold_p.png",
+      "border": [
+        40,
+        52,
+        40,
+        40
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_btn_cream.png",
+      "border": [
+        40,
+        52,
+        40,
+        40
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_btn_cream_p.png",
+      "border": [
+        40,
+        52,
+        40,
+        40
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_btn_coffee.png",
+      "border": [
+        40,
+        52,
+        40,
+        40
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_btn_coffee_p.png",
+      "border": [
+        40,
+        52,
+        40,
+        40
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_chip.png",
+      "border": [
+        38,
+        44,
+        38,
+        38
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_card.png",
+      "border": [
+        32,
+        42,
+        32,
+        32
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_bar_track.png",
+      "border": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_bar_fill.png",
+      "border": [
+        15,
+        15,
+        15,
+        15
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_ring_bg.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_ring_fill.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_disc.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_bubble.png",
+      "border": [
+        44,
+        52,
+        44,
+        44
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_bubble_tail.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_dim.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_coin.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_star.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_clock.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_cup.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_phin.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_sua_dac.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_sua_tuoi.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_da.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_tra.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_check.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_cross.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_heart.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+# Unity (project nằm trong game/)
+game/[Ll]ibrary/
+game/[Tt]emp/
+game/[Oo]bj/
+game/[Bb]uild/
+game/[Bb]uilds/
+game/[Ll]ogs/
+game/[Uu]ser[Ss]ettings/
+game/[Mm]emoryCaptures/
+game/[Rr]ecordings/
+game/*.csproj
+game/*.sln
+game/*.slnx
+game/.vs/
+game/.idea/
+game/*.apk
+game/*.aab
+game/*.keystore
+game/crashlytics-build.properties
+
+# Blender
+*.blend1
+*.blend2
+
+# Tool output tạm
+art_source/export/validate_report.json
+__pycache__/
+*.pyc
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.superpowers/

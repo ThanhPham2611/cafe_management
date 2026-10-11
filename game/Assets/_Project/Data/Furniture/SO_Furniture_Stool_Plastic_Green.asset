@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ba341d98cc92be48b208bac9574fcd8, type: 3}
+  m_Name: SO_Furniture_Stool_Plastic_Green
+  m_EditorClassIdentifier: Cafe.Runtime::Cafe.FurnitureDef
+  id: Stool_Plastic_Green
+  displayName: "Gh\u1EBF nh\u1EF1a xanh l\xE1"
+  prefab: {fileID: 6043457630852594578, guid: 2bbf162cc91c2414f856429df2b19407, type: 3}
+  footprint: {x: 1, y: 1}
+  price: 200
+  kind: 0
+  comfort: 1
+  style: 0
+  seatHeight: 0.27
+  overhead: 0
+  hangY: 0
+  minTier: 1
+  onlyTier: 0
+  shopVisible: 1
+  icon: {fileID: 21300000, guid: 56c03c44c355cfe499ea9a0403ddf15c, type: 3}
+  priceStep: 75
+  maxCount: 0
+  attract: 0

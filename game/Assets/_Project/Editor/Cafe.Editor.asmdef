@@ -1,0 +1,26 @@
+{
+    "name": "Cafe.Editor",
+    "rootNamespace": "Cafe.EditorTools",
+    "references": [
+        "Cafe.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.render-pipelines.universal",
+            "expression": "",
+            "define": "CAFE_URP"
+        }
+    ],
+    "noEngineReferences": false
+}

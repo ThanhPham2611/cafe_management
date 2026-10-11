@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ba341d98cc92be48b208bac9574fcd8, type: 3}
+  m_Name: SO_Furniture_Fan_Ceiling
+  m_EditorClassIdentifier: Cafe.Runtime::Cafe.FurnitureDef
+  id: Fan_Ceiling
+  displayName: "Qu\u1EA1t tr\u1EA7n"
+  prefab: {fileID: 888776714450731507, guid: a4b8ec197c2037a4e9c6c69cd9c6e40a, type: 3}
+  footprint: {x: 1, y: 1}
+  price: 900
+  kind: 2
+  comfort: 4
+  style: 1
+  seatHeight: 0
+  overhead: 1
+  hangY: 2.485
+  minTier: 2
+  onlyTier: 0
+  shopVisible: 1
+  icon: {fileID: 21300000, guid: e1a255c3b25b4b048b0ba2c7b38b82d3, type: 3}
+  priceStep: 0
+  maxCount: 0
+  attract: 0

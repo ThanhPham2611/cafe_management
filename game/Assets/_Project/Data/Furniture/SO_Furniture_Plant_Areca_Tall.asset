@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ba341d98cc92be48b208bac9574fcd8, type: 3}
+  m_Name: SO_Furniture_Plant_Areca_Tall
+  m_EditorClassIdentifier: Cafe.Runtime::Cafe.FurnitureDef
+  id: Plant_Areca_Tall
+  displayName: "C\xE2y cau ti\u1EC3u tr\xE2m"
+  prefab: {fileID: 2475269349125433876, guid: c86304b221bee40409219bd2f06a2996, type: 3}
+  footprint: {x: 1, y: 1}
+  price: 400
+  kind: 2
+  comfort: 0
+  style: 3
+  seatHeight: 0
+  overhead: 0
+  hangY: 0
+  minTier: 1
+  onlyTier: 0
+  shopVisible: 1
+  icon: {fileID: 21300000, guid: 4555c0a6d0e510042b23e4530880f486, type: 3}
+  priceStep: 0
+  maxCount: 0
+  attract: 5
