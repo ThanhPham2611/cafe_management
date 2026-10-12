@@ -496,14 +496,25 @@ namespace Cafe
 
                 foreach (BrewStep step in o.recipe.steps)
                 {
-                    yield return tap;
-                    g.Station.TapStep(step);
+                    // Chủ quán tạm rời quầy một nhịp (TapStep báo OwnerAway): người thật sẽ chạm lại bước đó
+                    BrewStation.TapResult res;
+                    int tries = 0;
+                    do
+                    {
+                        yield return tap;
+                        res = g.Station.TapStep(step);
+                        tries++;
+                    }
+                    while (res == BrewStation.TapResult.OwnerAway && tries < 40);
                     if (g.Station.State == BrewStation.Phase.Idle) break; // hỏng ly
                 }
                 yield return tap;
+                // Kẹt giữa chừng (sai bước...): bấm Hủy như người chơi thật rồi pha lại
+                if (g.Station.State == BrewStation.Phase.Brewing && !g.Station.Experiment) g.Station.CancelOrDiscard();
                 if (g.Station.State == BrewStation.Phase.Ready && o.customer != null)
                 {
-                    o.customer.OnTap(); // cùng đường vào với người chơi thật: xếp việc giao ly cho chủ quán
+                    // Có nhân viên Phục vụ thì họ tự mang ly đi; không thì chạm khách như người chơi thật (chủ quán đi giao)
+                    if (g.Staff == null || !g.Staff.HasRole(StaffRole.Server)) o.customer.OnTap();
                     t0 = Time.time;
                     while (g.Station.State == BrewStation.Phase.Ready && Time.time - t0 < 45f) yield return tap;
                     if (g.Station.State == BrewStation.Phase.Ready) g.Station.CancelOrDiscard(); // kẹt: đổ ly, pha lại

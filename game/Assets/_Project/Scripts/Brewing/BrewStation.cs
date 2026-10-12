@@ -370,6 +370,20 @@ namespace Cafe
             return true;
         }
 
+        /// Nhân viên Phục vụ cầm ly đã pha đi giao: quầy rảnh ngay để pha ly kế (không phải chờ ly tới tay khách).
+        /// Trả chất lượng ly, 0 nếu quầy không có đúng ly đó.
+        public int TakeReadyDrink(RecipeDef expected)
+        {
+            if (State != Phase.Ready || Recipe != expected) return 0;
+            int quality = HeldQuality;
+            State = Phase.Idle;
+            Recipe = null;
+            Selected = null;
+            HeldQuality = 0;
+            Raise();
+            return quality;
+        }
+
         /// Chạm khách: phục vụ nếu đúng món đang cầm.
         public bool TryServe(Customer c)
         {

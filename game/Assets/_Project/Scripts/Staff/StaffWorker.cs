@@ -88,6 +88,10 @@ namespace Cafe
         private int brewQuality;
         private Vector3 home;
 
+        // Phục vụ: ly đang cầm đi giao
+        private Order carriedOrder;
+        private int carriedQuality;
+
         public StaffSave Data { get { return data; } }
         public StaffRole Role { get { return role; } }
         /// Số việc đã xong từ đầu ngày (dọn bàn / rửa ly / mang ly / pha ly): để chẩn đoán và thống kê.
@@ -248,21 +252,50 @@ namespace Cafe
                     retryAt = Time.time + 0.5f;
                     return;
                 }
+                // Cầm ly đi ngay: quầy rảnh để chủ quán pha ly kế. Giữ chỗ đơn để Pha chế không làm trùng.
+                if (!pick.TryClaim(this)) { retryAt = Time.time + 0.5f; return; }
+                int quality = game.Station.TakeReadyDrink(pick.recipe);
+                if (quality <= 0) { pick.Release(this); retryAt = Time.time + 0.5f; return; }
+                carriedOrder = pick;
+                carriedQuality = quality;
+                GameEvents.RaiseOrderClaimChanged(pick);
                 serveTarget = customer;
                 visual.SetCarry(true);
                 if (!MoveTo(point)) { StopWork(); retryAt = Time.time + 1f; }
                 else BeginState(WorkerState.Moving);
                 return;
             }
-            if (serveTarget == null || !serveTarget.IsWaitingForDrink || game.Station.State != BrewStation.Phase.Ready)
+            if (carriedOrder == null || serveTarget == null || !IsWaiting(carriedOrder) ||
+                !ReferenceEquals(serveTarget.CurrentOrder, carriedOrder))
             {
-                StopWork();
+                StopWork(); // khách bỏ đi giữa đường: ly bỏ, ly sạch về kho
                 return;
             }
             if (state == WorkerState.Moving && ReachedTarget())
             {
-                if (game.Station.TryServe(serveTarget)) JobsDoneToday++;
+                if (serveTarget.Serve(carriedQuality))
+                {
+                    carriedQuality = 0; // ly sang tay khách
+                    JobsDoneToday++;
+                }
                 StopWork();
+            }
+        }
+
+        /// Bỏ ly đang cầm (nếu còn) và nhả đơn đã giữ.
+        private void AbortCarry()
+        {
+            if (carriedOrder != null)
+            {
+                Order o = carriedOrder;
+                carriedOrder = null;
+                o.Release(this);
+                if (game != null) GameEvents.RaiseOrderClaimChanged(o);
+            }
+            if (carriedQuality > 0)
+            {
+                carriedQuality = 0;
+                if (game != null && game.Stock != null) game.Stock.Return();
             }
         }
 
@@ -433,6 +466,7 @@ namespace Cafe
         {
             if (lease != null) lease.Release();
             AbortBrew();
+            AbortCarry();
             serveTarget = null;
             if (visual != null) visual.SetCarry(false);
             if (agent != null && agent.enabled && agent.isOnNavMesh)
@@ -455,6 +489,7 @@ namespace Cafe
         {
             if (lease != null) lease.Release();
             AbortBrew();
+            AbortCarry();
         }
     }
 }

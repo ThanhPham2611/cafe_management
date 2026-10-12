@@ -30,16 +30,16 @@ Chạy `QuanCaPhe.exe -batchmode -nographics -autoplay ... -days 9` trên bản 
 Bot là người chơi "khá": thêm cờ `-autobuy` (mua bàn khi dư tiền), `-autohidden` (mở 2 món ẩn, tắt món rẻ), `-upgradestaff` (nâng cấp nhân viên), `-nobrewer` (đối chứng). Số liệu từng lượt nằm ở `D:\cafe_store_verify\run*.log` (không đưa vào repo).
 
 - Cấp 2 chỉ 6 ghế + 6 ly (trước khi sửa): ~25–30 khách/ngày, lãi ~1.100–1.200/ngày sau lương; **tiền thuê 7.000/tuần ≈ 1.000/ngày ăn gần hết lãi**.
-- Sau khi sửa ly, dọn dẹp, lau sàn và thứ tự ưu tiên của chủ quán, có mở rộng ghế + menu món ẩn + nâng cấp nhân viên (lượt cuối, 10 ngày, có Pha chế): **trung bình ~32 khách/ngày, các ngày tốt 36–40 khách, doanh thu 4.700–5.400/ngày, lãi tuần ≈ +9.200 sau tiền thuê**. So với tài liệu (52–63 khách, lãi 4.200+/ngày) vẫn thấp khoảng một nửa; mua nhà hàng 250.000 Xu sẽ mất ~190 ngày in-game thay vì ~58 → **cần cân bằng thêm** (xem 0.3).
-- **Pha chế có ích hơn dự đoán ở lượt cuối**: có Pha chế trung bình ~32 khách/ngày (ngày 2–10) so với ~22 khi không có (lượt đối chứng, nhiều ngày sập còn 3–16 khách); lãi tuần +9.200 so với ~+7.000. Chỉ 1 lượt mỗi phương án và dao động lớn, nên coi là xu hướng chứ chưa phải kết luận chắc.
-- Vẫn còn **ngày tụt bất thường** (12–22 khách) khoảng 1 ngày trong 4–5 ngày. Phần lớn do chủ quán vừa pha vừa giao ly nên hay "đang đi" khi có đơn chờ; cần chẩn đoán tiếp trước khi khóa số cân bằng.
+- Sau khi sửa ly, dọn dẹp, lau sàn, thứ tự ưu tiên của chủ quán và để Phục vụ cầm ly đi là quầy rảnh ngay (lượt cuối, 10 ngày, bot mua bàn + menu món ẩn + nâng cấp nhân viên): **ổn định ~38 khách/ngày (31–48), doanh thu 4.400–6.900/ngày, lãi tuần ≈ +13.000 đến +17.000 sau tiền thuê**, không còn ngày sập. Mức này gần mức tài liệu suy ra (~14.700/tuần); mua nhà hàng 250.000 Xu mất khoảng 110–130 ngày in-game nếu bot không chi thêm.
+- **Nhân viên Pha chế chưa đáng tiền ở cấp 2 (14 ghế)**: có Pha chế ~38 khách/ngày, lãi tuần +13.100; không có Pha chế ~38,6 khách/ngày, lãi tuần +16.900. Chủ quán + Phục vụ đã đủ nhanh, Pha chế chỉ tốn lương 450/ngày. Mỗi phương án 1 lượt nên chỉ là xu hướng. Gợi ý: giữ làm lựa chọn, giảm phí tuyển / lương, hoặc chỉ mở từ cấp 3 khi ghế nhiều hơn.
+- Các ngày "sập" trước đó phần lớn do bot (chạm bước pha khi chủ quán tạm rời quầy thì ly kẹt mãi) và do chủ quán bị kéo đi dọn / giao ly. Đã sửa bot (thử lại bước, hủy ly kẹt) và luật ưu tiên của chủ quán; người chơi thật có thể vẫn gặp ly kẹt nếu không chạm lại bước, cần xem lại gợi ý UI.
 
 ### 0.3 Việc nên làm tiếp ngay cho cấp 2 (đề xuất)
 
-1. **Ly pha xong giải phóng quầy ngay khi Phục vụ cầm đi** (hiện quầy giữ trạng thái `Ready` tới khi ly tới tay khách, chủ quán không pha được ly kế).
-2. Cho thuê **tối đa 2 nhân viên Dọn dẹp** (hiện 1 người/vai trò), hoặc đẩy tốc độ nâng cấp rẻ hơn ở cấp 1→3.
-3. Kiểm chứng lại tiền thuê 7.000/tuần với lãi đo được; cân nhắc 4.500–5.500.
-4. Tutorial / gợi ý "mua thêm bàn ghế" khi khách bỏ về vì hết chỗ (mỗi bộ bàn + 2 ghế tự hoàn vốn trong ~1–2 ngày).
+1. ~~Ly pha xong giải phóng quầy ngay khi Phục vụ cầm đi~~ **Đã làm** (`BrewStation.TakeReadyDrink`): Phục vụ làm 24–34 lượt giao/ngày ở ngày tốt.
+2. Cho thuê **tối đa 2 nhân viên Dọn dẹp** (hiện 1 người/vai trò), hoặc nâng cấp rẻ hơn ở cấp 1→3 (dọn dẹp từng là cổ chai đo được, ~17–20 bàn/ngày ở cấp 1).
+3. Tiền thuê 7.000/tuần: với lãi đo được (13–17k/tuần) vẫn chịu được; chưa cần giảm, xem lại khi có số liệu người chơi thật.
+4. Tutorial / gợi ý "mua thêm bàn ghế" khi khách bỏ về vì hết chỗ (mỗi bộ bàn + 2 ghế tự hoàn vốn trong ~1–2 ngày), và gợi ý nâng cấp nhân viên Dọn dẹp trước các vai trò khác.
 
 ## 1. Phạm vi Giai đoạn 3 (Alpha)
 
