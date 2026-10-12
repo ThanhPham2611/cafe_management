@@ -18,9 +18,12 @@ BG = (255, 244, 220)
 
 def tier2_ids():
     src = (ROOT / "tools" / "gen_furniture.py").read_text(encoding="utf-8")
-    block = src[src.index("ASSETS_T2 = {"):]
-    block = block[:block.index("}")]
-    return [m[3:] for m in re.findall(r'"(SM_[A-Za-z0-9_]+)"', block)]
+    ids = []
+    for head in ("ASSETS_T2 = {", "ASSETS_T2B = {"):   # nhóm Tier 2 gốc + bộ trang trí kiểu Việt
+        block = src[src.index(head):]
+        block = block[:block.index("}")]
+        ids += [m[3:] for m in re.findall(r'"(SM_[A-Za-z0-9_]+)"', block)]
+    return ids
 
 
 def main():

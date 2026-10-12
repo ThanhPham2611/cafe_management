@@ -31,6 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PALETTE_PNG = ROOT / "art_source" / "palette" / "T_Palette_256.png"
 BLEND_OUT = ROOT / "art_source" / "blend" / "furniture_tier1.blend"
 BLEND_OUT_T2 = ROOT / "art_source" / "blend" / "furniture_tier2.blend"
+BLEND_OUT_T2B = ROOT / "art_source" / "blend" / "furniture_tier2b.blend"
 EXPORT_DIR = ROOT / "art_source" / "export"
 MAT_NAME = "M_Toon_Palette"
 GRID = 8
@@ -822,10 +823,222 @@ def trash_bin(name):
                               "ref_height": 0.43})
 
 
+def tea_jar_big(name):
+    """Bình trà đá to 1×1 (Ø0.35, cao 0.60 m) trên giá gỗ thấp: thân nhựa xanh dù, vai xanh đậm, nắp + núm vàng, vòi inox
+    + tay gạt ở mặt trước (-Y)."""
+    b = Builder()
+    b.cylinder(0.18, 0.18, 0.20, 0.235, C["wood_mid"], segs=10, round_r=0.008)               # mặt giá
+    for k in range(3):
+        a = math.radians(120 * k + 30)
+        b.leg((0.12 * math.cos(a), 0.12 * math.sin(a), 0.205), (0.16 * math.cos(a), 0.16 * math.sin(a), 0.0),
+              0.022, 0.028, C["wood_honey"], segs=6)
+    b.cylinder(0.15, 0.17, 0.235, 0.50, C["umbrella"], segs=12, round_r=0.02)                  # thân bình
+    b.cylinder(0.17, 0.12, 0.49, 0.54, C["blue_dk"], segs=12)                                  # vai bình
+    b.cylinder(0.09, 0.075, 0.535, 0.575, C["yellow"], segs=12, round_r=0.01)                  # nắp
+    b.cylinder(0.028, 0.022, 0.57, 0.605, C["yellow"], segs=6)                                 # núm
+    ax90 = Matrix.Rotation(math.radians(90), 4, "X")
+    b.cylinder(0.022, 0.022, -0.045, 0.045, C["inox"], segs=6, center=(0, -0.205, 0.30), axis=ax90)   # vòi
+    b.rbox((0.026, 0.05, 0.016), (0, -0.245, 0.335), C["red"], r=0)                           # tay gạt
+    return b.to_object(name, {"category": "furniture", "footprint_x": 1, "footprint_z": 1,
+                              "ref_height": 0.6})
+
+
+def stand_fan(name):
+    """Quạt đứng 1×1 (cao ~1.25 m): đế gang tròn, cột inox, đầu quạt có lồng tròn + 3 cánh xanh, hướng -Y."""
+    b = Builder()
+    b.cylinder(0.2, 0.17, 0.0, 0.045, C["charcoal"], segs=12, round_r=0.015)                  # đế
+    b.cylinder(0.05, 0.04, 0.04, 0.12, C["charcoal"], segs=8)
+    b.rod((0, 0, 0.1), (0, 0, 0.98), 0.02, C["inox"], segs=8)                                  # cột
+    ax90 = Matrix.Rotation(math.radians(90), 4, "X")
+    zc = 1.02
+    b.cylinder(0.065, 0.06, -0.075, 0.075, C["inox_dk"], segs=10, center=(0, 0.03, zc), axis=ax90, round_r=0.01)  # động cơ
+    b.cylinder(0.03, 0.03, -0.02, 0.02, C["charcoal"], segs=6, center=(0, -0.085, zc), axis=ax90)               # tâm cánh
+    n = 14
+    for k in range(n):                                                                         # vành lồng
+        a = 2 * math.pi * k / n
+        b.rbox((0.075, 0.018, 0.018), (0.215 * math.cos(a), -0.07, zc + 0.215 * math.sin(a)), C["inox_mid"], r=0,
+               rot=Matrix.Rotation(-a + math.pi / 2, 4, "Y"))
+    for k in range(3):                                                                         # cánh
+        a = math.radians(120 * k + 20)
+        b.blob((0.105 * math.cos(a), -0.085, zc + 0.105 * math.sin(a)), (0.1, 0.012, 0.05), C["teal"], u=6, v=4,
+               rot=Matrix.Rotation(-a, 4, "Y"))
+    for k in range(3):                                                                         # 3 nan hướng tâm của lồng
+        a = math.radians(120 * k + 80)
+        b.rod((0.03 * math.cos(a), -0.07, zc + 0.03 * math.sin(a)), (0.215 * math.cos(a), -0.07, zc + 0.215 * math.sin(a)),
+              0.007, C["inox_mid"], segs=4)
+    return b.to_object(name, {"category": "furniture", "footprint_x": 1, "footprint_z": 1,
+                              "ref_height": 1.2})
+
+
+# ---------------------------------------------------------------- Tier 2 — bộ trang trí kiểu Việt (Đà Lạt / Sài Gòn xưa / Hội An)
+
+def rattan_chair(name):
+    """Ghế mây 1×1 (0.46×0.46, mặt ngồi 0.45 m, cao ~0.98 m): khung mây mật ong, đệm kem, 4 chân mảnh xòe có thanh
+    giằng, lưng tựa tròn đan. Chỗ ngồi hướng -Y, lưng ở +Y."""
+    b = Builder()
+    seat = 0.45
+    b.rounded_slab(0.42, 0.42, seat - 0.085, seat - 0.045, C["wood_light"], corner=0.09, edge=0.01, segs=2)   # khung mặt
+    b.rounded_slab(0.38, 0.38, seat - 0.045, seat, C["beige"], corner=0.10, edge=0.014, segs=2)                # đệm
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            b.leg((sx * 0.165, sy * 0.165, seat - 0.085), (sx * 0.2, sy * 0.2, 0.0), 0.024, 0.03, C["bamboo"], segs=5)
+    corners = [(-1, -1), (1, -1), (1, 1), (-1, 1)]
+    for i in range(4):                                                                       # thanh giằng quanh chân
+        (ax, ay), (bx, by) = corners[i], corners[(i + 1) % 4]
+        b.rod((ax * 0.183, ay * 0.183, 0.16), (bx * 0.183, by * 0.183, 0.16), 0.011, C["wood_light"], segs=4)
+    for sx in (-1, 1):                                                                       # hai trụ đỡ lưng
+        b.rod((sx * 0.15, 0.17, seat - 0.06), (sx * 0.13, 0.2, 0.68), 0.014, C["bamboo"], segs=5)
+    ax90 = Matrix.Rotation(math.radians(90), 4, "X")                                         # đĩa quay mặt về -Y
+    b.cylinder(0.235, 0.235, -0.022, 0.022, C["wood_light"], segs=12, center=(0, 0.2, 0.74), axis=ax90,
+               round_r=0.01)                                                                 # vành lưng tựa
+    b.cylinder(0.19, 0.19, -0.03, 0.03, C["beige"], segs=12, center=(0, 0.195, 0.74), axis=ax90)  # mặt đan
+    return b.to_object(name, {"category": "furniture", "footprint_x": 1, "footprint_z": 1,
+                              "ref_height": seat, "seat_height": seat, "total_height": 0.98})
+
+
+def round_tile_table(name):
+    """Bàn tròn gạch bông 2×2 (Ø0.94, cao 0.75 m) cho 2 chỗ: mặt gỗ dày, mặt khảm gạch bông đồng tâm, cột và đế gang."""
+    b = Builder()
+    h = 0.75
+    b.cylinder(0.25, 0.22, 0.0, 0.05, C["charcoal"], segs=12, round_r=0.018)                  # đế gang
+    b.cylinder(0.055, 0.05, 0.04, 0.64, C["charcoal"], segs=10)                               # cột
+    b.cylinder(0.11, 0.07, 0.58, 0.67, C["charcoal"], segs=10, round_r=0.012)                 # cổ đỡ mặt
+    b.cylinder(0.47, 0.47, h - 0.08, h, C["wood_mid"], segs=14, round_r=0.02)                 # mặt gỗ
+    b.cylinder(0.40, 0.40, h - 0.002, h + 0.01, C["tile_cream"], segs=14)                     # nền gạch bông
+    b.cylinder(0.30, 0.30, h + 0.008, h + 0.016, C["tile_red"], segs=14)
+    b.cylinder(0.21, 0.21, h + 0.014, h + 0.02, C["tile_cream"], segs=12)
+    b.cylinder(0.12, 0.12, h + 0.018, h + 0.024, C["tile_blue"], segs=12)
+    for k in range(4):                                                                         # 4 chấm vàng giữa các vòng
+        a = math.radians(45 + 90 * k)
+        b.cylinder(0.035, 0.035, h + 0.008, h + 0.02, C["tile_yellow"], segs=6,
+                   center=(0.255 * math.cos(a), 0.255 * math.sin(a)))
+    return b.to_object(name, {"category": "furniture", "footprint_x": 2, "footprint_z": 2,
+                              "ref_height": h, "seats": 2})
+
+
+def monstera_large(name):
+    """Cây trầu bà lá xẻ (monstera) cao ~1.1 m, gọn trong ô 1×1: chậu men xanh ngọc viền kem, 7 cuống dựng, lá bầu xếp tầng."""
+    b = Builder()
+    b.cylinder(0.14, 0.19, 0.0, 0.34, C["teal"], segs=10, round_r=0.025, round_top=False)       # chậu
+    b.cylinder(0.205, 0.205, 0.31, 0.365, C["tile_cream"], segs=10, round_r=0.016)              # viền miệng
+    b.cylinder(0.17, 0.17, 0.36, 0.38, C["soil"], segs=10)                                      # đất
+    greens = [C["leaf_md"], C["leaf_dk"], C["leaf_lt"], C["leaf_moss"]]
+    n = 7
+    for i in range(n):
+        a = 2 * math.pi * i / n + 0.25
+        ca, sa = math.cos(a), math.sin(a)
+        reach = 0.03 + 0.045 * (i % 3)
+        top = 0.66 + 0.2 * ((i * 5) % 4) / 3
+        p0 = Vector((ca * 0.02, sa * 0.02, 0.38))
+        p1 = Vector((ca * reach, sa * reach, top))
+        b.rod(p0, p1, 0.011, C["leaf_dk"], segs=4)                                               # cuống
+        b.leaf(p1, (ca * 0.55, sa * 0.55, 0.75 - 0.2 * (i % 2)), 0.26, 0.20, greens[i % 4], thick=0.16, u=7, v=4)
+    return b.to_object(name, {"category": "furniture", "footprint_x": 1, "footprint_z": 1,
+                              "ref_height": 1.0})
+
+
+def floor_lamp(name):
+    """Đèn cây 1×1 (cao 1.56 m): ba chân gỗ xòe, cột đồng thau, chụp vải trống phát sáng ấm."""
+    b = Builder()
+    for k in range(3):
+        a = math.radians(120 * k + 90)
+        b.leg((0.0, 0.0, 0.80), (0.20 * math.cos(a), 0.20 * math.sin(a), 0.0), 0.02, 0.024, C["wood_honey"], segs=6)
+    b.cylinder(0.04, 0.03, 0.74, 0.86, C["wood_mid"], segs=8, round_r=0.008)                  # khớp ba chân
+    b.rod((0, 0, 0.85), (0, 0, 1.30), 0.016, C["caramel"], segs=6)                              # cột
+    b.cylinder(0.05, 0.045, 1.28, 1.34, C["caramel"], segs=8, round_r=0.008)                   # đầu cột
+    b.cylinder(0.22, 0.155, 1.32, 1.56, C["star"], segs=14, round_r=0.014)                     # chụp vải (phát sáng)
+    b.cylinder(0.226, 0.226, 1.31, 1.335, C["caramel"], segs=14)                                # viền dưới
+    return b.to_object(name, {"category": "furniture", "footprint_x": 1, "footprint_z": 1,
+                              "ref_height": 1.5})
+
+
+def bookshelf_low(name):
+    """Kệ sách thấp 2×1 (0.96×0.30×1.06 m): khung gỗ, 3 tầng kệ đầy sách nhiều màu, chậu cây nhỏ trên nắp.
+    Lưng kệ ở +Y (tựa tường), gáy sách quay -Y."""
+    b = Builder()
+    w, d, hgt = 0.96, 0.30, 1.04
+    b.rbox((w, d, 0.07), (0, 0, 0.035), C["wood_dark"], r=0.008, segs=1)                         # chân đế
+    for sx in (-1, 1):
+        b.rbox((0.034, d, hgt - 0.07), (sx * (w / 2 - 0.017), 0, 0.07 + (hgt - 0.07) / 2), C["wood_mid"], r=0.006, segs=1)
+    b.rbox((w, d + 0.02, 0.04), (0, -0.01, hgt - 0.02 + 0.02), C["wood_light"], r=0.01, segs=1)  # nắp
+    b.rbox((w - 0.06, 0.02, hgt - 0.11), (0, d / 2 - 0.01, 0.07 + (hgt - 0.11) / 2), C["wood_dark"], r=0)  # lưng
+    shelves = (0.07, 0.40, 0.72)
+    cols = [C["red"], C["blue"], C["green"], C["yellow"], C["teal"], C["pink"], C["orange"], C["cacao"]]
+    widths = (0.035, 0.045, 0.03, 0.05, 0.04, 0.035, 0.045, 0.03, 0.04)
+    heights = (0.22, 0.26, 0.20, 0.24, 0.25, 0.21, 0.23, 0.26, 0.19)
+    for r_i, z in enumerate(shelves):
+        b.rbox((w - 0.07, d - 0.03, 0.025), (0, -0.01, z + 0.0125), C["wood_light"], r=0)         # ván kệ
+        x = -0.40 if r_i != 1 else -0.36
+        for j in range(9):
+            k = (j + r_i * 3) % 9
+            wd, ht = widths[k], heights[k]
+            if x + wd > 0.41 - (0.18 if r_i == 2 else 0.0):                                      # tầng trên chừa chỗ đồ trang trí
+                break
+            b.rbox((wd, 0.2, ht), (x + wd / 2, -0.015, z + 0.025 + ht / 2), cols[(j * 3 + r_i) % len(cols)], r=0)
+            x += wd + 0.004
+    # tầng giữa: một cuốn nằm ngang + ly nhỏ; tầng trên: chậu cây nhỏ
+    b.rbox((0.17, 0.2, 0.03), (0.27, -0.015, 0.425 + 0.015), C["foam"], r=0)
+    b.rbox((0.15, 0.18, 0.025), (0.27, -0.015, 0.425 + 0.0425), C["coffee"], r=0)
+    b.cylinder(0.04, 0.05, 0.745, 0.80, C["terracotta"], segs=8, center=(0.33, -0.01))
+    for i in range(4):
+        a = math.radians(90 * i + 20)
+        b.leaf((0.33 + math.cos(a) * 0.015, -0.01 + math.sin(a) * 0.015, 0.8), (math.cos(a) * 0.6, math.sin(a) * 0.6, 0.7),
+               0.13, 0.09, [C["leaf_lt"], C["leaf_md"]][i % 2], thick=0.3, u=5, v=3)
+    return b.to_object(name, {"category": "furniture", "footprint_x": 2, "footprint_z": 1,
+                              "ref_height": 1.06})
+
+
+def radio_stand(name):
+    """Bàn nhỏ tròn (Ø0.48, cao 0.56 m) đặt radio cổ gỗ: loa vải đen, kính dò đài sáng, 2 núm chỉnh, ăng-ten.
+    Mặt radio quay -Y. Tổng cao ~0.98 m."""
+    b = Builder()
+    top = 0.56
+    b.cylinder(0.24, 0.24, top - 0.035, top, C["wood_honey"], segs=12, round_r=0.012)           # mặt bàn
+    for k in range(3):
+        a = math.radians(120 * k + 30)
+        b.leg((0.13 * math.cos(a), 0.13 * math.sin(a), top - 0.035), (0.20 * math.cos(a), 0.20 * math.sin(a), 0.0),
+              0.02, 0.024, C["wood_mid"], segs=6)
+    b.cylinder(0.15, 0.15, 0.19, 0.213, C["wood_mid"], segs=10)                                 # tầng dưới
+    b.rbox((0.36, 0.15, 0.21), (0, 0, top + 0.105), C["caramel"], r=0.02, segs=1)               # thân radio
+    b.rbox((0.30, 0.012, 0.16), (0, -0.0765, top + 0.105), C["beige"], r=0)                     # mặt
+    b.rbox((0.12, 0.014, 0.12), (-0.08, -0.081, top + 0.105), C["charcoal"], r=0)               # loa
+    b.rbox((0.11, 0.014, 0.045), (0.08, -0.081, top + 0.145), C["star"], r=0)                   # kính dò đài
+    ax90 = Matrix.Rotation(math.radians(90), 4, "X")
+    for i in range(2):                                                                         # núm chỉnh
+        b.cylinder(0.017, 0.017, -0.012, 0.012, C["inox_dk"], segs=6, center=(0.065 + 0.05 * i, -0.088, top + 0.07),
+                   axis=ax90)
+    b.rod((0.15, 0.04, top + 0.21), (0.23, 0.07, top + 0.42), 0.005, C["inox"], segs=4)       # ăng-ten
+    return b.to_object(name, {"category": "furniture", "footprint_x": 1, "footprint_z": 1,
+                              "ref_height": 0.95})
+
+
+def hoian_lantern(name):
+    """Đèn lồng Hội An treo trần (thân Ø0.32, cao ~0.58 m + dây): thân giấy cam có nan vàng, nắp gỗ, chùm tua đỏ.
+    Pivot ở đáy tua; treo ở HANG_TOP (xem mount_y)."""
+    b = Builder()
+    zc, rz = 0.40, 0.19
+    b.blob((0, 0, zc), (0.16, 0.16, rz), C["orange"], u=10, v=6)                               # thân giấy
+    for dz in (-0.12, 0.0, 0.12):                                                              # nan tre ngang
+        r = 0.16 * math.sqrt(max(0.0, 1 - (dz / rz) ** 2))
+        b.cylinder(r + 0.006, r + 0.006, zc + dz - 0.007, zc + dz + 0.007, C["yellow"], segs=10)
+    b.cylinder(0.075, 0.06, zc + rz - 0.025, zc + rz + 0.025, C["wood_dark"], segs=8, round_r=0.006)   # nắp trên
+    b.cylinder(0.06, 0.07, zc - rz - 0.02, zc - rz + 0.03, C["wood_dark"], segs=8, round_r=0.006)      # nắp dưới
+    for k in range(5):                                                                          # tua đỏ
+        a = math.radians(72 * k)
+        b.rod((0.025 * math.cos(a), 0.025 * math.sin(a), zc - rz), (0.03 * math.cos(a), 0.03 * math.sin(a), 0.02),
+              0.006, C["red"], segs=3)
+    b.blob((0, 0, 0.03), (0.035, 0.035, 0.03), C["yellow"], u=6, v=4)                          # hạt tua
+    b.rod((0, 0, zc + rz + 0.02), (0, 0, 0.92), 0.005, C["charcoal"], segs=4)                  # dây
+    b.cylinder(0.05, 0.04, 0.90, 0.94, C["inox"], segs=8, round_r=0.006)                       # hoa trần
+    props = _hang(b)
+    return b.to_object(name, {"category": "furniture", "footprint_x": 1, "footprint_z": 1, **props})
+
+
 ASSETS_T1 = {
     "SM_Stool_Plastic_Red": lambda n: plastic_stool(n, C["red"], C["red_dk"]),
     "SM_Stool_Plastic_Blue": lambda n: plastic_stool(n, C["blue"], C["blue_dk"]),
     "SM_Stool_Plastic_Green": lambda n: plastic_stool(n, C["green"], C["green_dk"]),
+    "SM_Stool_Plastic_Yellow": lambda n: plastic_stool(n, C["yellow"], C["orange"]),
     "SM_Table_Low_Blue_2x2": lambda n: low_table(n, C["blue"], C["blue_dk"]),
     "SM_Table_Low_Inox_2x2": lambda n: low_table(n, C["inox"], C["inox_dk"]),
     "SM_Cart_Coffee_3x2": coffee_cart,
@@ -834,6 +1047,8 @@ ASSETS_T1 = {
     "SM_Plant_Pot_Small": plant_pot_small,
     "SM_Plant_Areca_Tall": areca_tall,
     "SM_Board_Menu_A": menu_board_a,
+    "SM_Jar_Tea_Big": tea_jar_big,
+    "SM_Fan_Stand": stand_fan,
 }
 
 ASSETS_T2 = {
@@ -849,7 +1064,18 @@ ASSETS_T2 = {
     "SM_Trash_Bin": trash_bin,
 }
 
-ASSETS = {**ASSETS_T1, **ASSETS_T2}
+# Bộ trang trí kiểu Việt cho nhà phố thuê (Đà Lạt vintage / Sài Gòn xưa / Hội An): cùng cấp 2, nguồn .blend riêng
+ASSETS_T2B = {
+    "SM_Chair_Rattan": rattan_chair,
+    "SM_Table_Round_Tile": round_tile_table,
+    "SM_Plant_Monstera": monstera_large,
+    "SM_Lamp_Floor": floor_lamp,
+    "SM_Bookshelf_Low": bookshelf_low,
+    "SM_Radio_Stand": radio_stand,
+    "SM_Lantern_Hoian": hoian_lantern,
+}
+
+ASSETS = {**ASSETS_T1, **ASSETS_T2, **ASSETS_T2B}
 
 
 # ---------------------------------------------------------------- export / preview
@@ -884,6 +1110,9 @@ PREVIEW_LAYOUT = {
     "SM_Plant_Pot_Small": (-2.7, -0.6, 0),
     "SM_Plant_Areca_Tall": (-2.7, 0.6, 0),
     "SM_Board_Menu_A": (2.1, -0.7, 0),
+    "SM_Stool_Plastic_Yellow": (-1.35, -1.3, 0),
+    "SM_Jar_Tea_Big": (-3.4, 0.2, 0),
+    "SM_Fan_Stand": (-3.4, 1.2, 0),
 }
 
 # Bố cục preview Tier 2 — một góc quán nhà phố: (asset, x, y, z, xoay Z độ). z=None -> dùng `mount_y` (đồ treo).
@@ -903,6 +1132,20 @@ PREVIEW_LAYOUT_T2 = [
     ("SM_Plant_Pothos_Hanging", -3.5, 1.4, None, 0),
 ]
 
+
+# Preview bộ trang trí kiểu Việt (cùng căn phòng cấp 2): bàn tròn + 2 ghế mây ở giữa, kệ sách / radio / cây / đèn cây tựa tường sau.
+PREVIEW_LAYOUT_T2B = [
+    ("SM_Bookshelf_Low", -2.45, 2.34, 0, 0),
+    ("SM_Radio_Stand", -1.2, 2.2, 0, 0),
+    ("SM_Plant_Monstera", -0.1, 2.15, 0, 0),
+    ("SM_Lamp_Floor", -3.55, 2.05, 0, 0),
+    ("SM_Table_Round_Tile", 1.7, 0.3, 0, 0),
+    ("SM_Chair_Rattan", 1.7, 1.15, 0, 0),
+    ("SM_Chair_Rattan", 1.7, -0.55, 0, 180),
+    ("SM_Lantern_Hoian", 1.1, 0.0, None, 0),
+    ("SM_Lantern_Hoian", 2.3, 0.0, None, 0),
+    ("SM_Lantern_Hoian", -0.9, 0.5, None, 0),
+]
 
 def _set_eevee(scene):
     for engine in ("BLENDER_EEVEE", "BLENDER_EEVEE_NEXT"):
@@ -1013,8 +1256,9 @@ def _stage_room_t2():
     return made
 
 
-def render_preview_tier2(objs):
+def render_preview_tier2(objs, layout=None, out_name="preview_tier2.png", cup_z=0.76):
     """Tier 2: một góc quán nhà phố — sàn gạch bông, tường kem/bạc hà, quầy, bàn ghế, đồ treo đúng mount_y."""
+    layout = PREVIEW_LAYOUT_T2 if layout is None else layout
     by_name = {o.name: o for o in objs}
     hidden = _isolate(objs)
     scene = bpy.context.scene
@@ -1027,7 +1271,7 @@ def render_preview_tier2(objs):
         obj.location = (x, y, z)
         obj.rotation_euler = (0, 0, math.radians(rot))
 
-    for name, x, y, z, rot in PREVIEW_LAYOUT_T2:
+    for name, x, y, z, rot in layout:
         src = by_name.get(name)
         if src is None:
             continue
@@ -1043,12 +1287,12 @@ def render_preview_tier2(objs):
         place(o, x, y, z, rot)
     # đồ nhỏ tham khảo tỷ lệ: ly phin trên bàn, chậu cây góc phải
     cup = phin_cup("PREVIEW_Cup")
-    cup.location = (1.7, 0.3, 0.76)
+    cup.location = (1.7, 0.3, cup_z)
     plant = plant_pot_small("PREVIEW_Plant")
     plant.location = (4.1, 0.3, 0)
     extras += [cup, plant]
     cam = _stage_camera(scene, (0.35, 1.0, 1.0), 10.2)
-    scene.render.filepath = str(EXPORT_DIR / "preview_tier2.png")
+    scene.render.filepath = str(EXPORT_DIR / out_name)
     bpy.ops.render.render(write_still=True)
 
     for o in hidden:
@@ -1060,10 +1304,10 @@ def render_preview_tier2(objs):
 
 
 def _save_blends(objs):
-    """Mỗi tier một .blend: furniture_tier1.blend / furniture_tier2.blend (chỉ chứa object của tier đó)."""
+    """Mỗi nhóm một .blend: furniture_tier1 / furniture_tier2 / furniture_tier2b (chỉ chứa object của nhóm đó)."""
     BLEND_OUT.parent.mkdir(parents=True, exist_ok=True)
     scene = bpy.context.scene
-    for path, group in ((BLEND_OUT, ASSETS_T1), (BLEND_OUT_T2, ASSETS_T2)):
+    for path, group in ((BLEND_OUT, ASSETS_T1), (BLEND_OUT_T2, ASSETS_T2), (BLEND_OUT_T2B, ASSETS_T2B)):
         keep = [o for o in objs if o.name in group]
         if not keep:
             continue
@@ -1079,7 +1323,7 @@ def _save_blends(objs):
 def main():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     ap = argparse.ArgumentParser()
-    ap.add_argument("--render", action="store_true", help="render preview_tier1.png / preview_tier2.png")
+    ap.add_argument("--render", action="store_true", help="render preview_tier1.png / preview_tier2.png / preview_tier2b.png")
     ap.add_argument("--only", nargs="*", help="chỉ sinh các asset này (KHÔNG ghi lại .blend để khỏi mất asset khác)")
     args = ap.parse_args(argv)
 
@@ -1102,8 +1346,11 @@ def main():
         t2 = [o for o in objs if o.name in ASSETS_T2]
         if t1:
             render_preview(t1)
+        t2b = [o for o in objs if o.name in ASSETS_T2B]
         if t2:
             render_preview_tier2(t2)
+        if t2b:
+            render_preview_tier2(t2b, PREVIEW_LAYOUT_T2B, "preview_tier2b.png", cup_z=0.79)
 
     if args.only:
         print("(--only: bỏ qua ghi .blend)")

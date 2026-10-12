@@ -5,7 +5,7 @@
 Kết quả: art_source/export/icons/ICON_<id>.png  (<id> = tên FBX bỏ "SM_", vd ICON_Board_Menu_A.png)
 Đọc FBX từ art_source/export/ (không đụng characters/). Vật thể phủ ~80% khung, có bóng tiếp xúc mềm
 (đồ treo trần — có custom prop mount_y/hang_top — không có bóng sàn). `--tier 2` = chỉ icon nội thất Tier 2
-(danh sách lấy từ gen_furniture.ASSETS_T2). Bảng tổng hợp xem nhanh: python tools/make_icon_sheet.py [--tier 2].
+(danh sách lấy từ gen_furniture.ASSETS_T2 + ASSETS_T2B). Bảng tổng hợp xem nhanh: python tools/make_icon_sheet.py [--tier 2].
 """
 import argparse
 import math
@@ -173,7 +173,7 @@ def main():
     if args.only:
         files = [f for f in files if f.stem[3:] in args.only]
     if args.tier:
-        group = gf.ASSETS_T1 if args.tier == 1 else gf.ASSETS_T2
+        group = gf.ASSETS_T1 if args.tier == 1 else {**gf.ASSETS_T2, **gf.ASSETS_T2B}
         files = [f for f in files if f.stem in group]
     scene = clear_scene()
     cam = setup_render(scene, args.size)

@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ba341d98cc92be48b208bac9574fcd8, type: 3}
+  m_Name: SO_Furniture_Fan_Stand
+  m_EditorClassIdentifier: Cafe.Runtime::Cafe.FurnitureDef
+  id: Fan_Stand
+  displayName: "Qu\u1EA1t \u0111\u1EE9ng"
+  prefab: {fileID: 5406482391678908995, guid: 5559791942c5db04594d7dc20a1189fa, type: 3}
+  footprint: {x: 1, y: 1}
+  price: 600
+  kind: 2
+  comfort: 3
+  style: 0
+  seatHeight: 0
+  overhead: 0
+  hangY: 0
+  minTier: 1
+  onlyTier: 0
+  shopVisible: 1
+  icon: {fileID: 21300000, guid: a62d09cd56d3de84aaefda913300789d, type: 3}
+  priceStep: 0
+  maxCount: 0
+  attract: 0

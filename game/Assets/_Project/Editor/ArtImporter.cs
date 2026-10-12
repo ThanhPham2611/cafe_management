@@ -46,6 +46,9 @@ namespace Cafe.EditorTools
             new Item { fbx = "SM_Plant_Pot_Small", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Chậu cây nhỏ", price = 250, comfort = 0, style = 2, attract = 5, footprint = new Vector2Int(1, 1) },
             new Item { fbx = "SM_Plant_Areca_Tall", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Cây cau tiểu trâm", price = 400, comfort = 0, style = 3, attract = 5, footprint = new Vector2Int(1, 1) },
             new Item { fbx = "SM_Board_Menu_A", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Bảng menu đứng", price = 600, comfort = 0, style = 2, attract = 12, maxCount = 1, footprint = new Vector2Int(1, 1) },
+            new Item { fbx = "SM_Stool_Plastic_Yellow", folder = "Furniture", kind = FurnitureKind.Seat, displayName = "Ghế nhựa vàng", price = 200, priceStep = 75, comfort = 1, style = 0, footprint = new Vector2Int(1, 1), seatHeight = 0.27f },
+            new Item { fbx = "SM_Jar_Tea_Big", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Bình trà đá to", price = 800, comfort = 1, style = 1, attract = 3, footprint = new Vector2Int(1, 1) },
+            new Item { fbx = "SM_Fan_Stand", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Quạt đứng", price = 600, comfort = 3, style = 0, footprint = new Vector2Int(1, 1) },
             // ---- Cấp 2: thuê mặt bằng (docs/phase2_spec.md). Kích thước/chiều cao theo báo cáo Tech Artist.
             new Item { fbx = "SM_Counter_Bar_4x2", folder = "Counters", kind = FurnitureKind.BrewStation, displayName = "Quầy bar", hidden = true, minTier = 2, price = 0, style = 4, footprint = new Vector2Int(4, 2) },
             new Item { fbx = "SM_Sink_Counter", folder = "Counters", kind = FurnitureKind.Decor, displayName = "Bồn rửa", hidden = true, minTier = 2, price = 0, footprint = new Vector2Int(2, 1) },
@@ -57,6 +60,14 @@ namespace Cafe.EditorTools
             new Item { fbx = "SM_Plant_Pothos_Hanging", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Chậu trầu bà treo", minTier = 2, price = 450, style = 3, attract = 5, footprint = new Vector2Int(1, 1), overhead = true, hangY = 1.99f },
             new Item { fbx = "SM_Door_Rolling_Shutter", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Cửa cuốn", hidden = true, minTier = 2, price = 0, footprint = new Vector2Int(3, 1) },
             new Item { fbx = "SM_Trash_Bin", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Thùng rác", minTier = 2, price = 150, footprint = new Vector2Int(1, 1) },
+            // Bộ trang trí kiểu Việt (cấp 2; art_source/blend/furniture_tier2b.blend). Chỉ số: Đà Lạt / Sài Gòn xưa / Hội An.
+            new Item { fbx = "SM_Chair_Rattan", folder = "Furniture", kind = FurnitureKind.Seat, displayName = "Ghế mây", minTier = 2, price = 450, comfort = 4, style = 4, footprint = new Vector2Int(1, 1), seatHeight = 0.45f },
+            new Item { fbx = "SM_Table_Round_Tile", folder = "Furniture", kind = FurnitureKind.Table, displayName = "Bàn tròn gạch bông", minTier = 2, price = 900, comfort = 2, style = 5, footprint = new Vector2Int(2, 2) },
+            new Item { fbx = "SM_Plant_Monstera", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Cây trầu bà lá xẻ", minTier = 2, price = 550, style = 4, attract = 5, footprint = new Vector2Int(1, 1) },
+            new Item { fbx = "SM_Lamp_Floor", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Đèn cây", minTier = 2, price = 650, comfort = 1, style = 4, footprint = new Vector2Int(1, 1) },
+            new Item { fbx = "SM_Bookshelf_Low", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Kệ sách thấp", minTier = 2, price = 1200, style = 5, footprint = new Vector2Int(2, 1) },
+            new Item { fbx = "SM_Radio_Stand", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Radio cổ", minTier = 2, price = 700, style = 4, attract = 3, footprint = new Vector2Int(1, 1) },
+            new Item { fbx = "SM_Lantern_Hoian", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Đèn lồng Hội An", minTier = 2, price = 650, style = 5, attract = 3, footprint = new Vector2Int(1, 1), overhead = true, hangY = 1.86f },
             new Item { fbx = "SM_Cup_Phin_SuaDa", folder = "Props", kind = FurnitureKind.Decor, displayName = "Ly cà phê", hidden = true, price = 0, comfort = 0, style = 0, footprint = new Vector2Int(1, 1) },
         };
 
