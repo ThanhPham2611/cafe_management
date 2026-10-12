@@ -22,7 +22,6 @@ namespace Cafe
             public Text priceText;
             public Image ringFill;
             public Order order;
-            public bool selected;
         }
 
         private GameBootstrap game;
@@ -288,8 +287,8 @@ namespace Cafe
         {
             if (starCountText == null) return;
             starCountText.text = stars.ToString();
-            int cur, next;
-            game.Reputation.GetRange(out cur, out next);
+            int next;
+            game.Reputation.GetRange(out _, out next);
             rpText.text = next < 0
                 ? string.Format(Strings.RpMaxFmt, Mathf.FloorToInt(rp))
                 : string.Format(Strings.RpFmt, Mathf.FloorToInt(rp), next);

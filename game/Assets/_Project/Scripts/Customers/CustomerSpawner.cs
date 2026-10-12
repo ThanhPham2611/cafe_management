@@ -124,6 +124,7 @@ namespace Cafe
 
         private void Spawn()
         {
+            using var perf = PerfNote.Measure("sinh khách");
             var go = new GameObject("Customer");
             var c = go.AddComponent<Customer>();
             RegularDefinition regular = scheduledRegular;

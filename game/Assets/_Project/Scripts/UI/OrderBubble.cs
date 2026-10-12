@@ -70,11 +70,9 @@ namespace Cafe
         {
             shown = true;
             label.text = text;
-            Sprite icon = null;
-            if (customer != null && customer.CurrentOrder != null)
-                icon = HudBuilder.T.IconFor(customer.CurrentOrder.recipe);
-            else
-                icon = HudBuilder.T.iconCup;
+            Sprite icon = customer != null && customer.CurrentOrder != null
+                ? HudBuilder.T.IconFor(customer.CurrentOrder.recipe)
+                : HudBuilder.T.iconCup;
             HudBuilder.SetIcon(drinkIcon, icon);
             lastPatience = -1f;
             SetPatience(1f);

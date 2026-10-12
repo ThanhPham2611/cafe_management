@@ -375,7 +375,7 @@ namespace Cafe
                 data.xu = Mathf.RoundToInt(dayStartXu);
                 data.rp = dayStartRp;
             }
-            SaveSystem.Save(data);
+            using (PerfNote.Measure("lưu game")) SaveSystem.Save(data);
         }
 
         /// Chốt Xu / RP hiện tại làm mốc đầu ngày (chuyển cấp quán: mốc quan trọng, không quay lại trạng thái trước cọc khi thoát-vào).
@@ -398,6 +398,25 @@ namespace Cafe
             dayStartXu = Mathf.Max(0f, dayStartXu + xu);
             dayStartRp = Mathf.Max(0f, dayStartRp + rp);
             SaveSnapshot();
+        }
+
+        /// Gợi ý đã hiện ở bảng tổng kết gần nhất (không lưu): để không lặp lại cùng một gợi ý hai ngày liền.
+        public DayAdvice LastAdvice { get; private set; }
+
+        /// Chọn gợi ý cho bảng tổng kết của ngày vừa xong.
+        public DayAdvice AdviseFor(DaySummary summary)
+        {
+            DayAdvice advice = DayAdvisor.Pick(new DayAdvisorInput
+            {
+                summary = summary,
+                tier = Tier != null ? Tier.Current : 1,
+                hasCleaner = Staff != null && Staff.HasRole(StaffRole.Cleaner),
+                debt = Tier != null && Tier.Ledger != null ? Tier.Ledger.Debt : 0,
+                missionReady = Missions != null && Missions.HasClaimable,
+                lastAdvice = LastAdvice
+            });
+            LastAdvice = advice;
+            return advice;
         }
 
         // ---- Nhiệm vụ ngày ----

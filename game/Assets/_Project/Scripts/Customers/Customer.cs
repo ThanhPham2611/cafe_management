@@ -144,7 +144,9 @@ namespace Cafe
             {
                 retryTimer = 0.4f;
                 Seat s;
-                if (game.Grid.TryReserveSeat(this, game.Day.InGameSeconds, out s))
+                bool reserved;
+                using (PerfNote.Measure("chọn ghế")) reserved = game.Grid.TryReserveSeat(this, game.Day.InGameSeconds, out s);
+                if (reserved)
                 {
                     Vector3 p;
                     if (s.TryGetApproachPoint(transform.position, out p))
@@ -206,8 +208,7 @@ namespace Cafe
             // Ngồi quay mặt vào bàn gần nhất, nếu không thì theo hướng ghế
             Vector3 look = seat.transform.forward;
             PlacedFurniture table;
-            Vector3 closest;
-            if (game.Grid.FindNearestTable(seat.transform.position, 1.5f, out table, out closest))
+            if (game.Grid.FindNearestTable(seat.transform.position, 1.5f, out table, out _))
                 look = table.WorldBounds.center - seat.transform.position;
             look.y = 0f;
             if (look.sqrMagnitude < 0.0001f) look = Vector3.forward;

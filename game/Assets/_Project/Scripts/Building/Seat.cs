@@ -32,8 +32,7 @@ namespace Cafe
                 GameBootstrap g = GameBootstrap.Instance;
                 if (g == null || g.Grid == null) return null;
                 PlacedFurniture t;
-                Vector3 closest;
-                if (g.Grid.FindNearestTable(transform.position, GameBalance.SeatTableLinkMeters, out t, out closest))
+                if (g.Grid.FindNearestTable(transform.position, GameBalance.SeatTableLinkMeters, out t, out _))
                     return t.Dirt;
                 return null;
             }

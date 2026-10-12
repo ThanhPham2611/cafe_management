@@ -1,3 +1,5 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+// Công cụ chạy thử tự động / đo hiệu năng: chỉ có trong Editor và bản Development, không vào bản release.
 using System;
 using System.Collections;
 using System.IO;
@@ -21,7 +23,7 @@ namespace Cafe
         bool autoplay;
         bool autoshop;
         bool autorecipes;
-        bool cheatXu, cheatRp, autoUpgrade, autoStaff, noBrewer, autoBuy, autoHidden, upgradeStaff;
+        bool cheatXu, cheatRp, autoUpgrade, autoStaff, noBrewer, autoBuy, autoHidden, upgradeStaff, perf, autoDecor;
         int targetDays = 1;
         int daysPlayed;
         float timeScale = 1f;
@@ -70,6 +72,8 @@ namespace Cafe
             p.autoBuy = Has(args, "-autobuy");
             p.autoHidden = Has(args, "-autohidden");
             p.upgradeStaff = Has(args, "-upgradestaff");
+            p.perf = Has(args, "-perf");
+            p.autoDecor = Has(args, "-autodecor");
             string days = Arg(args, "-days");
             int nd;
             if (days != null && int.TryParse(days, out nd)) p.targetDays = Mathf.Clamp(nd, 1, 60);
@@ -103,6 +107,8 @@ namespace Cafe
             if (autoUpgrade) StartCoroutine(UpgradeLoop());
             if (autoBuy) StartCoroutine(BuyLoop());
             if (autoHidden) StartCoroutine(HiddenMenuLoop());
+            if (perf) DebugPerfProbe.Attach();
+            if (autoDecor) StartCoroutine(DecorTest());
             StartCoroutine(StatsLoop());
         }
 
@@ -359,17 +365,20 @@ namespace Cafe
         /// qua đúng luồng build mode (Builder.DebugPlace), tới khi hết chỗ trống trong danh sách ô thử.
         IEnumerator BuyLoop()
         {
+            // Ô thử theo thứ tự; ô nào bị luật đặt đồ từ chối (chặn lối, trùng đồ) thì bỏ qua
             Vector2Int[] tableSpots =
             {
-                new Vector2Int(1, 8), new Vector2Int(9, 8), new Vector2Int(1, 11), new Vector2Int(9, 11), new Vector2Int(5, 11)
+                new Vector2Int(1, 8), new Vector2Int(9, 8), new Vector2Int(1, 11), new Vector2Int(9, 11), new Vector2Int(5, 11),
+                new Vector2Int(1, 1), new Vector2Int(9, 1), new Vector2Int(1, 14), new Vector2Int(9, 14)
             };
-            int next = 0;
+            int next = 0, decorNext = 0;
             while (true)
             {
                 yield return new WaitForSeconds(10f);
                 var g = GameBootstrap.Instance;
-                if (g == null || g.Builder == null || g.Tier == null || g.Tier.Current < 2) continue;
+                if (g == null || g.Builder == null || g.Tier == null) continue;
                 if (g.Day.CurrentPhase != DayCycle.Phase.Open) continue;
+                if (g.Tier.Current < 2) { TryBuyStool(g); continue; } // vỉa hè: mua ghế đẩu khi nhu cầu vượt sức chứa
 
                 // Nâng cấp nhân viên khi dư tiền: dọn dẹp trước (cổ chai đo được ở cấp 2), rồi pha chế, rồi phục vụ
                 if (upgradeStaff && g.Wallet.Xu >= 4500)
@@ -391,7 +400,11 @@ namespace Cafe
                     }
                 }
                 upgraded:
-                if (next >= tableSpots.Length) continue;
+                if (next >= tableSpots.Length)
+                {
+                    TryBuyDecor(g, ref decorNext); // đủ ghế rồi thì mua đồ trang trí cho F (điểm nội thất)
+                    continue;
+                }
 
                 FurnitureDef table = g.GetDef(TierConfig.IdTable) ?? g.GetDef(TierConfig.IdTableFallback);
                 FurnitureDef chair = g.GetDef(TierConfig.IdChair) ?? g.GetDef(TierConfig.IdChairFallback);
@@ -407,6 +420,86 @@ namespace Cafe
                 Debug.Log($"[AutoPilot] MUA bàn @ {c}: bàn={okT} ghế trái={okL} ghế phải={okR}, Xu {xu0} -> {g.Wallet.Xu}, " +
                           $"ghế {seats0} -> {g.Grid.Seats.Count}");
             }
+        }
+
+        /// Vỉa hè (cấp 1): mua ghế đẩu kế tiếp khi sức chứa (ghế × 4 lượt) thấp hơn nhu cầu + 6 (economy §16), còn quỹ dự phòng.
+        static void TryBuyStool(GameBootstrap g)
+        {
+            int seats = g.Grid.Seats.Count;
+            if (seats >= 12) return;
+            int demand = GameBalance.DemandWithAttract(g.Reputation.Stars, g.Day.Day, ShopRules.AttractSum(g.Grid));
+            if (GameBalance.Capacity(seats) >= demand + 6) return;
+            FurnitureDef def = g.GetDef("Stool_Plastic_Red");
+            if (def == null) return;
+            int price = ShopRules.Price(g.Grid, def);
+            if (g.Wallet.Xu < price + 250) return;
+            int xu0 = g.Wallet.Xu;
+            bool ok = false;
+            for (int y = 0; y < g.Grid.Size.y && !ok; y++)
+                for (int x = 0; x < g.Grid.Size.x && !ok; x++)
+                    ok = g.Builder.DebugPlace(def, new Vector2Int(x, y));
+            Debug.Log($"[AutoPilot] MUA ghế đẩu: {(ok ? "đã đặt" : "không có chỗ")}, Xu {xu0} -> {g.Wallet.Xu}, ghế {seats} -> {g.Grid.Seats.Count}, nhu cầu {demand}");
+        }
+
+        static readonly string[] DecorBuyOrder =
+            { "Plant_Monstera", "Lamp_Floor", "Radio_Stand", "Lantern_Hoian", "Bookshelf_Low", "Lantern_Hoian", "Plant_Monstera" };
+
+        /// Mua món trang trí kế tiếp trong DecorBuyOrder nếu còn dư tiền (giữ quỹ dự phòng) và tìm được ô đặt hợp lệ.
+        static void TryBuyDecor(GameBootstrap g, ref int index)
+        {
+            if (index >= DecorBuyOrder.Length) return;
+            FurnitureDef def = g.GetDef(DecorBuyOrder[index]);
+            if (def == null) { index++; return; }
+            int price = ShopRules.Price(g.Grid, def);
+            if (g.Wallet.Xu < price + 3000) return;
+            index++;
+            int xu0 = g.Wallet.Xu;
+            bool ok = false;
+            for (int y = 0; y < g.Grid.Size.y && !ok; y++)
+                for (int x = 0; x < g.Grid.Size.x && !ok; x++)
+                    ok = g.Builder.DebugPlace(def, new Vector2Int(x, y));
+            Debug.Log($"[AutoPilot] MUA trang trí {def.id}: {(ok ? "đã đặt" : "không có chỗ")}, Xu {xu0} -> {g.Wallet.Xu}, " +
+                      $"F={g.Grid.FurnitureScore:0.00} ({g.Grid.ComfortStyleTotal}/{g.Grid.FRef})");
+        }
+
+        /// -autodecor: sau khi lên cấp 2, mua và đặt thử bộ trang trí kiểu Việt qua đúng luồng build mode (Builder.DebugPlace),
+        /// kiểm tra luật đặt đồ + NavMesh rebake, rồi chụp màn hình (cần -autoshot và chạy có đồ họa).
+        IEnumerator DecorTest()
+        {
+            GameBootstrap g = null;
+            while (g == null || g.Tier == null || g.Tier.Current < 2 || g.Builder == null || g.Day.CurrentPhase != DayCycle.Phase.Open)
+            {
+                yield return new WaitForSeconds(2f);
+                g = GameBootstrap.Instance;
+            }
+            g.Wallet.Earn(20000);
+            yield return new WaitForSeconds(1f);
+            // (món, ô ưu tiên); không đặt được thì quét cả lưới
+            (string id, Vector2Int cell)[] plan =
+            {
+                ("Table_Round_Tile", new Vector2Int(5, 11)), ("Chair_Rattan", new Vector2Int(4, 11)), ("Chair_Rattan", new Vector2Int(7, 12)),
+                ("Plant_Monstera", new Vector2Int(0, 1)), ("Lamp_Floor", new Vector2Int(11, 1)), ("Bookshelf_Low", new Vector2Int(9, 14)),
+                ("Radio_Stand", new Vector2Int(0, 6)), ("Lantern_Hoian", new Vector2Int(5, 9)), ("Lantern_Hoian", new Vector2Int(9, 6)),
+                ("Jar_Tea_Big", new Vector2Int(11, 8)), ("Fan_Stand", new Vector2Int(0, 10)), ("Stool_Plastic_Yellow", new Vector2Int(2, 14)),
+            };
+            int placed = 0;
+            foreach (var (id, cell) in plan)
+            {
+                FurnitureDef def = g.GetDef(id);
+                if (def == null) { Debug.Log($"[AutoPilot] DECOR {id}: KHÔNG có FurnitureDef"); continue; }
+                int xu0 = g.Wallet.Xu;
+                bool ok = g.Builder.DebugPlace(def, cell);
+                for (int y = 0; y < g.Grid.Size.y && !ok; y++)
+                    for (int x = 0; x < g.Grid.Size.x && !ok; x++)
+                        ok = g.Builder.DebugPlace(def, new Vector2Int(x, y));
+                if (ok) placed++;
+                Debug.Log($"[AutoPilot] DECOR {id}: {(ok ? "đã đặt" : "KHÔNG đặt được")}, Xu {xu0} -> {g.Wallet.Xu}, giá {def.price}, " +
+                          $"ghế={g.Grid.Seats.Count}, F={g.Grid.FurnitureScore:0.00} (điểm {g.Grid.ComfortStyleTotal}/{g.Grid.FRef})");
+                yield return null;
+            }
+            Debug.Log($"[AutoPilot] DECOR xong: {placed}/{plan.Length} món");
+            yield return new WaitForSeconds(4f);
+            if (shotDir != null) Shot("decor");
         }
 
         /// -autohidden: người chơi biết khám phá món ẩn — sang ngày thứ 2 của cấp 2 mở Cà phê muối + cốt dừa
@@ -523,3 +616,4 @@ namespace Cafe
         }
     }
 }
+#endif

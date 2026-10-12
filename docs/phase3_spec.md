@@ -41,6 +41,30 @@ Bot là người chơi "khá": thêm cờ `-autobuy` (mua bàn khi dư tiền), 
 3. Tiền thuê 7.000/tuần: với lãi đo được (13–17k/tuần) vẫn chịu được; chưa cần giảm, xem lại khi có số liệu người chơi thật.
 4. Tutorial / gợi ý "mua thêm bàn ghế" khi khách bỏ về vì hết chỗ (mỗi bộ bàn + 2 ghế tự hoàn vốn trong ~1–2 ngày), và gợi ý nâng cấp nhân viên Dọn dẹp trước các vai trò khác.
 
+### 0.4 Bổ sung giai đoạn 2 (2026-10-12/13)
+
+| Việc | Nội dung |
+|---|---|
+| Nội thất mới (Blender tự sinh, `tools/gen_furniture.py`) | Cấp 2 "kiểu Việt": ghế mây, bàn tròn gạch bông, cây trầu bà lá xẻ, đèn cây, kệ sách thấp, radio cổ, đèn lồng Hội An (`ASSETS_T2B`, `furniture_tier2b.blend`). Cấp 1: ghế nhựa vàng, bình trà đá to, quạt đứng. Tất cả < 800 tris, qua `blender_validate.py`, có icon cửa hàng và chạy được qua luồng build mode trong game. Cửa hàng cấp 2 giờ ~25 món (MVP yêu cầu ~20) |
+| Điểm nội thất F | F tính trên **mọi** món (cả ghế, bàn): F_ref cấp 2 = 60 làm F = 1 ngay từ bố cục mặc định nên đồ trang trí vô nghĩa. Đổi F_ref T2 = 200, T3 = 400 (đo: mặc định ~61 điểm, +ghế/bàn ~116, +bộ trang trí ~160) |
+| Gợi ý đầu ngày | `DayAdvisor`: tổng kết ngày hiện **một** gợi ý theo lý do mất khách (hết chỗ → mua bàn ghế; chờ lâu → nhân viên; bẩn → nâng cấp Dọn dẹp; chưa thuê Dọn dẹp ở cấp 2; còn nợ; nhiệm vụ chưa nhận). Không lặp hai ngày liền. 9 test |
+| Sửa giao diện | Bảng tổng kết cấp 2 bị nút "Ngày mới" che dòng "Nợ" (thẻ cao 900 → 960; +80 khi có gợi ý) |
+| Code | Tách `StaffWorker` thành thân nhân vật + `CleanerBehaviour` / `ServerBehaviour` / `BrewerBehaviour` (lớp cơ sở `StaffBehaviour`); `DebugAutoPilot`, `DebugPerfProbe` chỉ có trong Editor và bản Development; `PerfNote` rỗng ở bản release. Phân tích tĩnh (compiler + IDE0005/51/52/59) sạch: 0 cảnh báo |
+
+### 0.5 Hiệu năng đo được (autoplay, PC, `-perf`)
+
+Công cụ: `QuanCaPhe.exe … -perf` in `[Perf]` mỗi 30 giây (CPU/khung, p95/p99, cấp phát, GC) và thống kê cảnh. Chạy `-nographics` thì thời gian khung ≈ chi phí **script** (không gồm GPU).
+
+| Chỉ số | Giá trị đo (PC) | Nhận xét |
+|---|---|---|
+| CPU script mỗi khung | TB 0,3–0,6 ms, p99 ~1 ms | Rất nhẹ; điện thoại tầm trung chậm hơn ~5–10× vẫn còn dư xa so với 16,6 ms |
+| Cấp phát GC mỗi khung | 12–46 B (~0,4 lần/khung) | Thấp; không có cấp phát rác mỗi khung đáng kể |
+| GC gen0 | 2–8 lần/phút, heap mono 10–14 MB | Nhỏ, mỗi lần rất ngắn |
+| Đỉnh một khung | 12–25 ms mỗi ~30 giây | Chủ yếu sinh khách (TB 0,8 ms, tối đa 3,5), lưu game (0,6–4 ms, tối đa 8), bake NavMesh (2–9 ms, chỉ khi đặt đồ) |
+| Lỗi đã sửa | `ClayButton` mất ổn định dưới 40 FPS (nút phóng to, nháy) | xem commit đầu |
+
+Chưa đo được trên PC: GPU/draw call/nhiệt độ trên điện thoại thật.
+
 ## 1. Phạm vi Giai đoạn 3 (Alpha)
 
 | Mã | Việc | Mô tả (số liệu theo economy) | Phụ thuộc |

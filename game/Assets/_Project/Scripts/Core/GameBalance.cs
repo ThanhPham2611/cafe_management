@@ -65,8 +65,11 @@ namespace Cafe
         // Lưới
         public const float CellSize = 0.5f;
         public const float FRefTier1 = 20f;
-        public const float FRefTier2 = 60f;
-        public const float FRefTier3 = 150f;
+        // F = (Σ comfort + Σ style) / F_ref cộng trên MỌI món đã đặt (cả ghế, bàn). Với 60 thì bố cục mặc định cấp 2 (~61 điểm)
+        // đã đạt F = 1 ngay. Đo bằng autoplay: bố cục mặc định ~61, thêm ~8 ghế + 3 bàn ~116, thêm bộ trang trí ~160 điểm,
+        // nên 200 giữ F tăng đều suốt cấp 2 (trang trí còn giá trị) mà vẫn đạt 1 khi quán đã đầy đồ.
+        public const float FRefTier2 = 200f;
+        public const float FRefTier3 = 400f;
 
         // ---- Cấp 2: Thuê mặt bằng (economy §3.2, §3.4) ----
         public const int Tier2StarRP = 300;                   // ★2

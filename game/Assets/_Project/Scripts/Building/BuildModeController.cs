@@ -1008,8 +1008,7 @@ namespace Cafe
 
         private ClayButton AddBarButton(RectTransform bar, int index, ClayStyle style, string label, UnityAction onClick)
         {
-            Text t;
-            ClayButton b = HudBuilder.AddLabelButton(bar, "Btn" + index, style, label, 42, onClick, out t);
+            ClayButton b = HudBuilder.AddLabelButton(bar, "Btn" + index, style, label, 42, onClick, out _);
             HudBuilder.SetFixed((RectTransform)b.transform, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(index * (BtnW + BtnGap), 0f), new Vector2(BtnW, BarH));
             return b;

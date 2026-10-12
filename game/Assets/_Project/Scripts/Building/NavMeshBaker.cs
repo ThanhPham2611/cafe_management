@@ -32,6 +32,7 @@ namespace Cafe
 
         public static bool Bake(Bounds bounds, IList<PlacedFurniture> furniture, IList<Transform> ignoreRoots)
         {
+            using var perf = PerfNote.Measure("bake NavMesh");
             Physics.SyncTransforms(); // collider vừa Instantiate phải đồng bộ trước khi thu thập
 
             var markups = new List<NavMeshBuildMarkup>();

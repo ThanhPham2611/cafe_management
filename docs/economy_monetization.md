@@ -227,7 +227,7 @@ W = clamp01( 1 − (t_wait − 20) / 40 )            # t_wait: giây thực từ
                                                  # ≤20 s → 1,0 ; ≥60 s → 0 ; >60 s → khách bỏ đi
 C = CI_zone / 100                                # chỉ số sạch zone khách ngồi (§5)
 F = clamp01( (ΣComfort_zone + ΣStyle_zone) / F_ref_tier )
-    F_ref: T1 = 20, T2 = 60, T3 = 150 (mỗi zone), T4 = n/a
+    F_ref: T1 = 20, T2 = 200, T3 = 400 (mỗi zone; đo lại 2026-10-12: Σ cộng trên mọi món kể cả ghế/bàn — bố cục mặc định cấp 2 ~61 điểm, +8 ghế/3 bàn ~116, +bộ trang trí ~160 — nên 60 làm F = 1 ngay), T4 = n/a
 ```
 
 - **T1 (vỉa hè, chưa có dọn bàn):** trọng số đổi thành `0,40·Q + 0,35·W + 0,10·C_ly + 0,15·F`, với `C_ly = 1` nếu ly được thu trong 30 s in-game, giảm tuyến tính về 0 sau 2 giờ in-game.
@@ -593,7 +593,7 @@ Funnel cần dashboard: Install → T1 ngày 3 → ★2 → T2 → công thức 
 | `upkeep_per_day` | [60, 150, 700] | |
 | `sat_weights` / `sat_weights_t1` | [0.35,0.30,0.20,0.15] / [0.40,0.35,0.10,0.15] | |
 | `wait_ok_s` / `wait_max_s` | 20 / 60 | |
-| `f_ref_per_tier` | [20, 60, 150] | |
+| `f_ref_per_tier` | [20, 200, 400] | |
 | `rp_star_thresholds` | [0, 300, 4000, 40000, 120000] | |
 | `rp_per_customer_scale` | 1.5 | |
 | `star_hold_avg_s` | [0.55, 0.65, 0.72, 0.80] | |
@@ -758,3 +758,19 @@ Tier 4 dat o ngay in-game: 177  (~10.3h choi)
 ```
 
 **Giới hạn của mô phỏng:** không mô phỏng từng khách (wait time, CI), dùng S trung bình; offline income, sự kiện và hoàn cọc T2 khi lên T3 không được tính → pacing thực tế sẽ **nhanh hơn ~5–10%** với người chơi quay lại thường xuyên. Bước tiếp theo: Monte Carlo theo persona (casual 15'/ngày, mid 30', core 90') và bản agent-based theo từng khách cho T2.
+
+---
+
+## 17. Số liệu đo từ bản chạy thật (autoplay, cấp 2) — 2026-10-12
+
+Bot autoplay `-autoplay -autobuy -autohidden -upgradestaff` chạy 10–12 ngày cấp 2 (có tiền thuê 7.000/tuần, 3 nhân viên). Các sửa lỗi đi kèm: số ly tăng theo ghế (`GameBalance.CupsFor`), Phục vụ cầm ly đi ngay, chủ quán không bỏ ly pha dở, nhân viên Dọn dẹp lau sàn.
+
+| Chỉ số | Thiết kế (§3.4, §7) | Đo được |
+|---|---|---|
+| Khách/ngày (14–16 ghế) | 52–63 | ổn định 33–47, TB ~38 (Demand cấp 2 ~48–52 là trần) |
+| Doanh thu/ngày | ~7.600 | 4.400–6.900 |
+| Lãi/ngày sau lương, trước thuê | 4.200+ | 2.200–3.700 |
+| Lãi tuần sau thuê 7.000 | ~14.700 | +12.700 đến +17.000 |
+| Pha chế (lương 450/ngày) | bù lương bằng 3★ | chưa bù lương ở 14–16 ghế (cổ chai là chủ quán + dọn dẹp) |
+
+Kết luận: cấp 2 có lãi và ổn định; mua nhà hàng 250.000 Xu mất khoảng 110–130 ngày in-game thay vì ~58. Núm chỉnh nên thử trước: Demand cấp 2 (hệ số 1,5), giá bán món ẩn, tiền thuê, giá cấp 3 (`t3_price`).

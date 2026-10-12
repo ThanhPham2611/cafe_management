@@ -13,6 +13,7 @@ namespace Cafe
         }
 
         private const float PopTime = 0.2f;
+        private const float AdviceExtra = 80f;
 
         private readonly GameBootstrap game;
         private readonly GameObject root;
@@ -22,6 +23,8 @@ namespace Cafe
         private readonly Row rowRevenue, rowTips, rowScrap, rowIngredients, rowFee, rowStaffWages;
         private readonly Row rowServed, rowLost, rowRp;
         private readonly Row rowMissions;    // tiến độ nhiệm vụ ngày
+        private readonly GameObject adviceChip;  // gợi ý đầu ngày mới (DayAdvisor), chỉ hiện khi có
+        private readonly Text adviceText;
         private readonly Row rowClean;       // độ sạch TB trong ngày (chỉ hiện khi CleaningRules.Enabled)
         private readonly GameObject rowCleanRoot;
         private readonly Row rowRent, rowDebt;   // thuê nhà + nợ (chỉ cấp 2 trở lên)
@@ -84,6 +87,17 @@ namespace Cafe
             rowCleanRoot = rowClean.value.transform.parent.gameObject;
             rowCleanRoot.SetActive(false);
             rowMissions = MakeRow(card, 540f, -534f, 410f, HudBuilder.T.iconHeart, MissionStrings.SummaryRow);
+
+            // dải gợi ý nằm sát đáy, trên hàng nút (thẻ cao thêm AdviceExtra khi hiện)
+            Image advice = HudBuilder.Chip(card, "AdviceChip", false);
+            advice.color = new Color(1f, 0.93f, 0.7f, 1f);
+            HudBuilder.SetFixed(advice.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 184f), new Vector2(900f, 64f));
+            adviceChip = advice.gameObject;
+            adviceText = HudBuilder.AddText(advice.transform, "Text", "", 26, TextAnchor.MiddleLeft, HudBuilder.Ink, false, false);
+            adviceText.rectTransform.offsetMin = new Vector2(24f, 4f);
+            adviceText.rectTransform.offsetMax = new Vector2(-24f, -4f);
+            HudBuilder.Fit(adviceText, 18);
+            adviceChip.SetActive(false);
 
             Text starLabel = HudBuilder.AddText(card, "StarsLabel", Strings.SumStars, 30, TextAnchor.MiddleLeft, HudBuilder.Ink, false, false);
             HudBuilder.SetFixed(starLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(548f, -340f), new Vector2(400f, 44f));
@@ -156,7 +170,13 @@ namespace Cafe
             rowRentRoot.SetActive(rented);
             rowDebtRoot.SetActive(rented);
             rowStaffWages.value.transform.parent.gameObject.SetActive(rented);
-            card.sizeDelta = new Vector2(1000f, rented ? 900f : 800f);
+            DayAdvice advice = game.AdviseFor(s);
+            string adviceMsg = DayAdvisor.Text(advice);
+            bool hasAdvice = advice != DayAdvice.None && adviceMsg.Length > 0;
+            adviceChip.SetActive(hasAdvice);
+            if (hasAdvice) adviceText.text = "Gợi ý: " + adviceMsg;
+            // cấp 2: thêm dòng thuê nhà + nợ, chừa chỗ để nút không che; có gợi ý thì cao thêm một dải
+            card.sizeDelta = new Vector2(1000f, (rented ? 960f : 800f) + (hasAdvice ? AdviceExtra : 0f));
             if (rented)
             {
                 SetMoney(rowRent, -s.rent, true);
