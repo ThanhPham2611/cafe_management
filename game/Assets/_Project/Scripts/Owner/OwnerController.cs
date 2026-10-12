@@ -256,6 +256,11 @@ namespace Cafe
                 GameEvents.RaiseToast(Strings.WrongCustomer);
                 return false;
             }
+            if (c.CurrentOrder.IsClaimed)
+            {
+                GameEvents.RaiseToast(Strings.OrderTakenByBrewer);
+                return false;
+            }
 
             OwnerTask existing = FindTask(OwnerTaskType.Deliver);
             if (existing != null)
@@ -432,7 +437,11 @@ namespace Cafe
 
             if (queue.Count == 0)
             {
-                if (WantsAutoWash())
+                // Đang pha dở thì ở lại quầy: bỏ ly đi rửa giữa chừng làm hỏng nhịp pha (TapStep báo "chủ quán đang đi") và kẹt ly
+                bool brewingNow = game.Station != null && game.Station.State == BrewStation.Phase.Brewing;
+                // Có khách đang chờ (chưa ai nhận) và còn ly sạch: pha trước, rửa sau. Hết ly sạch thì phải đi rửa mới pha tiếp được.
+                bool customersWaiting = game.Stock != null && game.Stock.Count > 0 && HasUnclaimedOrder();
+                if (!brewingNow && !customersWaiting && WantsAutoWash())
                 {
                     // đang cầm ly bẩn (hoặc còn ly bẩn ở bồn mà không ai rửa): đi rửa
                     queue.Add(new OwnerTask { type = OwnerTaskType.WashCups });
@@ -546,6 +555,14 @@ namespace Cafe
         }
 
         /// Rảnh việc mà đang cầm ly bẩn / còn ly bẩn chưa ai rửa ở bồn -> tự đi rửa.
+        private bool HasUnclaimedOrder()
+        {
+            if (game.Orders == null) return false;
+            for (int i = 0; i < game.Orders.Items.Count; i++)
+                if (!game.Orders.Items[i].IsClaimed) return true;
+            return false;
+        }
+
         private bool WantsAutoWash()
         {
             if (!CleaningRules.Enabled) return false;

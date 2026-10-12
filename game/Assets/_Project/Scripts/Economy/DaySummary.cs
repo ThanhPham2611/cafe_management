@@ -11,6 +11,10 @@ namespace Cafe
         public int fee;
         public int served;
         public int lost;
+        // Lý do khách bỏ về (chẩn đoán cân bằng; tổng = lost trừ đóng cửa / chuyển cấp)
+        public int lostNoSeat;      // không có ghế trống > 10 s
+        public int lostPatience;    // chờ món hết kiên nhẫn
+        public int lostDirty;       // quán bẩn (CI < 60) quay đầu bỏ đi
         public float rpGained;
         public float satisfactionSum;
         public int stars;

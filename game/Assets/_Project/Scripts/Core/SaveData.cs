@@ -49,6 +49,11 @@ namespace Cafe
         public StaffSave[] staff;
         public RegularSave[] regulars;
 
+        // v3 (thêm sau, không đổi version vì chỉ thêm trường: file cũ đọc ra mặc định)
+        public MissionSave[] missions;       // nhiệm vụ ngày hiện tại
+        public int missionDayKey;            // ngày thật (MissionClock.DayKey) của bộ nhiệm vụ
+        public bool missionChestClaimed;
+
         /// Nâng file cũ lên định dạng hiện tại (gọi ngay sau khi load).
         public void Migrate()
         {
@@ -83,6 +88,17 @@ namespace Cafe
         public int preset;   // 0..3 = PF_Char_Staff_M1, M2, F1, F2
         public int level;    // 1..5
         public string name;
+    }
+
+    /// Một nhiệm vụ ngày đã lưu (id tra trong MissionCatalog).
+    [Serializable]
+    public struct MissionSave
+    {
+        public string id;
+        public int target;
+        public int progress;
+        public int rewardXu;
+        public bool claimed;
     }
 
     /// Tiến độ một khách quen.

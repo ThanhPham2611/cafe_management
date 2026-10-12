@@ -32,6 +32,15 @@ namespace Cafe.Tests
             Assert.That(StaffWorkerRules.CleanSeconds(level), Is.EqualTo(expected).Within(0.001f));
         }
 
+        [TestCase(1, 10f)]
+        [TestCase(3, 6.667f)]
+        [TestCase(5, 3.667f)]
+        public void MopSeconds_ScalesWithCleanSpeed_RelativeToOwner(int level, float expected)
+        {
+            // Chủ quán lau bàn 1,2 s và lau sàn 2,0 s; nhân viên lau bàn CleanSeconds(level) nên lau sàn theo cùng tỉ lệ
+            Assert.That(StaffWorkerRules.MopSeconds(level), Is.EqualTo(expected).Within(0.01f));
+        }
+
         [Test]
         public void Lease_DetectsOwnerSteal_WithoutReleasingOwnersClaim()
         {

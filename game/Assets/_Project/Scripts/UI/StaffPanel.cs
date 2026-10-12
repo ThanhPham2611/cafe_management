@@ -19,7 +19,7 @@ namespace Cafe
         private readonly GameBootstrap game;
         private readonly ClayButton openButton;
         private readonly Image panel;
-        private readonly RoleView[] views = new RoleView[2];
+        private readonly RoleView[] views = new RoleView[StaffRoles.All.Length];
         private bool open;
 
         public StaffPanel(GameBootstrap game, Transform parent)
@@ -34,7 +34,7 @@ namespace Cafe
 
             panel = HudBuilder.Panel(parent, "StaffPanel", true);
             HudBuilder.SetFixed(panel.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-28f, 0f), new Vector2(650f, 680f));
+                new Vector2(-28f, 0f), new Vector2(650f, 840f));
 
             Text heading = HudBuilder.AddText(panel.transform, "Heading", "ĐỘI NGŨ QUÁN", 42,
                 TextAnchor.MiddleCenter, HudBuilder.Ink, true, false);
@@ -47,8 +47,8 @@ namespace Cafe
             HudBuilder.SetFixed((RectTransform)close.transform, new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-22f, -20f), new Vector2(64f, 60f));
 
-            views[0] = BuildRole(StaffRole.Cleaner, 118f);
-            views[1] = BuildRole(StaffRole.Server, 378f);
+            for (int i = 0; i < views.Length; i++)
+                views[i] = BuildRole(StaffRoles.All[i], 108f + i * 235f);
 
             game.Staff.Changed += Refresh;
             GameEvents.MoneyChanged += OnMoneyChanged;
@@ -64,8 +64,7 @@ namespace Cafe
             HudBuilder.SetFixed(card.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -y), new Vector2(570f, 225f));
 
-            view.title = HudBuilder.AddText(card.transform, "Title",
-                role == StaffRole.Cleaner ? "DỌN DẸP" : "PHỤC VỤ", 34,
+            view.title = HudBuilder.AddText(card.transform, "Title", RoleTitle(role), 34,
                 TextAnchor.MiddleLeft, HudBuilder.Ink, true, false);
             HudBuilder.SetFixed(view.title.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(28f, -22f), new Vector2(360f, 46f));
@@ -91,6 +90,37 @@ namespace Cafe
             return view;
         }
 
+        private static string RoleTitle(StaffRole role)
+        {
+            switch (role)
+            {
+                case StaffRole.Server: return "PHỤC VỤ";
+                case StaffRole.Brewer: return "PHA CHẾ";
+                default: return "DỌN DẸP";
+            }
+        }
+
+        private static string RoleHint(StaffRole role)
+        {
+            switch (role)
+            {
+                case StaffRole.Server: return "Tự mang ly bạn pha xong tới khách";
+                case StaffRole.Brewer: return "Tự nhận đơn và pha món • Cấp 3 pha được 3★";
+                default: return "Tự lau bàn và rửa ly";
+            }
+        }
+
+        /// Dáng nhân viên theo vai trò (0..3 = PF_Char_Staff_M1, M2, F1, F2).
+        private static int PresetFor(StaffRole role)
+        {
+            switch (role)
+            {
+                case StaffRole.Server: return 0;
+                case StaffRole.Brewer: return 1;
+                default: return 2;
+            }
+        }
+
         private void Toggle() { SetOpen(!open); }
 
         private void SetOpen(bool value)
@@ -105,7 +135,7 @@ namespace Cafe
             int index = Find(role);
             int cost = index < 0 ? GameBalance.StaffHireFee(role) : GameBalance.StaffUpgradeCost(game.Staff.Members[index].level);
             bool changed = index < 0
-                ? game.Staff.Hire(role, role == StaffRole.Cleaner ? 2 : 0, StaffRoles.DefaultName(role))
+                ? game.Staff.Hire(role, PresetFor(role), StaffRoles.DefaultName(role))
                 : game.Staff.Upgrade(index);
             if (changed)
             {
@@ -147,7 +177,7 @@ namespace Cafe
                 {
                     int fee = GameBalance.StaffHireFee(view.role);
                     int wage = GameBalance.StaffDailyWage(view.role);
-                    view.detail.text = "Chưa tuyển • Lương " + wage + " Xu/ngày";
+                    view.detail.text = "Chưa tuyển • Lương " + wage + " Xu/ngày\n" + RoleHint(view.role);
                     view.primaryLabel.text = "THUÊ • " + fee + " XU";
                     view.primary.SetInteractable(unlocked && game.Wallet.Xu >= fee);
                     view.fire.gameObject.SetActive(false);
@@ -159,7 +189,7 @@ namespace Cafe
                     bool max = member.level >= 5;
                     bool tierLocked = member.level == 4 && game.Tier.Current < 3;
                     view.detail.text = member.name + " • Cấp " + member.level + " • Lương " +
-                        GameBalance.StaffDailyWage(view.role) + " Xu/ngày";
+                        GameBalance.StaffDailyWage(view.role) + " Xu/ngày\n" + RoleHint(view.role);
                     view.primaryLabel.text = max ? "ĐÃ TỐI ĐA" : (tierLocked ? "CẦN QUÁN CẤP 3" : "NÂNG CẤP • " + cost + " XU");
                     view.primary.SetInteractable(!max && !tierLocked && game.Wallet.Xu >= cost);
                     view.fire.gameObject.SetActive(true);

@@ -50,6 +50,7 @@ namespace Cafe
         private RecipeBookPanel recipeBook;
         private StaffPanel staffPanel;
         private RegularsBookPanel regularsBook;
+        private MissionPanel missionPanel;
         private StoryDialog storyDialog;
         public bool StoryOpen { get { return storyDialog != null && storyDialog.IsOpen; } }
         public void DebugAdvanceStory() { if (storyDialog != null) storyDialog.DebugAdvance(); }
@@ -97,6 +98,7 @@ namespace Cafe
             staffPanel = new StaffPanel(game, safe);
             summaryPanel = new SummaryPanel(game, canvas.transform);
             regularsBook = new RegularsBookPanel(game, safe, canvas.transform);
+            missionPanel = new MissionPanel(game, safe, canvas.transform);
             storyDialog = new StoryDialog(game, canvas.transform);
 
             // Chữ nổi (trên cùng)
@@ -106,6 +108,7 @@ namespace Cafe
             GameEvents.ReputationChanged += OnReputation;
             GameEvents.OrderAdded += OnOrderChanged;
             GameEvents.OrderRemoved += OnOrderChanged;
+            GameEvents.OrderClaimChanged += OnOrderChanged;
             GameEvents.DayStarted += OnDayStarted;
             GameEvents.DayEnded += OnDayEnded;
             GameEvents.CustomerServed += OnServed;
@@ -139,6 +142,7 @@ namespace Cafe
             GameEvents.ReputationChanged -= OnReputation;
             GameEvents.OrderAdded -= OnOrderChanged;
             GameEvents.OrderRemoved -= OnOrderChanged;
+            GameEvents.OrderClaimChanged -= OnOrderChanged;
             GameEvents.DayStarted -= OnDayStarted;
             GameEvents.DayEnded -= OnDayEnded;
             GameEvents.CustomerServed -= OnServed;
@@ -153,6 +157,7 @@ namespace Cafe
             if (recipeBook != null) recipeBook.Dispose();
             if (staffPanel != null) staffPanel.Dispose();
             if (regularsBook != null) regularsBook.Dispose();
+            if (missionPanel != null) missionPanel.Dispose();
             if (storyDialog != null) storyDialog.Dispose();
         }
 
@@ -358,6 +363,7 @@ namespace Cafe
             Order selected = game.Station.Selected;
             Color normal = HudBuilder.T.card != null ? Color.white : HudBuilder.Cream;
             Color sel = HudBuilder.T.card != null ? new Color(1f, 0.82f, 0.42f, 1f) : HudBuilder.Accent;
+            Color brewing = HudBuilder.T.card != null ? new Color(0.72f, 0.95f, 0.78f, 1f) : HudBuilder.Mint; // nhân viên Pha chế đang làm
 
             for (int i = 0; i < MaxCards; i++)
             {
@@ -370,7 +376,7 @@ namespace Cafe
                     HudBuilder.SetIcon(cv.icon, HudBuilder.T.IconFor(o.recipe));
                     cv.nameText.text = Strings.ShortName(o.recipe);
                     cv.priceText.text = string.Format(Strings.XuFmt, o.recipe.price);
-                    cv.button.SetTint(o == selected ? sel : normal);
+                    cv.button.SetTint(o == selected ? sel : (o.IsClaimed ? brewing : normal));
                     if (o.customer != null) HudBuilder.SetRing(cv.ringFill, o.customer.PatienceNormalized);
                 }
                 else

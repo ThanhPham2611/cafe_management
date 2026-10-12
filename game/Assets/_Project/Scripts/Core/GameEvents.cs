@@ -10,6 +10,8 @@ namespace Cafe
         public static event Action<float, int> ReputationChanged; // rp, stars
         public static event Action<Order> OrderAdded;
         public static event Action<Order> OrderRemoved;
+        /// Đơn vừa được nhân viên Pha chế nhận / nhả (thẻ order đổi màu).
+        public static event Action<Order> OrderClaimChanged;
         public static event Action<int> DayStarted;
         public static event Action DayClosing;
         public static event Action<DaySummary> DayEnded;
@@ -21,6 +23,7 @@ namespace Cafe
         public static void RaiseReputationChanged(float rp, int stars) { if (ReputationChanged != null) ReputationChanged(rp, stars); }
         public static void RaiseOrderAdded(Order o) { if (OrderAdded != null) OrderAdded(o); }
         public static void RaiseOrderRemoved(Order o) { if (OrderRemoved != null) OrderRemoved(o); }
+        public static void RaiseOrderClaimChanged(Order o) { if (OrderClaimChanged != null) OrderClaimChanged(o); }
         public static void RaiseDayStarted(int day) { if (DayStarted != null) DayStarted(day); }
         public static void RaiseDayClosing() { if (DayClosing != null) DayClosing(); }
         public static void RaiseDayEnded(DaySummary s) { if (DayEnded != null) DayEnded(s); }
@@ -36,6 +39,7 @@ namespace Cafe
             ReputationChanged = null;
             OrderAdded = null;
             OrderRemoved = null;
+            OrderClaimChanged = null;
             DayStarted = null;
             DayClosing = null;
             DayEnded = null;

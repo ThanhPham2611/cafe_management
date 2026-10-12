@@ -7,6 +7,17 @@ namespace Cafe
     {
         public const int StartXu = 500;
         public const int StartCups = 6;
+        /// Ly trên mỗi ghế. Một ly đi hết vòng pha -> mang ra -> uống -> nằm trên bàn bẩn -> dọn -> rửa mất ~45 s,
+        /// nên với 6 ly cố định thông lượng chỉ ~27 ly/ngày dù có thêm ghế hay nhân viên (autoplay cấp 2 xác nhận).
+        public const float CupsPerSeatTier1 = 1f;
+        public const float CupsPerSeatTier2 = 1.5f;
+
+        /// Tổng số ly của quán theo cấp và số ghế (không bao giờ ít hơn StartCups).
+        public static int CupsFor(int tier, int seats)
+        {
+            float perSeat = tier >= 2 ? CupsPerSeatTier2 : CupsPerSeatTier1;
+            return Mathf.Max(StartCups, Mathf.CeilToInt(Mathf.Max(0, seats) * perSeat));
+        }
         public const int SidewalkFee = 60;
         public const int ScrapXu = 1; // ve chai khi thu ly
 
@@ -74,18 +85,30 @@ namespace Cafe
         // Nhân viên Cấp 2 (economy_monetization §5–6)
         public const int StaffCleanerHireFee = 1500;
         public const int StaffServerHireFee = 1500;
+        public const int StaffBrewerHireFee = 2500;
         public const int StaffCleanerDailyWage = 300;
         public const int StaffServerDailyWage = 350;
+        public const int StaffBrewerDailyWage = 450;
         public const int StaffMaxLevel = 5;
 
         public static int StaffHireFee(StaffRole role)
         {
-            return role == StaffRole.Cleaner ? StaffCleanerHireFee : StaffServerHireFee;
+            switch (role)
+            {
+                case StaffRole.Server: return StaffServerHireFee;
+                case StaffRole.Brewer: return StaffBrewerHireFee;
+                default: return StaffCleanerHireFee;
+            }
         }
 
         public static int StaffDailyWage(StaffRole role)
         {
-            return role == StaffRole.Cleaner ? StaffCleanerDailyWage : StaffServerDailyWage;
+            switch (role)
+            {
+                case StaffRole.Server: return StaffServerDailyWage;
+                case StaffRole.Brewer: return StaffBrewerDailyWage;
+                default: return StaffCleanerDailyWage;
+            }
         }
 
         /// Cost(Lv) = 1.000 × 2,5^(Lv−1); currentLevel là cấp trước khi nâng.

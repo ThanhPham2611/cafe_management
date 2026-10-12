@@ -57,6 +57,8 @@ namespace Cafe
         public OwnerController Owner { get; private set; }
         public StaffRoster Staff { get; private set; }
         public RegularsManager Regulars { get; private set; }
+        /// Nhiệm vụ ngày + rương (đổi lúc 04:00 giờ VN). Luôn khác null sau Build().
+        public MissionBook Missions { get; private set; }
         public ShopSign Sign { get; private set; }
         public CreatorScreen Creator { get; private set; }
         public GameObject CupPrefab { get; private set; }
@@ -90,6 +92,11 @@ namespace Cafe
         private void Awake()
         {
             Instance = this;
+#if UNITY_ANDROID || UNITY_IOS
+            // Mục tiêu 60 FPS (plan §4). ProjectSetup chỉ đặt trong Editor nên bản build trước đó chạy theo mặc định của máy.
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = 60;
+#endif
         }
 
         private void Start()
@@ -195,6 +202,17 @@ namespace Cafe
             Regulars = new RegularsManager();
             Regulars.Init(this, hasSave ? save : null);
 
+            // Nhiệm vụ ngày: thưởng đi thẳng vào ví; mốc đầu ngày dời theo để thoát-vào không làm mất thưởng
+            Missions = new MissionBook(
+                xu => { Wallet.Earn(xu); NotifyRewardGranted(xu, 0f); },
+                gems => { Gems.Add(gems); SaveSnapshot(); },
+                rp => NotifyRewardGranted(0, Reputation.Add(rp)));
+            Missions.Load(hasSave ? save : null);
+            EnsureMissions();
+            GameEvents.CustomerServed += OnCustomerServedForMissions;
+            GameEvents.DayStarted += OnDayStartedForMissions;
+            GameEvents.DayEnded += OnDayEndedForMissions;
+
             // Camera + input
             Camera cam = Camera.main;
             if (cam == null) cam = FindAnyObjectByType<Camera>();
@@ -294,6 +312,13 @@ namespace Cafe
             GameEvents.RaiseDayStarted(day);
         }
 
+        /// Bổ sung ly cho đủ theo số ghế (gọi khi bắt đầu ngày và mỗi khi bố cục / cấp quán đổi).
+        public void TopUpCups()
+        {
+            if (Stock == null || Grid == null || Tier == null) return;
+            Stock.EnsureTotal(GameBalance.CupsFor(Tier.Current, Grid.Seats.Count));
+        }
+
         /// Chọn món theo orderWeight trong số món đã biết + trong menu + đúng cấp (RecipeBook.PickRecipe).
         public RecipeDef PickRecipe(int day)
         {
@@ -337,6 +362,7 @@ namespace Cafe
             if (Tier != null) Tier.WriteToSave(data); // tier, deposit, rentDebt, daysSinceRent, inventory
             if (Staff != null) Staff.WriteToSave(data);
             if (Regulars != null) Regulars.WriteToSave(data);
+            if (Missions != null) Missions.WriteToSave(data);
             if (Day.CurrentPhase == DayCycle.Phase.Summary)
             {
                 data.day = Day.Day + 1;
@@ -366,9 +392,51 @@ namespace Cafe
             SaveSnapshot();
         }
 
+        /// Thưởng nhận giữa ngày (nhiệm vụ, rương): dời cả mốc Xu và RP đầu ngày để không bị mất khi thoát-vào; rồi lưu.
+        public void NotifyRewardGranted(int xu, float rp)
+        {
+            dayStartXu = Mathf.Max(0f, dayStartXu + xu);
+            dayStartRp = Mathf.Max(0f, dayStartRp + rp);
+            SaveSnapshot();
+        }
+
+        // ---- Nhiệm vụ ngày ----
+
+        private void EnsureMissions()
+        {
+            if (Missions == null) return;
+            bool hidden = false;
+            if (recipes != null && Recipes != null)
+                for (int i = 0; i < recipes.Length && !hidden; i++)
+                    hidden = recipes[i] != null && recipes[i].hidden && Recipes.IsKnown(recipes[i]);
+            var ctx = new MissionContext { RecipeKnown = id => Recipes != null && Recipes.IsKnown(id), HasHiddenKnown = hidden };
+            if (Missions.EnsureToday(MissionClock.DayKey(System.DateTime.UtcNow), Tier != null ? Tier.Current : 1, ctx) && started)
+                SaveSnapshot();
+        }
+
+        private void OnCustomerServedForMissions(Customer c)
+        {
+            RecipeDef r = c != null ? c.ServedRecipe : null;
+            if (r == null || Missions == null) return;
+            Missions.RecordServed(r.id, c.ServedQuality, r.hidden, c.LastTip);
+        }
+
+        private void OnDayStartedForMissions(int day)
+        {
+            EnsureMissions(); // phiên chơi dài qua 04:00 thì sang bộ nhiệm vụ mới
+        }
+
+        private void OnDayEndedForMissions(DaySummary s)
+        {
+            if (Missions == null || s == null) return;
+            Missions.RecordDay(s.served, s.lost, s.cleanliness);
+            SaveSnapshot();
+        }
+
         private void OnApplicationPause(bool paused)
         {
             if (paused) SaveSnapshot();
+            else EnsureMissions(); // quay lại app sau khi qua 04:00
         }
 
         private void OnApplicationQuit()
@@ -378,6 +446,9 @@ namespace Cafe
 
         private void OnDestroy()
         {
+            GameEvents.CustomerServed -= OnCustomerServedForMissions;
+            GameEvents.DayStarted -= OnDayStartedForMissions;
+            GameEvents.DayEnded -= OnDayEndedForMissions;
             if (Staff != null) Staff.Dispose();
             if (Station != null) Station.Dispose();
             if (Recipes != null)

@@ -21,7 +21,7 @@ namespace Cafe
         bool autoplay;
         bool autoshop;
         bool autorecipes;
-        bool cheatXu, cheatRp, autoUpgrade, autoStaff;
+        bool cheatXu, cheatRp, autoUpgrade, autoStaff, noBrewer, autoBuy, autoHidden, upgradeStaff;
         int targetDays = 1;
         int daysPlayed;
         float timeScale = 1f;
@@ -66,6 +66,10 @@ namespace Cafe
             p.cheatRp = Has(args, "-cheatrp") && Debug.isDebugBuild;
             p.autoUpgrade = Has(args, "-autoupgrade");
             p.autoStaff = Has(args, "-autostaff");
+            p.noBrewer = Has(args, "-nobrewer");
+            p.autoBuy = Has(args, "-autobuy");
+            p.autoHidden = Has(args, "-autohidden");
+            p.upgradeStaff = Has(args, "-upgradestaff");
             string days = Arg(args, "-days");
             int nd;
             if (days != null && int.TryParse(days, out nd)) p.targetDays = Mathf.Clamp(nd, 1, 60);
@@ -97,6 +101,8 @@ namespace Cafe
             if (autorecipes) StartCoroutine(RecipesTest());
             if (cheatXu || cheatRp) StartCoroutine(CheatLoop());
             if (autoUpgrade) StartCoroutine(UpgradeLoop());
+            if (autoBuy) StartCoroutine(BuyLoop());
+            if (autoHidden) StartCoroutine(HiddenMenuLoop());
             StartCoroutine(StatsLoop());
         }
 
@@ -115,11 +121,13 @@ namespace Cafe
             Debug.Log($"[AutoPilot] KẾT THÚC NGÀY {s.day}: phục vụ {s.served}, mất {s.lost}, doanh thu {s.revenue}, " +
                       $"tip {s.tips}, nguyên liệu {s.ingredientCost}, phí {s.fee}, lãi {s.NetProfit}, " +
                       $"RP +{s.rpGained:0.0}, hài lòng TB {s.AverageSatisfaction:0.00}, ★{s.stars}");
+            Debug.Log($"[AutoPilot] MẤT KHÁCH ngày {s.day}: hết chỗ {s.lostNoSeat}, hết kiên nhẫn {s.lostPatience}, quán bẩn {s.lostDirty}, khác {s.lost - s.lostNoSeat - s.lostPatience - s.lostDirty}");
             var tg = GameBootstrap.Instance;
             int tierNow = tg != null && tg.Tier != null ? tg.Tier.Current : 1;
             Debug.Log($"[AutoPilot] TIER={tierNow}");
             if (tg != null && tg.Staff != null && tg.Staff.Count > 0)
-                Debug.Log($"[AutoPilot] STAFF count={tg.Staff.Count}, lương trả hôm nay={s.staffWages}");
+                Debug.Log($"[AutoPilot] STAFF count={tg.Staff.Count}, lương trả hôm nay={s.staffWages}, việc đã làm: {StaffWorkSummary(tg)}");
+            if (tg != null && tg.Missions != null) StartCoroutine(MissionsNextFrame(tg)); // sau khi GameBootstrap ghi nhận nhiệm vụ cuối ngày
             if (tg != null && tg.Regulars != null)
                 foreach (var d in tg.Regulars.Definitions)
                 {
@@ -233,12 +241,50 @@ namespace Cafe
             }
         }
 
-        /// -autostaff: thuê 1 dọn dẹp + 1 phục vụ ngay sau khi lên Cấp 2 (đi qua đúng StaffRoster.Hire).
+        /// -autostaff: thuê 1 dọn dẹp + 1 phục vụ + 1 pha chế ngay sau khi lên Cấp 2 (đi qua đúng StaffRoster.Hire).
         void HireStaff(GameBootstrap g)
         {
             bool a = g.Staff.Hire(StaffRole.Cleaner, 0, null);
             bool b = g.Staff.Hire(StaffRole.Server, 2, null);
-            Debug.Log($"[AutoPilot] STAFF thuê dọn dẹp={a}, phục vụ={b}, tổng={g.Staff.Count}, Xu={g.Wallet.Xu}");
+            bool c = !noBrewer && g.Staff.Hire(StaffRole.Brewer, 1, null); // -nobrewer: đối chứng "trước khi có Pha chế"
+            Debug.Log($"[AutoPilot] STAFF thuê dọn dẹp={a}, phục vụ={b}, pha chế={c}, tổng={g.Staff.Count}, Xu={g.Wallet.Xu}");
+        }
+
+        IEnumerator MissionsNextFrame(GameBootstrap g)
+        {
+            yield return null;
+            LogAndClaimMissions(g);
+        }
+
+        /// Cuối ngày: in tiến độ nhiệm vụ rồi nhận hết (đi qua đúng MissionBook.Claim / ClaimChest như bấm nút).
+        static void LogAndClaimMissions(GameBootstrap g)
+        {
+            MissionBook m = g.Missions;
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < m.Items.Count; i++)
+            {
+                MissionState it = m.Items[i];
+                sb.Append(it.id).Append(' ').Append(it.progress).Append('/').Append(it.target).Append(it.claimed ? " (đã nhận)" : "").Append("; ");
+            }
+            int xu0 = g.Wallet.Xu, gems0 = g.Gems.Gems;
+            int claimed = 0;
+            for (int i = 0; i < m.Items.Count; i++)
+                if (m.Claim(i)) claimed++;
+            bool chest = m.ClaimChest();
+            Debug.Log($"[AutoPilot] MISSIONS key={m.DayKey}: {sb}→ nhận {claimed}, rương={chest}, +{g.Wallet.Xu - xu0} Xu, +{g.Gems.Gems - gems0} Hạt");
+        }
+
+        /// Số việc mỗi vai trò đã làm trong ngày (để chứng minh nhân viên thật sự làm việc).
+        static string StaffWorkSummary(GameBootstrap g)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (StaffWorker w in g.Staff.Workers)
+            {
+                if (w == null) continue;
+                if (sb.Length > 0) sb.Append(", ");
+                sb.Append(StaffRoles.ToId(w.Role)).Append('=').Append(w.JobsDoneToday);
+            }
+            return sb.ToString();
         }
 
         /// Truyện khách quen dừng game (timeScale 0): bot bấm TIẾP bằng thời gian thật.
@@ -269,7 +315,9 @@ namespace Cafe
                 var g = GameBootstrap.Instance;
                 if (g == null || g.Wallet == null) continue;
                 Debug.Log($"[AutoPilot] t={Time.time:0}s Xu={g.Wallet.Xu} RP={g.Reputation.RP:0.0} " +
-                          $"orders={g.Orders.Count} cups={g.LeftoverCups.Count} khách={g.Spawner.ActiveCount}");
+                          $"orders={g.Orders.Count} cups={g.LeftoverCups.Count} khách={g.Spawner.ActiveCount} " +
+                          $"quầy={g.Station.State}/{(g.Station.Recipe != null ? g.Station.Recipe.id : "-")} chọn={(g.Station.Selected != null)} " +
+                          $"chủQuán: hàng={g.Owner.QueueCount} tạiQuầy={g.Owner.IsAtCart} giao={g.Owner.IsDelivering}");
                 CleaningSystem cs = CleaningSystem.Instance;
                 if (CleaningRules.Enabled && cs != null && cs.Model != null)
                     Debug.Log($"[AutoPilot] CI={cs.Model.CI:0.0} floor={cs.Model.FloorDirt:0.0} " +
@@ -307,6 +355,78 @@ namespace Cafe
             }
         }
 
+        /// -autobuy: "người chơi trung bình" của economy §16 — từ cấp 2, hễ dư tiền là mua thêm một bộ bàn + 2 ghế
+        /// qua đúng luồng build mode (Builder.DebugPlace), tới khi hết chỗ trống trong danh sách ô thử.
+        IEnumerator BuyLoop()
+        {
+            Vector2Int[] tableSpots =
+            {
+                new Vector2Int(1, 8), new Vector2Int(9, 8), new Vector2Int(1, 11), new Vector2Int(9, 11), new Vector2Int(5, 11)
+            };
+            int next = 0;
+            while (true)
+            {
+                yield return new WaitForSeconds(10f);
+                var g = GameBootstrap.Instance;
+                if (g == null || g.Builder == null || g.Tier == null || g.Tier.Current < 2) continue;
+                if (g.Day.CurrentPhase != DayCycle.Phase.Open) continue;
+
+                // Nâng cấp nhân viên khi dư tiền: dọn dẹp trước (cổ chai đo được ở cấp 2), rồi pha chế, rồi phục vụ
+                if (upgradeStaff && g.Wallet.Xu >= 4500)
+                {
+                    StaffRole[] order = { StaffRole.Cleaner, StaffRole.Brewer, StaffRole.Server };
+                    for (int r = 0; r < order.Length; r++)
+                    {
+                        string rid = StaffRoles.ToId(order[r]);
+                        for (int m = 0; m < g.Staff.Members.Count; m++)
+                        {
+                            if (g.Staff.Members[m].role != rid) continue;
+                            int upCost = GameBalance.StaffUpgradeCost(g.Staff.Members[m].level);
+                            if (g.Wallet.Xu >= upCost + 3000 && g.Staff.Upgrade(m))
+                            {
+                                Debug.Log($"[AutoPilot] NÂNG CẤP nhân viên {rid} -> cấp {g.Staff.Members[m].level}, -{upCost} Xu");
+                                goto upgraded;
+                            }
+                        }
+                    }
+                }
+                upgraded:
+                if (next >= tableSpots.Length) continue;
+
+                FurnitureDef table = g.GetDef(TierConfig.IdTable) ?? g.GetDef(TierConfig.IdTableFallback);
+                FurnitureDef chair = g.GetDef(TierConfig.IdChair) ?? g.GetDef(TierConfig.IdChairFallback);
+                if (table == null || chair == null) continue;
+                int cost = ShopRules.Price(g.Grid, table) + 2 * ShopRules.Price(g.Grid, chair);
+                if (g.Wallet.Xu < cost + 3000) continue; // giữ quỹ dự phòng như economy §16 (reserve)
+
+                Vector2Int c = tableSpots[next++];
+                int seats0 = g.Grid.Seats.Count, xu0 = g.Wallet.Xu;
+                bool okT = g.Builder.DebugPlace(table, c);
+                bool okL = okT && g.Builder.DebugPlace(chair, new Vector2Int(c.x - 1, c.y));
+                bool okR = okT && g.Builder.DebugPlace(chair, new Vector2Int(c.x + 2, c.y + 1));
+                Debug.Log($"[AutoPilot] MUA bàn @ {c}: bàn={okT} ghế trái={okL} ghế phải={okR}, Xu {xu0} -> {g.Wallet.Xu}, " +
+                          $"ghế {seats0} -> {g.Grid.Seats.Count}");
+            }
+        }
+
+        /// -autohidden: người chơi biết khám phá món ẩn — sang ngày thứ 2 của cấp 2 mở Cà phê muối + cốt dừa
+        /// (qua RecipeBook.Discover, cùng đường với thử pha thành công) và tắt món rẻ để menu 6 món ưu tiên giá cao.
+        IEnumerator HiddenMenuLoop()
+        {
+            while (true)
+            {
+                yield return new WaitForSeconds(5f);
+                var g = GameBootstrap.Instance;
+                if (g == null || g.Recipes == null || g.Tier == null || g.Tier.Current < 2 || g.Day.Day < 2) continue;
+                g.Recipes.SetOnMenu("tra_da", false);
+                g.Recipes.SetOnMenu("tra_chanh", false);
+                g.Recipes.Discover("ca_phe_muoi");
+                g.Recipes.Discover("ca_phe_cot_dua");
+                Debug.Log($"[AutoPilot] MENU ẩn: {g.Recipes.MenuCount} món, đã biết {g.Recipes.KnownCount}");
+                yield break;
+            }
+        }
+
         IEnumerator PlayLoop()
         {
             var tap = new WaitForSeconds(0.4f);
@@ -334,6 +454,8 @@ namespace Cafe
                         if (tables[i] != null && tables[i].Dirt != null && tables[i].Dirt.IsDirty) dirtyCount++;
                     // Ưu tiên pha chế: chỉ dọn khi rảnh đơn, hoặc khi quá nửa số bàn đã bẩn
                     bool wantClean = g.Orders.Count == 0 || dirtyCount * 2 >= tables.Count;
+                    // Đã thuê nhân viên Dọn dẹp thì người chơi giao việc dọn / lau sàn / rửa ly cho họ (chủ quán không cướp việc)
+                    if (g.Staff != null && g.Staff.HasRole(StaffRole.Cleaner)) wantClean = false;
                     if (wantClean)
                     {
                         for (int i = 0; i < tables.Count; i++)
@@ -364,8 +486,10 @@ namespace Cafe
                 if (!g.Owner.IsAtCart) continue;
                 if (g.Station.State != BrewStation.Phase.Idle || g.Orders.Count == 0) continue;
 
-                Order o = g.Orders.Items[0];
-                if (!g.Station.Select(o)) continue;
+                Order o = null; // đơn cũ nhất mà nhân viên Pha chế chưa nhận
+                for (int k = 0; k < g.Orders.Items.Count && o == null; k++)
+                    if (!g.Orders.Items[k].IsClaimed) o = g.Orders.Items[k];
+                if (o == null || !g.Station.Select(o)) continue;
                 float t0 = Time.time;
                 while (!g.Owner.IsAtCart && Time.time - t0 < 30f) yield return tap;
                 if (!g.Owner.IsAtCart || g.Station.Selected != o) continue;

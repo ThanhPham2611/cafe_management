@@ -37,6 +37,9 @@ namespace Cafe
         /// Khách còn ngồi chờ món (chủ quán mang ly tới được).
         public bool IsWaitingForDrink { get { return State == CustomerState.WaitOrder && order != null; } }
         public bool WasServed { get; private set; }
+        /// Món đã gọi và chất lượng đã nhận (cho nhiệm vụ ngày).
+        public RecipeDef ServedRecipe { get { return orderedRecipe; } }
+        public int ServedQuality { get { return quality; } }
         public int LastPay { get; private set; }
         public int LastTip { get; private set; }
         public string RegularId { get { return regular != null ? regular.id : null; } }
@@ -159,7 +162,7 @@ namespace Cafe
                 }
             }
 
-            if (noSeatTimer > GameBalance.NoSeatSeconds) Abandon(true);
+            if (noSeatTimer > GameBalance.NoSeatSeconds) Abandon(true, LostReason.NoSeat);
         }
 
         private void UpdateWalk()
@@ -190,7 +193,7 @@ namespace Cafe
                 if (p > 0f && Random.value < p)
                 {
                     UiFx.FloatText(transform.position + new Vector3(0f, 1.9f, 0f), Strings.DirtyWalkAway, HudBuilder.Red);
-                    Abandon(true);
+                    Abandon(true, LostReason.Dirty);
                     return;
                 }
             }
@@ -254,7 +257,7 @@ namespace Cafe
             // Ghế êm (comfort cao) làm thanh kiên nhẫn giảm chậm hơn
             patienceUsed += dt / (1f + 0.05f * seat.Def.comfort);
             if (bubble != null) bubble.SetPatience(PatienceNormalized);
-            if (patienceUsed >= GameBalance.PatienceSeconds) Abandon(true);
+            if (patienceUsed >= GameBalance.PatienceSeconds) Abandon(true, LostReason.Patience);
         }
 
         /// Được phục vụ ly với chất lượng 1..3 sao.
@@ -349,7 +352,9 @@ namespace Cafe
         // ---- Rời đi ----
 
         /// Bỏ đi (hết kiên nhẫn / không có ghế): penalty = -2 RP.
-        private void Abandon(bool penalty)
+        private enum LostReason { Other, NoSeat, Patience, Dirty }
+
+        private void Abandon(bool penalty, LostReason reason = LostReason.Other)
         {
             if (State == CustomerState.Leaving || State == CustomerState.Done) return;
             if (order != null)
@@ -360,7 +365,13 @@ namespace Cafe
             if (bubble != null) bubble.Hide();
 
             DaySummary sum = game.Day.Summary;
-            if (sum != null) sum.lost++;
+            if (sum != null)
+            {
+                sum.lost++;
+                if (reason == LostReason.NoSeat) sum.lostNoSeat++;
+                else if (reason == LostReason.Patience) sum.lostPatience++;
+                else if (reason == LostReason.Dirty) sum.lostDirty++;
+            }
             if (penalty)
             {
                 visual.SetPose(CustomerPose.Angry);
@@ -427,6 +438,11 @@ namespace Cafe
         public void OnTap()
         {
             if (State != CustomerState.WaitOrder || order == null) return;
+            if (order.IsClaimed)
+            {
+                GameEvents.RaiseToast(Strings.OrderTakenByBrewer);
+                return;
+            }
 
             BrewStation st = game.Station;
             if (st.State == BrewStation.Phase.Ready)

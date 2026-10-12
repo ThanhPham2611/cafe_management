@@ -21,6 +21,7 @@ namespace Cafe
         private readonly Text title;
         private readonly Row rowRevenue, rowTips, rowScrap, rowIngredients, rowFee, rowStaffWages;
         private readonly Row rowServed, rowLost, rowRp;
+        private readonly Row rowMissions;    // tiến độ nhiệm vụ ngày
         private readonly Row rowClean;       // độ sạch TB trong ngày (chỉ hiện khi CleaningRules.Enabled)
         private readonly GameObject rowCleanRoot;
         private readonly Row rowRent, rowDebt;   // thuê nhà + nợ (chỉ cấp 2 trở lên)
@@ -82,6 +83,7 @@ namespace Cafe
             rowClean = MakeRow(card, 540f, -470f, 410f, CleaningRules.BroomIcon(HudBuilder.T), Strings.SumCleanliness);
             rowCleanRoot = rowClean.value.transform.parent.gameObject;
             rowCleanRoot.SetActive(false);
+            rowMissions = MakeRow(card, 540f, -534f, 410f, HudBuilder.T.iconHeart, MissionStrings.SummaryRow);
 
             Text starLabel = HudBuilder.AddText(card, "StarsLabel", Strings.SumStars, 30, TextAnchor.MiddleLeft, HudBuilder.Ink, false, false);
             HudBuilder.SetFixed(starLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(548f, -340f), new Vector2(400f, 44f));
@@ -185,10 +187,25 @@ namespace Cafe
             for (int i = 0; i < starIcons.Length; i++)
                 starIcons[i].color = i < s.stars ? Color.white : new Color(0.35f, 0.28f, 0.24f, 0.4f);
 
+            ShowMissions();
+
             root.SetActive(true);
             popTimer = 0f;
             card.localScale = new Vector3(0.9f, 0.9f, 1f);
             dim.color = new Color(0f, 0f, 0f, 0f);
+        }
+
+        private void ShowMissions()
+        {
+            MissionBook book = game.Missions;
+            bool any = book != null && book.Items.Count > 0;
+            rowMissions.value.transform.parent.gameObject.SetActive(any);
+            if (!any) return;
+            int done = 0;
+            for (int i = 0; i < book.Items.Count; i++)
+                if (book.Items[i].IsDone) done++;
+            rowMissions.value.text = done + "/" + book.Items.Count + (book.HasClaimable ? MissionStrings.SummaryHasReward : "");
+            rowMissions.value.color = book.HasClaimable ? HudBuilder.Red : HudBuilder.GoodDark;
         }
 
         private static void SetMoney(Row row, int v, bool sign)

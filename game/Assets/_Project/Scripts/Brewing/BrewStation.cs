@@ -77,6 +77,11 @@ namespace Cafe
                 GameEvents.RaiseToast(Strings.HoldingDrink);
                 return false;
             }
+            if (o != null && o.IsClaimed)
+            {
+                GameEvents.RaiseToast(Strings.OrderTakenByBrewer);
+                return false;
+            }
             // Chọn đơn khi đang thử pha (chưa có nguyên liệu) = thoát chế độ thử
             if (Experiment) LeaveExperiment();
             Selected = o;
@@ -370,7 +375,7 @@ namespace Cafe
         {
             if (State != Phase.Ready || c == null) return false;
             Order o = c.CurrentOrder;
-            if (o == null || o.recipe != Recipe) return false;
+            if (o == null || o.recipe != Recipe || o.IsClaimed) return false; // đơn Pha chế đang làm thì không giao ly này
             if (!c.Serve(HeldQuality)) return false;
             State = Phase.Idle;
             Recipe = null;

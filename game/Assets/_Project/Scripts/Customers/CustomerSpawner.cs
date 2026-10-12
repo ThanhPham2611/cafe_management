@@ -60,6 +60,7 @@ namespace Cafe
         {
             curDay = day;
             curStars = stars;
+            game.TopUpCups();
             int count = TargetCount(seatCount);
 
             schedule = new float[count];
@@ -77,6 +78,7 @@ namespace Cafe
         /// Gọi khi bố cục quán đổi giữa ngày: tính lại số khách còn lại theo ghế + đồ hút khách mới.
         public void RefreshDemand()
         {
+            if (game != null) game.TopUpCups(); // mua thêm ghế giữa ngày => thêm ly ngay
             if (game == null || game.Day == null || game.Grid == null || curDay <= 0) return;
             if (game.Day.CurrentPhase != DayCycle.Phase.Open) return;
 
