@@ -20,6 +20,9 @@ namespace Cafe
     ///   -autodecor3           như -autodecor nhưng ở nhà hàng (cấp 3): mua và đặt bộ nội thất cấp 3 rồi chụp màn hình
     ///   -nomachines           bot không mua máy móc cấp 3 (đối chứng)
     ///   -t3xu <n>             (chỉ bản Development) cộng thêm n Xu ngay sau khi mua nhà hàng (thử máy móc / nội thất)
+    ///   -gfxcycle             đổi mức đồ họa giữa chừng (Vừa -> Thấp -> Cao) và chụp từng mức, không lưu lựa chọn
+    ///   -shotsettings         mở bảng Cài đặt đồ họa rồi chụp màn hình (cần -autoshot)
+    ///   -gfx low|medium|high  ép mức đồ họa (bản Development); log "[Gfx]" cho biết mức đang dùng
     ///   -cleaners <n>         số nhân viên Dọn dẹp bot thuê (mặc định = tối đa của cấp)
     ///   -fullstaff            thuê đủ nhân viên của cấp ngay khi đủ tiền tuyển (không chờ đủ ghế / quỹ dự phòng)
     ///   -days <n>             chơi n ngày rồi thoát (mặc định 1; 4 khi có -autoupgrade). Cuối ngày in "[AutoPilot] TIER=<n>"
@@ -30,7 +33,7 @@ namespace Cafe
         bool autoplay;
         bool autoshop;
         bool autorecipes;
-        bool cheatXu, cheatRp, autoUpgrade, autoUpgrade3, cheatT3, fullStaff, noMachines, autoDecor3, autoStaff, noBrewer, autoBuy, autoHidden, upgradeStaff, perf, autoDecor;
+        bool cheatXu, cheatRp, autoUpgrade, autoUpgrade3, cheatT3, fullStaff, noMachines, gfxCycle, shotSettings, autoDecor3, autoStaff, noBrewer, autoBuy, autoHidden, upgradeStaff, perf, autoDecor;
         int cleanerLimit = 99;
         int t3ExtraXu;
         int targetDays = 1;
@@ -80,6 +83,8 @@ namespace Cafe
             p.cheatT3 = Has(args, "-cheatt3") && Debug.isDebugBuild;
             p.fullStaff = Has(args, "-fullstaff");
             p.noMachines = Has(args, "-nomachines");
+            p.shotSettings = Has(args, "-shotsettings");
+            p.gfxCycle = Has(args, "-gfxcycle");
             p.autoDecor3 = Has(args, "-autodecor3");
             string tx = Arg(args, "-t3xu");
             int txn;
@@ -129,6 +134,8 @@ namespace Cafe
             if (autoHidden) StartCoroutine(HiddenMenuLoop());
             if (perf) DebugPerfProbe.Attach();
             if (autoDecor) StartCoroutine(DecorTest());
+            if (shotSettings) StartCoroutine(SettingsShot());
+            if (gfxCycle) StartCoroutine(GfxCycle());
             StartCoroutine(StatsLoop());
         }
 
@@ -653,6 +660,41 @@ namespace Cafe
                 Shot("staffpanel");
                 g.Hud.DebugToggleStaffPanel();
             }
+        }
+
+        /// -gfxcycle: sau khi vào ngày, đổi mức đồ họa Vừa -> Thấp -> Cao ngay trong lúc chơi (mỗi mức 12 giây thực) và chụp từng mức.
+        IEnumerator GfxCycle()
+        {
+            GameBootstrap g = null;
+            while (g == null || g.Day == null || g.Day.CurrentPhase != DayCycle.Phase.Open)
+            {
+                yield return new WaitForSecondsRealtime(1f);
+                g = GameBootstrap.Instance;
+            }
+            foreach (GraphicsLevel level in new[] { GraphicsLevel.Medium, GraphicsLevel.Low, GraphicsLevel.High })
+            {
+                yield return new WaitForSecondsRealtime(8f);
+                GraphicsQuality.DebugApply(level);
+                yield return new WaitForSecondsRealtime(4f);
+                if (shotDir != null) Shot("gfx_" + level);
+            }
+        }
+
+        /// -shotsettings: mở bảng Cài đặt đồ họa và chụp màn hình (cần -autoshot).
+        IEnumerator SettingsShot()
+        {
+            GameBootstrap g = null;
+            while (g == null || g.Hud == null || g.Day == null || g.Day.CurrentPhase == DayCycle.Phase.Idle)
+            {
+                yield return new WaitForSecondsRealtime(1f);
+                g = GameBootstrap.Instance;
+            }
+            yield return new WaitForSecondsRealtime(3f);
+            g.Hud.DebugOpenSettings(true);
+            yield return new WaitForSecondsRealtime(1.5f);
+            if (shotDir != null) Shot("settings");
+            yield return new WaitForSecondsRealtime(1f);
+            g.Hud.DebugOpenSettings(false);
         }
 
         /// -autohidden: người chơi biết khám phá món ẩn — sang ngày thứ 2 của cấp 2 mở Cà phê muối + cốt dừa

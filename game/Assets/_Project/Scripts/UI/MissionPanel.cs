@@ -48,7 +48,7 @@ namespace Cafe
             HudBuilder.SetFixed(dotImg.rectTransform, new Vector2(1f, 1f), new Vector2(0.5f, 0.5f), new Vector2(-6f, -6f), new Vector2(32f, 32f));
             dot = dotImg.gameObject;
 
-            Image dim = HudBuilder.Img(overlayParent, "MissionBook", HudBuilder.T.dim, new Color(0f, 0f, 0f, 0.62f), false, true);
+            Image dim = HudBuilder.Dim(overlayParent, "MissionBook", 0.62f);
             HudBuilder.Stretch(dim.rectTransform);
             root = dim.gameObject;
             Image card = HudBuilder.Panel(dim.transform, "Card", true);

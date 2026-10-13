@@ -173,6 +173,14 @@ namespace Cafe
             return img;
         }
 
+        /// Lớp phủ tối toàn màn hình sau hộp thoại. Img() ép màu trắng khi có sprite nên phải gán màu sau (bản cũ để lộ nền trắng).
+        public static Image Dim(Transform parent, string name, float alpha)
+        {
+            Image dim = Img(parent, name, T.dim, new Color(0f, 0f, 0f, alpha), false, true);
+            dim.color = new Color(0f, 0f, 0f, alpha);
+            return dim;
+        }
+
         /// Icon vuông: không có sprite thì ẩn.
         public static Image Icon(Transform parent, string name, Sprite sprite, float size)
         {
@@ -279,6 +287,7 @@ namespace Cafe
                 var o = rt.gameObject.AddComponent<Outline>();
                 o.effectColor = OutlineColor;
                 o.effectDistance = new Vector2(2f, -2f);
+                o.enabled = GraphicsQuality.UiOutlines; // mức Thấp bỏ viền chữ (nhân bốn số đỉnh chữ)
             }
             return t;
         }

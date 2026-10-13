@@ -21,7 +21,7 @@ namespace Cafe
         public StoryDialog(GameBootstrap game, Transform parent)
         {
             this.game = game;
-            Image dim = HudBuilder.Img(parent, "StoryDialog", HudBuilder.T.dim, new Color(0f, 0f, 0f, 0.72f), false, true);
+            Image dim = HudBuilder.Dim(parent, "StoryDialog", 0.72f);
             HudBuilder.Stretch(dim.rectTransform);
             root = dim.gameObject;
 

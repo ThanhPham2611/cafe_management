@@ -22,52 +22,88 @@ namespace Cafe.EditorTools
     }
 
 #if CAFE_URP
-    /// Tạo URP asset cho mobile theo art_bible §6: 1 cascade, shadow 18 m / 1024, không HDR/MSAA,
-    /// không depth/opaque texture, SRP Batcher bật.
+    /// Tạo 3 URP asset cho mobile theo art_bible §6 — mỗi mức đồ họa một asset (runtime chọn bằng QualitySettings, xem GraphicsQuality):
+    ///   Thấp  URP_Mobile_Low    : không bóng, độ nét 70%, không MSAA
+    ///   Vừa   URP_Mobile_Medium : bóng cứng 512 (18 -> 14 m), độ nét 85%
+    ///   Cao   URP_Mobile        : bóng mềm 1024, độ nét 100%, MSAA 2x
+    /// Chung: 1 cascade, không HDR, không depth/opaque texture, SRP Batcher bật, tắt đèn phụ. Mức chất lượng i của Unity = GraphicsLevel i
+    /// (ProjectSettings/QualitySettings có đúng 3 mức Low / Medium / High).
     public static class UrpSetup
     {
         const string Dir = "Assets/_Project/Settings";
-        const string AssetPath = Dir + "/URP_Mobile.asset";
         const string RendererPath = Dir + "/URP_Mobile_Renderer.asset";
+
+        struct Preset
+        {
+            public string path;
+            public bool shadows, soft;
+            public int shadowRes, msaa;
+            public float shadowDistance, renderScale;
+        }
+
+        static readonly Preset[] Presets =
+        {
+            new Preset { path = Dir + "/URP_Mobile_Low.asset", shadows = false, soft = false, shadowRes = 512, msaa = 1, shadowDistance = 14f, renderScale = 0.7f },
+            new Preset { path = Dir + "/URP_Mobile_Medium.asset", shadows = true, soft = false, shadowRes = 512, msaa = 1, shadowDistance = 14f, renderScale = 0.85f },
+            new Preset { path = Dir + "/URP_Mobile.asset", shadows = true, soft = true, shadowRes = 1024, msaa = 2, shadowDistance = 18f, renderScale = 1f },
+        };
 
         public static void Ensure()
         {
-            var rp = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(AssetPath);
-            if (rp == null)
+            var assets = new UniversalRenderPipelineAsset[Presets.Length];
+            for (int i = 0; i < Presets.Length; i++)
             {
-                Directory.CreateDirectory(Dir);
-                var rendererData = ScriptableObject.CreateInstance<UniversalRendererData>();
-                AssetDatabase.CreateAsset(rendererData, RendererPath);
-                rp = UniversalRenderPipelineAsset.Create(rendererData);
-                AssetDatabase.CreateAsset(rp, AssetPath);
+                assets[i] = LoadOrCreate(Presets[i].path);
+                Configure(assets[i], Presets[i]);
             }
 
+            GraphicsSettings.defaultRenderPipeline = assets[assets.Length - 1]; // Cao
+            int current = QualitySettings.GetQualityLevel();
+            int levels = Mathf.Min(QualitySettings.names.Length, assets.Length);
+            for (int i = 0; i < levels; i++)
+            {
+                QualitySettings.SetQualityLevel(i, false);
+                QualitySettings.renderPipeline = assets[i];
+            }
+            QualitySettings.SetQualityLevel(Mathf.Clamp(current, 0, levels - 1), false);
+            AssetDatabase.SaveAssets();
+            Debug.Log("[Cafe] URP Thấp / Vừa / Cao đã gán cho 3 mức chất lượng (Low / Medium / High).");
+        }
+
+        static UniversalRenderPipelineAsset LoadOrCreate(string path)
+        {
+            var rp = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(path);
+            if (rp != null) return rp;
+            Directory.CreateDirectory(Dir);
+            var rendererData = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(RendererPath);
+            if (rendererData == null)
+            {
+                rendererData = ScriptableObject.CreateInstance<UniversalRendererData>();
+                AssetDatabase.CreateAsset(rendererData, RendererPath);
+            }
+            rp = UniversalRenderPipelineAsset.Create(rendererData);
+            AssetDatabase.CreateAsset(rp, path);
+            return rp;
+        }
+
+        static void Configure(UniversalRenderPipelineAsset rp, Preset p)
+        {
             // Set qua SerializedObject để không phụ thuộc setter public của từng phiên bản URP
             var so = new SerializedObject(rp);
-            SetFloat(so, "m_ShadowDistance", 18f);
+            SetFloat(so, "m_ShadowDistance", p.shadowDistance);
             SetInt(so, "m_ShadowCascadeCount", 1);
-            SetInt(so, "m_MainLightShadowmapResolution", 1024);
-            SetBool(so, "m_MainLightShadowsSupported", true);
-            SetBool(so, "m_SoftShadowsSupported", true);
-            SetInt(so, "m_MSAA", 1);
+            SetInt(so, "m_MainLightShadowmapResolution", p.shadowRes);
+            SetBool(so, "m_MainLightShadowsSupported", p.shadows);
+            SetBool(so, "m_AnyShadowsSupported", p.shadows);
+            SetBool(so, "m_SoftShadowsSupported", p.soft);
+            SetInt(so, "m_MSAA", p.msaa);
             SetBool(so, "m_SupportsHDR", false);
-            SetFloat(so, "m_RenderScale", 1f);
+            SetFloat(so, "m_RenderScale", p.renderScale);
             SetBool(so, "m_RequireDepthTexture", false);
             SetBool(so, "m_RequireOpaqueTexture", false);
             SetBool(so, "m_UseSRPBatcher", true);
             SetInt(so, "m_AdditionalLightsRenderingMode", 0); // tắt đèn phụ (fake bằng emission)
             so.ApplyModifiedPropertiesWithoutUndo();
-
-            GraphicsSettings.defaultRenderPipeline = rp;
-            int current = QualitySettings.GetQualityLevel();
-            for (int i = 0; i < QualitySettings.names.Length; i++)
-            {
-                QualitySettings.SetQualityLevel(i, false);
-                QualitySettings.renderPipeline = rp;
-            }
-            QualitySettings.SetQualityLevel(current, false);
-            AssetDatabase.SaveAssets();
-            Debug.Log("[Cafe] URP_Mobile đã gán cho Graphics + mọi Quality level.");
         }
 
         static void SetFloat(SerializedObject so, string name, float v)

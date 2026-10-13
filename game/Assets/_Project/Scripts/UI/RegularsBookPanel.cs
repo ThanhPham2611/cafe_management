@@ -20,8 +20,7 @@ namespace Cafe
             HudBuilder.SetFixed((RectTransform)button.transform, new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-24f, -366f), new Vector2(230f, 86f)); // cột phải, tránh khay nguyên liệu ở đáy
 
-            Image dim = HudBuilder.Img(overlayParent, "RegularsBook", HudBuilder.T.dim,
-                new Color(0f, 0f, 0f, 0.62f), false, true);
+            Image dim = HudBuilder.Dim(overlayParent, "RegularsBook", 0.62f);
             HudBuilder.Stretch(dim.rectTransform);
             root = dim.gameObject;
             Image card = HudBuilder.Panel(dim.transform, "Card", true);

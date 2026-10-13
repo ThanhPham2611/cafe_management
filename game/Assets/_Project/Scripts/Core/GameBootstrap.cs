@@ -94,11 +94,9 @@ namespace Cafe
         private void Awake()
         {
             Instance = this;
-#if UNITY_ANDROID || UNITY_IOS
-            // Mục tiêu 60 FPS (plan §4). ProjectSetup chỉ đặt trong Editor nên bản build trước đó chạy theo mặc định của máy.
-            QualitySettings.vSyncCount = 0;
-            Application.targetFrameRate = 60;
-#endif
+            // Mức đồ họa (Thấp / Vừa / Cao): người chơi chọn trong Cài đặt, lần đầu tự chọn theo máy. Trên điện thoại đặt luôn
+            // giới hạn FPS (30 cho mức Thấp, 60 cho còn lại; plan §4); trên máy tính không giới hạn để đo hiệu năng.
+            GraphicsQuality.Init();
         }
 
         private void Start()

@@ -236,6 +236,21 @@ Quy tắc:
 - Target: 30 fps ổn định (60 fps cho máy mạnh), nhiệt độ thấp, RAM < 1.2 GB.
 - Texture: chỉ 2 texture world (`T_Palette_256`, `T_Decal_Atlas_512`) + UI atlas.
 
+### 6.3 Ba mức đồ họa (Thấp / Vừa / Cao)
+
+Người chơi chọn trong **Cài đặt đồ họa** (nút "ĐỒ HỌA" ở cột phải HUD); đổi có hiệu lực ngay và được nhớ theo máy (PlayerPrefs `cafe.graphics`, không đi theo save game). Lần chạy đầu tự chọn theo cấu hình máy (`GraphicsPresets.Recommend`): máy tính = Cao; điện thoại RAM ≤ 3,2 GB hoặc ≤ 4 nhân = Thấp, RAM ≥ 5,5 GB và ≥ 8 nhân = Cao, còn lại = Vừa.
+
+| | **Thấp** (máy yếu) | **Vừa** | **Cao** |
+|---|---|---|---|
+| URP asset | `URP_Mobile_Low` | `URP_Mobile_Medium` | `URP_Mobile` |
+| Bóng đổ | **tắt** (không có lượt vẽ bóng) | cứng, bản đồ bóng 512, tới 14 m | mềm, bản đồ bóng 1024, tới 18 m |
+| Độ nét (render scale) | 70% (≈ 49% số điểm ảnh) | 85% (≈ 72%) | 100% |
+| Khử răng cưa | không | không | MSAA 2x |
+| FPS tối đa trên điện thoại | **30** | 60 | 60 |
+| Viền chữ UI (Outline) | tắt | bật | bật |
+
+Mỗi mức = một mức chất lượng của Unity (`ProjectSettings/QualitySettings` có đúng 3 mức Low / Medium / High) trỏ tới URP asset riêng; `UrpSetup.Ensure` (menu Cafe) tạo lại 3 asset nếu mất. UI (Screen Space Overlay) luôn vẽ ở độ phân giải gốc nên chữ vẫn nét khi giảm độ nét cảnh 3D. Thêm cờ chạy thử: `-gfx low|medium|high` (bản Development).
+
 ---
 
 ## 7. Quy ước đặt tên
