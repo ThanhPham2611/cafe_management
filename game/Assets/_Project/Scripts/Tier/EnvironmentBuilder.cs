@@ -3,9 +3,9 @@ using UnityEngine.Rendering;
 
 namespace Cafe
 {
-    /// Dựng phòng thuê cấp 2 (nhà ống ~6 x 8 m) hoàn toàn bằng code từ các khối palette, không cần import gì:
+    /// Dựng phòng của quán cấp 2 (nhà ống ~6 x 8 m) và cấp 3 (nhà hàng ~10 x 12 m) hoàn toàn bằng code từ các khối palette, không cần import gì:
     ///  - sàn gạch bông (mỗi ô 0.5 m: nền kem + hoa văn hình thoi + chấm góc), tường kem + chân tường xanh bạc hà,
-    ///  - tường sau, 2 tường hông, mặt tiền thấp có khung cửa, mái hiên sọc trên cửa, vỉa hè + lòng đường phía trước,
+    ///  - tường sau, 2 tường hông, mặt tiền thấp có khung cửa, vỉa hè + lòng đường phía trước,
     ///  - KHÔNG có trần (camera nhìn từ trên xuống). Tường không có collider (không chắn chạm / không ảnh hưởng NavMesh);
     ///    NavMesh bị chặn ở tường vì sàn chỉ tồn tại trong phòng, ở ngưỡng cửa và ở vỉa hè.
     ///  - Collider "Ground" (BoxCollider) cho NavMesh + raycast chạm.
@@ -14,35 +14,42 @@ namespace Cafe
     {
         private const float Cell = GameBalance.CellSize;
 
-        /// Dựng phòng, trả về root "Room_T2" (con của parent nếu có). mat = GameBootstrap.toonMaterial.
-        public static GameObject BuildRoom(Material mat, Transform parent)
+        /// Dựng phòng theo RoomSpec của cấp, trả về root "Room_T{cấp}" (con của parent nếu có). mat = GameBootstrap.toonMaterial.
+        public static GameObject BuildRoom(Material mat, Transform parent, RoomSpec r)
         {
-            var root = new GameObject("Room_T2");
+            var root = new GameObject("Room_T" + r.Tier);
             if (parent != null) root.transform.SetParent(parent, false);
             Transform rt = root.transform;
 
-            BuildInteriorFloor(rt, mat);
-            BuildStreet(rt, mat);
-            BuildColliders(rt);
-            BuildWalls(rt, mat);
-            // Mái hiên bỏ: ở độ cao 2,9 m, camera nhìn chếch xuống thấy nó nằm giữa phòng và che khách.
-            // BuildAwning(rt, mat);
-            BuildDetails(rt, mat);
+            BuildInteriorFloor(rt, mat, r);
+            BuildStreet(rt, mat, r);
+            BuildColliders(rt, r);
+            BuildWalls(rt, mat, r);
+            BuildDetails(rt, mat, r);
             return root;
         }
 
         // ------------------------------------------------------------------ sàn
 
-        private static void BuildInteriorFloor(Transform root, Material mat)
+        private static void BuildInteriorFloor(Transform root, Material mat, RoomSpec r)
         {
-            Vector3 o = RoomLayout.GridOrigin;
             var b = new PaletteMeshBuilder();
-            b.AddUpQuad(0f, 0f, 0.001f, RoomLayout.Width, RoomLayout.Depth, TierConfig.CellGrout);
+            b.AddUpQuad(0f, 0f, 0.001f, r.Width, r.Depth, TierConfig.CellGrout);
+            if (r.Tier >= 3) AddParquet(b, r);
+            else AddEncausticTiles(b, r);
+            Mesh mesh = b.ToMesh("SM_Room_Floor", true);
+            GameObject floor = PaletteBox.MakeFromMesh("Floor", mesh, mat, root, Vector3.zero);
+            floor.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+        }
 
+        /// Cấp 2: gạch bông 0,5 m (nền kem + hoa văn hình thoi + chấm góc).
+        private static void AddEncausticTiles(PaletteMeshBuilder b, RoomSpec r)
+        {
+            Vector3 o = r.GridOrigin;
             float corner = Cell * 0.5f - 0.07f;
-            for (int i = 0; i < RoomLayout.GridSize.x; i++)
+            for (int i = 0; i < r.GridSize.x; i++)
             {
-                for (int j = 0; j < RoomLayout.GridSize.y; j++)
+                for (int j = 0; j < r.GridSize.y; j++)
                 {
                     float cx = o.x + (i + 0.5f) * Cell;
                     float cz = o.z + (j + 0.5f) * Cell;
@@ -59,19 +66,36 @@ namespace Cafe
                     b.AddUpQuad(cx + corner, cz + corner, 0.005f, 0.08f, 0.08f, dots);
                 }
             }
-            Mesh mesh = b.ToMesh("SM_Room_Floor", true);
-            GameObject floor = PaletteBox.MakeFromMesh("Floor", mesh, mat, root, Vector3.zero);
-            floor.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+        }
+
+        /// Cấp 3: sàn gỗ ghép thanh sáng màu (thanh rộng 25 cm, dài 2 m, lệch hàng) — êm mắt hơn gạch bông để nội thất nổi bật.
+        private static void AddParquet(PaletteMeshBuilder b, RoomSpec r)
+        {
+            const float plank = 0.25f, gap = 0.012f, length = 2f;
+            int[] tones = { TierConfig.CellWoodWhite, TierConfig.CellWoodLight, TierConfig.CellWoodWhite, TierConfig.CellCream, TierConfig.CellWoodLight };
+            int cols = Mathf.RoundToInt(r.Width / plank);
+            float z0 = -r.Depth * 0.5f, z1 = r.Depth * 0.5f;
+            for (int i = 0; i < cols; i++)
+            {
+                float x = -r.Width * 0.5f + (i + 0.5f) * plank;
+                float z = z0 - (i % 3) * (length / 3f);
+                for (int n = 0; z < z1; n++, z += length)
+                {
+                    float a = Mathf.Max(z, z0), e = Mathf.Min(z + length, z1);
+                    if (e - a < 0.05f) continue;
+                    b.AddUpQuad(x, (a + e) * 0.5f, 0.003f, plank - gap, e - a - gap, tones[(i * 7 + n * 3) % tones.Length]);
+                }
+            }
         }
 
         // ------------------------------------------------------------------ vỉa hè, lòng đường
 
-        private static void BuildStreet(Transform root, Material mat)
+        private static void BuildStreet(Transform root, Material mat, RoomSpec r)
         {
-            float zFront = RoomLayout.FrontWallOuterZ;
+            float zFront = r.FrontWallOuterZ;
             float sd = RoomLayout.SidewalkDepth;
             float hw = RoomLayout.SidewalkHalfWidthVisual;
-            float swMid = RoomLayout.SidewalkMidZ;
+            float swMid = r.SidewalkMidZ;
 
             // Vỉa hè: nền vữa + tấm lát 1 m
             var s = new PaletteMeshBuilder();
@@ -92,32 +116,32 @@ namespace Cafe
             sw.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
 
             // Bó vỉa, lòng đường (+ vạch), nền xa
-            var r = new PaletteMeshBuilder();
+            var road = new PaletteMeshBuilder();
             float curbZ = zFront - sd - 0.1f;
-            r.AddBox(new Vector3(0f, -0.03f, curbZ), new Vector3(hw * 2f, 0.06f, 0.2f), TierConfig.CellGrout);
+            road.AddBox(new Vector3(0f, -0.03f, curbZ), new Vector3(hw * 2f, 0.06f, 0.2f), TierConfig.CellGrout);
             float roadD = 5.2f;
             float roadZ = curbZ - 0.1f - roadD * 0.5f;
-            r.AddBox(new Vector3(0f, -0.15f, roadZ), new Vector3(hw * 2f, 0.1f, roadD), TierConfig.CellRoad);
+            road.AddBox(new Vector3(0f, -0.15f, roadZ), new Vector3(hw * 2f, 0.1f, roadD), TierConfig.CellRoad);
             for (float x = -14f; x <= 14f; x += 3f)
-                r.AddBox(new Vector3(x, -0.098f, roadZ), new Vector3(1.4f, 0.01f, 0.12f), TierConfig.CellRoadLine);
-            r.AddBox(new Vector3(0f, -0.22f, 0f), new Vector3(80f, 0.2f, 80f), 39); // nền xa (rêu), ngay dưới mặt đường
-            GameObject street = PaletteBox.MakeFromMesh("Street", r.ToMesh("SM_Room_Street", true), mat, root, Vector3.zero);
+                road.AddBox(new Vector3(x, -0.098f, roadZ), new Vector3(1.4f, 0.01f, 0.12f), TierConfig.CellRoadLine);
+            road.AddBox(new Vector3(0f, -0.22f, 0f), new Vector3(80f, 0.2f, 80f), 39); // nền xa (rêu), ngay dưới mặt đường
+            GameObject street = PaletteBox.MakeFromMesh("Street", road.ToMesh("SM_Room_Street", true), mat, root, Vector3.zero);
             street.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
         }
 
         // ------------------------------------------------------------------ collider
 
-        private static void BuildColliders(Transform root)
+        private static void BuildColliders(Transform root, RoomSpec r)
         {
-            float zFront = RoomLayout.FrontWallOuterZ;
+            float zFront = r.FrontWallOuterZ;
             // Sàn trong nhà (NavMesh + chạm). Mặt trên ở y = 0.
-            AddCollider(root, "Ground", new Vector3(0f, -0.05f, 0f), new Vector3(RoomLayout.Width, 0.1f, RoomLayout.Depth));
+            AddCollider(root, "Ground", new Vector3(0f, -0.05f, 0f), new Vector3(r.Width, 0.1f, r.Depth));
             // Ngưỡng cửa nối sàn trong nhà với vỉa hè (chồng lên 2 bên một chút để NavMesh liền mạch)
-            AddCollider(root, "Ground_Door", new Vector3(RoomLayout.DoorCenterX, -0.05f, (zFront + RoomLayout.InteriorFrontZ) * 0.5f),
-                new Vector3(RoomLayout.DoorHalfWidth * 2f, 0.1f, RoomLayout.WallThickness + 0.1f));
+            AddCollider(root, "Ground_Door", new Vector3(RoomLayout.DoorCenterX, -0.05f, (zFront + r.InteriorFrontZ) * 0.5f),
+                new Vector3(r.DoorHalfWidth * 2f, 0.1f, RoomLayout.WallThickness + 0.1f));
             // Vỉa hè
-            AddCollider(root, "Ground_Sidewalk", new Vector3(0f, -0.05f, RoomLayout.SidewalkMidZ),
-                new Vector3(RoomLayout.SidewalkHalfWidthCollider * 2f, 0.1f, RoomLayout.SidewalkDepth));
+            AddCollider(root, "Ground_Sidewalk", new Vector3(0f, -0.05f, r.SidewalkMidZ),
+                new Vector3(r.SidewalkHalfWidthCollider * 2f, 0.1f, RoomLayout.SidewalkDepth));
         }
 
         private static void AddCollider(Transform root, string name, Vector3 center, Vector3 size)
@@ -130,20 +154,20 @@ namespace Cafe
 
         // ------------------------------------------------------------------ tường
 
-        private static void BuildWalls(Transform root, Material mat)
+        private static void BuildWalls(Transform root, Material mat, RoomSpec r)
         {
-            float hw = RoomLayout.Width * 0.5f;
-            float hd = RoomLayout.Depth * 0.5f;
+            float hw = r.Width * 0.5f;
+            float hd = r.Depth * 0.5f;
             float t = RoomLayout.WallThickness;
 
-            MakeWall(root, mat, "Wall_Back", new Vector3(0f, 0f, hd + t * 0.5f), true, RoomLayout.Width, Vector3.forward, false, false, true);
-            MakeWall(root, mat, "Wall_Front", new Vector3(0f, 0f, -(hd + t * 0.5f)), true, RoomLayout.Width, Vector3.back, true, false, false);
-            MakeWall(root, mat, "Wall_Left", new Vector3(-(hw + t * 0.5f), 0f, 0f), false, RoomLayout.Depth + 2f * t, Vector3.left, false, true, false);
-            MakeWall(root, mat, "Wall_Right", new Vector3(hw + t * 0.5f, 0f, 0f), false, RoomLayout.Depth + 2f * t, Vector3.right, false, true, false);
+            MakeWall(root, mat, r, "Wall_Back", new Vector3(0f, 0f, hd + t * 0.5f), true, r.Width, Vector3.forward, false, false, true);
+            MakeWall(root, mat, r, "Wall_Front", new Vector3(0f, 0f, -(hd + t * 0.5f)), true, r.Width, Vector3.back, true, false, false);
+            MakeWall(root, mat, r, "Wall_Left", new Vector3(-(hw + t * 0.5f), 0f, 0f), false, r.Depth + 2f * t, Vector3.left, false, true, false);
+            MakeWall(root, mat, r, "Wall_Right", new Vector3(hw + t * 0.5f, 0f, 0f), false, r.Depth + 2f * t, Vector3.right, false, true, false);
         }
 
         /// center: tâm đáy tường (y = 0). alongX: tường chạy dọc trục X (tường trước/sau) hay Z (tường hông).
-        private static void MakeWall(Transform root, Material mat, string name, Vector3 center, bool alongX, float length,
+        private static void MakeWall(Transform root, Material mat, RoomSpec r, string name, Vector3 center, bool alongX, float length,
                                      Vector3 outward, bool withDoor, bool windows, bool pictures)
         {
             var go = new GameObject(name);
@@ -164,7 +188,7 @@ namespace Cafe
 
             // đoạn tường (theo trục s); cửa cắt tường trước làm đôi
             float half = length * 0.5f;
-            float dc = RoomLayout.DoorCenterX, dh = RoomLayout.DoorHalfWidth;
+            float dc = RoomLayout.DoorCenterX, dh = r.DoorHalfWidth;
             if (withDoor)
             {
                 AddWallSegment(lower, upper, alongX, -half, dc - dh, t, lowH, capH, upH);
@@ -189,13 +213,14 @@ namespace Cafe
 
             if (windows)
             {
-                AddWindow(upper, alongX, -1.5f, 1.85f - upBase, inward, t);
-                AddWindow(upper, alongX, 1.5f, 1.85f - upBase, inward, t);
+                foreach (float s in Spots(r, length, 3.0f, 1.5f))
+                    AddWindow(upper, alongX, s, 1.85f - upBase, inward, t);
             }
             if (pictures)
             {
-                AddPicture(upper, alongX, -2.2f, 2.3f - upBase, inward, t, 13);
-                AddPicture(upper, alongX, 2.2f, 2.3f - upBase, inward, t, 37);
+                int i = 0;
+                foreach (float s in Spots(r, length, 3.4f, 2.2f))
+                    AddPicture(upper, alongX, s, 2.3f - upBase, inward, t, (i++ & 1) == 0 ? 13 : 37);
             }
 
             GameObject lo = PaletteBox.MakeFromMesh("Lower", lower.ToMesh("SM_" + name + "_Lower", true), mat, go.transform, Vector3.zero);
@@ -232,6 +257,19 @@ namespace Cafe
             upper.AddBox(Item(alongX, s, yLocal, inward, t * 0.5f + 0.025f), Size(alongX, 0.44f, 0.32f, 0.05f), swatch);
         }
 
+        /// Vị trí chi tiết dọc tường (cửa sổ, tranh). Cấp 2: hai điểm ±fixedHalf; cấp 3: chia đều theo khoảng spacing.
+        private static System.Collections.Generic.IEnumerable<float> Spots(RoomSpec r, float length, float spacing, float fixedHalf)
+        {
+            if (r.Tier < 3)
+            {
+                yield return -fixedHalf;
+                yield return fixedHalf;
+                yield break;
+            }
+            int n = Mathf.Max(2, Mathf.FloorToInt(length / spacing));
+            for (int i = 0; i < n; i++) yield return (i + 0.5f) * length / n - length * 0.5f;
+        }
+
         /// Vị trí trong toạ độ local của tường: s dọc theo tường, y độ cao.
         private static Vector3 Pos(bool alongX, float s, float y)
         {
@@ -249,39 +287,16 @@ namespace Cafe
             return Pos(alongX, s, y) + inward * offsetFromCenter;
         }
 
-        // ------------------------------------------------------------------ mái hiên + chi tiết
+        // ------------------------------------------------------------------ chi tiết
 
-        private static void BuildAwning(Transform root, Material mat)
-        {
-            // Mái hiên sọc đỏ-trắng chìa ra vỉa hè ngay trên cửa (nhỏ và cao để không che bên trong khi nhìn từ camera)
-            var b = new PaletteMeshBuilder();
-            const int stripes = 6;
-            float width = 2.7f;
-            float sw = width / stripes;
-            float depth = 0.6f;
-            float y = 2.9f;
-            float zc = RoomLayout.FrontWallOuterZ - depth * 0.5f;
-            for (int i = 0; i < stripes; i++)
-            {
-                int swatch = (i & 1) == 0 ? TierConfig.CellAwningRed : TierConfig.CellAwningWhite;
-                float x = RoomLayout.DoorCenterX - width * 0.5f + (i + 0.5f) * sw;
-                b.AddBox(new Vector3(x, y, zc), new Vector3(sw, 0.05f, depth), swatch);
-                b.AddBox(new Vector3(x, y - 0.09f, RoomLayout.FrontWallOuterZ - depth + 0.02f), new Vector3(sw, 0.18f, 0.04f), swatch);
-            }
-            // hai thanh đỡ
-            b.AddBox(new Vector3(RoomLayout.DoorCenterX - width * 0.5f + 0.03f, y - 0.1f, zc), new Vector3(0.04f, 0.04f, depth), TierConfig.CellWoodDark);
-            b.AddBox(new Vector3(RoomLayout.DoorCenterX + width * 0.5f - 0.03f, y - 0.1f, zc), new Vector3(0.04f, 0.04f, depth), TierConfig.CellWoodDark);
-            PaletteBox.MakeFromMesh("Awning", b.ToMesh("SM_Room_Awning", true), mat, root, Vector3.zero);
-        }
-
-        private static void BuildDetails(Transform root, Material mat)
+        private static void BuildDetails(Transform root, Material mat, RoomSpec r)
         {
             // Thảm chùi chân ngay trong cửa (chỉ để nhìn, không collider)
             var b = new PaletteMeshBuilder();
-            b.AddBox(new Vector3(RoomLayout.DoorCenterX, 0.009f, RoomLayout.InteriorFrontZ + 0.35f), new Vector3(1.1f, 0.012f, 0.55f), TierConfig.CellDoorMat);
+            b.AddBox(new Vector3(RoomLayout.DoorCenterX, 0.009f, r.InteriorFrontZ + 0.35f), new Vector3(1.1f, 0.012f, 0.55f), TierConfig.CellDoorMat);
             // ngưỡng cửa gỗ
-            b.AddBox(new Vector3(RoomLayout.DoorCenterX, 0.004f, (RoomLayout.FrontWallOuterZ + RoomLayout.InteriorFrontZ) * 0.5f),
-                new Vector3(RoomLayout.DoorHalfWidth * 2f, 0.01f, RoomLayout.WallThickness), TierConfig.CellWoodMid);
+            b.AddBox(new Vector3(RoomLayout.DoorCenterX, 0.004f, (r.FrontWallOuterZ + r.InteriorFrontZ) * 0.5f),
+                new Vector3(r.DoorHalfWidth * 2f, 0.01f, RoomLayout.WallThickness), TierConfig.CellWoodMid);
             GameObject d = PaletteBox.MakeFromMesh("Details", b.ToMesh("SM_Room_Details", true), mat, root, Vector3.zero);
             d.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
         }

@@ -352,6 +352,7 @@ namespace Cafe
                 StepIconFallback.ApplyRecipe(cv.icon, r, false);
                 cv.name.text = Strings.FullName(r);
                 cv.sub.text = string.Format(RecipeStrings.RecipeCostFmt, r.price, r.ingredientCost);
+                if (!rb.MachineReady(r)) cv.sub.text = string.Format(RecipeStrings.NeedMachineFmt, MachineRules.DisplayName(r.requiredMachine));
                 cv.hint.gameObject.SetActive(false);
                 BindSteps(cv, r, true);
 

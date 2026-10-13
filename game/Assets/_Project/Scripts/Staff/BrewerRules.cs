@@ -13,10 +13,11 @@ namespace Cafe
         /// Cấp tối thiểu để pha 3★ (economy §2.3: nhân viên pha chế Lv ≥ 3 cho 3★ không tốn thêm thời gian).
         public const int ThreeStarLevel = 3;
 
-        public static float BrewSeconds(float recipeSeconds, int level)
+        /// machineFactor: hệ số của máy móc cấp 3 (MachineRules.BrewTimeFactor), 1 = không có máy.
+        public static float BrewSeconds(float recipeSeconds, int level, float machineFactor = 1f)
         {
             float factor = TimeFactors[Mathf.Clamp(level, 1, TimeFactors.Length) - 1];
-            return Mathf.Max(1f, recipeSeconds * factor);
+            return Mathf.Max(1f, recipeSeconds * factor * machineFactor);
         }
 
         /// 2★ khi đúng công thức; 3★ khi cấp đủ và dụng cụ cho phép (món ẩn cần dụng cụ cấp ≥ 2).

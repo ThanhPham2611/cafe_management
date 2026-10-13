@@ -127,6 +127,14 @@ namespace Cafe
         public const string TierConfirmTitle = "Thuê mặt bằng";
         public const string TierConfirmBodyFmt = "Đặt cọc {0} Xu, được hoàn lại khi mua nhà hàng.\nTiền thuê {1} Xu mỗi {2} ngày, tự trừ vào sáng đầu tuần.\nBàn ghế cũ được cất vào kho, bạn đặt lại tùy ý.";
         public const string TierYes = "Thuê ngay";
+        public const string Tier3CardTitle = "Mua nhà hàng";
+        public const string Tier3CtaTitle = "Mua nhà hàng!";
+        public const string Tier3CtaSubFmt = "Trả {0} Xu (đã hoàn cọc)";
+        public const string Tier3NeedFmt = "Cần đủ {0} Xu và {1} RP để mua nhà hàng";
+        public const string Tier3ConfirmTitle = "Mua nhà hàng";
+        public const string Tier3ConfirmBodyFmt = "Giá nhà {0} Xu, cọc {1} Xu được hoàn lại: bạn trả {2} Xu.\nKhông còn tiền thuê hàng tuần; chi phí vận hành {3} Xu mỗi ngày.\nBàn ghế cũ được cất vào kho; nhà hàng rộng hơn rất nhiều.";
+        public const string Tier3YesLabel = "Mua ngay";
+        public const string Tier3GrandOpening = "Nhà hàng!";
         public const string TierLater = "Để sau";
         public const string GrandOpening = "Khai trương!";
         public const string RentInfoFmt = "Thuê nhà: còn {0} ngày";

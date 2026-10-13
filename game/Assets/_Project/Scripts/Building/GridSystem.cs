@@ -55,6 +55,18 @@ namespace Cafe
             return def.overhead || (def.kind == FurnitureKind.Decor && def.footprint.x * def.footprint.y >= 9);
         }
 
+        /// Quán đang đặt máy có id này không (máy trong kho chưa đặt thì chưa có tác dụng).
+        public bool HasMachine(string machineId)
+        {
+            if (string.IsNullOrEmpty(machineId)) return false;
+            for (int i = 0; i < Placed.Count; i++)
+            {
+                FurnitureDef d = Placed[i].Def;
+                if (d != null && d.machineId == machineId) return true;
+            }
+            return false;
+        }
+
         public bool InBounds(Vector2Int c)
         {
             return c.x >= 0 && c.y >= 0 && c.x < Size.x && c.y < Size.y;

@@ -78,6 +78,11 @@ namespace Cafe
         public const int RentIntervalDays = 7;                // trừ thuê khi bộ đếm ngày chạm 7
         public const int Tier2DailyFixedCost = 150;           // điện nước + vận hành mỗi ngày (thay phí vỉa hè 60)
         public const float DebtRevenueShare = 0.30f;          // thiếu tiền thuê: trừ 30% doanh thu mỗi ngày vào nợ
+        // ---- Cấp 3: Mua nhà hàng (economy §3.1, §3.5) ----
+        public const int Tier3StarRP = 4000;                  // ★3
+        public const int Tier3Price = 250000;                 // cọc cấp 2 được hoàn: thực trả Tier3Price - cọc
+        public const int Tier3DailyFixedCost = 700;           // vận hành nhà hàng/ngày; hết tiền thuê
+
         public const float Tier2DemandMult = 1.5f;
         public const float Tier3DemandMult = 2.6f;
         public const float SeatTurnsTier2 = 4.5f;
@@ -93,6 +98,21 @@ namespace Cafe
         public const int StaffServerDailyWage = 350;
         public const int StaffBrewerDailyWage = 450;
         public const int StaffMaxLevel = 5;
+
+        /// Số nhân viên tối đa mỗi vai trò theo cấp quán (tổng cấp 2 = 2, cấp 3 = 8; economy §3.1 "4–10 NV" ở cấp 3).
+        /// Đo bằng autoplay ở cấp 2 (14–16 ghế, 9 ngày): người Dọn dẹp thứ hai và Pha chế đều KHÔNG tăng số khách (~40/ngày dù có hay
+        /// không) mà tốn thêm lương, nên cấp 2 chỉ 1 Dọn dẹp + 1 Phục vụ; người thứ hai và Pha chế mở từ cấp 3 (sảnh lớn, nhiều khách).
+        public static int StaffMaxCount(StaffRole role, int tier)
+        {
+            if (tier < 2) return 0;
+            bool restaurant = tier >= 3;
+            switch (role)
+            {
+                case StaffRole.Server: return restaurant ? 2 : 1;
+                case StaffRole.Brewer: return restaurant ? 3 : 0;
+                default: return restaurant ? 3 : 1;
+            }
+        }
 
         public static int StaffHireFee(StaffRole role)
         {
@@ -119,6 +139,23 @@ namespace Cafe
         {
             int level = Mathf.Clamp(currentLevel, 1, StaffMaxLevel - 1);
             return Mathf.RoundToInt(1000f * Mathf.Pow(2.5f, level - 1));
+        }
+
+        /// RP cần để mua cấp `toTier` (2 hoặc 3).
+        public static int UpgradeStarRP(int toTier)
+        {
+            return toTier >= 3 ? Tier3StarRP : Tier2StarRP;
+        }
+
+        /// Xu phải trả ngay khi lên cấp `toTier`: cấp 2 = tiền cọc; cấp 3 = giá nhà trừ cọc đã đặt (được hoàn).
+        public static int UpgradeCost(int toTier, int deposit)
+        {
+            return toTier >= 3 ? Mathf.Max(0, Tier3Price - Mathf.Max(0, deposit)) : Tier2Deposit;
+        }
+
+        public static int FixedCostFor(int tier)
+        {
+            return tier >= 3 ? Tier3DailyFixedCost : (tier == 2 ? Tier2DailyFixedCost : SidewalkFee);
         }
 
         // Hạng sao theo RP: ★1..★5
@@ -168,7 +205,7 @@ namespace Cafe
             return Mathf.RoundToInt(seats * turns * (1f + staffBonus * Mathf.Max(0, staffCount)));
         }
 
-        /// F_ref theo cấp (economy §4.1): T1 20, T2 60, T3 150.
+        /// F_ref theo cấp (economy §4.1): T1 20, T2 200, T3 400.
         public static float FRefFor(int tier)
         {
             return tier >= 3 ? FRefTier3 : (tier == 2 ? FRefTier2 : FRefTier1);

@@ -11,8 +11,9 @@ namespace Cafe
         private readonly Wallet wallet;
         private readonly RentLedger debtLedger;
         private readonly Func<int> tierProvider;
-        private readonly List<StaffSave> members = new List<StaffSave>(4);
-        private readonly List<StaffWorker> workers = new List<StaffWorker>(4);
+        private const int MaxTier = 3; // Load giữ tối đa theo cấp cao nhất: save cấp 2 có Pha chế cũ không bị mất
+        private readonly List<StaffSave> members = new List<StaffSave>(8);
+        private readonly List<StaffWorker> workers = new List<StaffWorker>(8);
         private GameBootstrap game;
 
         public event Action Changed;
@@ -47,12 +48,12 @@ namespace Cafe
                 for (int i = 0; i < saved.Length; i++)
                 {
                     StaffRole role;
-                    if (!StaffRoles.TryParse(saved[i].role, out role) || HasRole(role)) continue;
+                    if (!StaffRoles.TryParse(saved[i].role, out role) || CountOf(role) >= GameBalance.StaffMaxCount(role, MaxTier)) continue;
                     StaffSave item = saved[i];
                     item.role = StaffRoles.ToId(role);
                     item.preset = Mathf.Clamp(item.preset, 0, 3);
                     item.level = Mathf.Clamp(item.level, 1, 5);
-                    if (string.IsNullOrWhiteSpace(item.name)) item.name = StaffRoles.DefaultName(role);
+                    if (string.IsNullOrWhiteSpace(item.name)) item.name = StaffRoles.DefaultName(role, CountOf(role));
                     else item.name = item.name.Trim();
                     members.Add(item);
                 }
@@ -62,24 +63,49 @@ namespace Cafe
 
         public bool HasRole(StaffRole role)
         {
+            return CountOf(role) > 0;
+        }
+
+        public int CountOf(StaffRole role)
+        {
+            string id = StaffRoles.ToId(role);
+            int n = 0;
+            for (int i = 0; i < members.Count; i++)
+                if (members[i].role == id) n++;
+            return n;
+        }
+
+        /// Chỉ số (trong Members) của người thứ k (từ 0) của vai trò; -1 nếu chưa có.
+        public int IndexOf(StaffRole role, int k)
+        {
             string id = StaffRoles.ToId(role);
             for (int i = 0; i < members.Count; i++)
-                if (members[i].role == id) return true;
-            return false;
+            {
+                if (members[i].role != id) continue;
+                if (k-- == 0) return i;
+            }
+            return -1;
+        }
+
+        public bool CanHire(StaffRole role)
+        {
+            int tier = tierProvider();
+            return tier >= 2 && CountOf(role) < GameBalance.StaffMaxCount(role, tier);
         }
 
         public bool Hire(StaffRole role, int preset, string name)
         {
-            if (tierProvider() < 2 || HasRole(role)) return false;
+            if (!CanHire(role)) return false;
             int fee = GameBalance.StaffHireFee(role);
             if (wallet.Xu < fee) return false;
             wallet.Spend(fee);
+            int n = CountOf(role);
             members.Add(new StaffSave
             {
                 role = StaffRoles.ToId(role),
                 preset = Mathf.Clamp(preset, 0, 3),
                 level = 1,
-                name = string.IsNullOrWhiteSpace(name) ? StaffRoles.DefaultName(role) : name.Trim()
+                name = string.IsNullOrWhiteSpace(name) ? StaffRoles.DefaultName(role, n) : name.Trim()
             });
             RaiseChanged();
             return true;

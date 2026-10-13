@@ -16,6 +16,8 @@ namespace Cafe
         public const int CellRoad = 51;          // lòng đường (than)
         public const int CellWoodDark = 19;      // gỗ óc chó (khung, nẹp)
         public const int CellWoodMid = 18;       // gỗ trung
+        public const int CellWoodLight = 16;     // gỗ sáng (sàn gỗ nhà hàng)
+        public const int CellWoodWhite = 22;     // gỗ trắng
         public const int CellPaper = 15;         // giấy/menu
         public const int CellCream = 12;         // be ấm
         public const int CellAwningRed = 56;     // đỏ cờ

@@ -33,6 +33,11 @@ namespace Cafe
 
         protected abstract void OnTick();
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// Chẩn đoán cho autoplay (-perf / NV): trạng thái máy trạng thái và lý do chưa nhận được việc.
+        public virtual string DebugState() { return state.ToString(); }
+#endif
+
         /// Nhả mọi thứ đang giữ (việc, đơn, ly sạch). Gọi khi dừng việc hoặc khi nhân viên bị gỡ khỏi quán.
         public virtual void Release() { }
 

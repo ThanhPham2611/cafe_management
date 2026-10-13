@@ -36,6 +36,12 @@ namespace Cafe
             DaysSinceRent = 0;
         }
 
+        /// Mua nhà hàng (cấp 3): hết tiền thuê hàng tuần. Nợ còn lại vẫn phải trả dần.
+        public void ClearRentCycle()
+        {
+            DaysSinceRent = 0;
+        }
+
         public void AddDebt(int amount)
         {
             if (amount > 0) Debt += amount;

@@ -15,6 +15,14 @@ namespace Cafe
         private float elapsed;
         private float total;
         private int quality;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private string lastBlock = "";
+        public override string DebugState()
+        {
+            return phase + (order != null ? " có-đơn" : "") + (holdsCup ? " cầm-ly" : "") + " chặn=" + lastBlock +
+                   " thử-lại=" + Mathf.Max(0f, retryAt - Time.time).ToString("0.0");
+        }
+#endif
 
         public BrewerBehaviour(StaffWorker worker) : base(worker) { }
 
@@ -45,14 +53,16 @@ namespace Cafe
         private void TryStart()
         {
             if (Time.time < retryAt || Game.Orders == null || Game.Station == null) return;
+            Game.Shelf.Prune(IsWaiting); // ly của khách đã bỏ đi: trả ly sạch về kho
             BrewStation st = Game.Station;
             Order pick = OrderPicker.NextForBrewer(Game.Orders.Items, st.Selected,
                 st.State == BrewStation.Phase.Ready ? st.Recipe : null, IsWaiting);
-            if (pick == null || pick.recipe == null) { retryAt = Time.time + 0.4f; return; }
+            if (pick == null || pick.recipe == null) { Block("khôngCóĐơn"); retryAt = Time.time + 0.4f; return; }
 
             RecipeDef recipe = pick.recipe;
-            if (Game.Wallet.Xu < recipe.ingredientCost || !Game.Stock.TryTake()) { retryAt = Time.time + 1f; return; }
-            if (!pick.TryClaim(worker)) { Game.Stock.Return(); retryAt = Time.time + 0.5f; return; }
+            if (Game.Wallet.Xu < recipe.ingredientCost || !Game.Stock.TryTake()) { Block("hếtLy/Xu"); retryAt = Time.time + 1f; return; }
+            if (!pick.TryClaim(worker)) { Block("claimLỗi"); Game.Stock.Return(); retryAt = Time.time + 0.5f; return; }
+            Block("");
 
             holdsCup = true;
             Game.Wallet.Spend(recipe.ingredientCost);
@@ -60,10 +70,18 @@ namespace Cafe
 
             order = pick;
             elapsed = 0f;
-            total = BrewerRules.BrewSeconds(recipe.brewSeconds, Data.level);
+            total = BrewerRules.BrewSeconds(recipe.brewSeconds, Data.level, Game.BrewTimeFactor);
             quality = BrewerRules.Quality(Data.level, Game.Recipes == null || Game.Recipes.ToolAllowsThreeStars(recipe));
             phase = BrewPhase.Brewing;
             GameEvents.RaiseOrderClaimChanged(pick);
+        }
+
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        private void Block(string why)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            lastBlock = why;
+#endif
         }
 
         private bool OrderStillValid()
@@ -81,6 +99,8 @@ namespace Cafe
             elapsed += Time.deltaTime;
             if (elapsed < total) return;
 
+            if (TryHandOffToServer()) return;
+
             Vector3 point;
             Customer c = order.customer;
             if (c.Seat == null || !c.Seat.TryGetApproachPoint(worker.transform.position, out point) || !MoveTo(point))
@@ -92,6 +112,21 @@ namespace Cafe
             worker.Visual.SetCarry(true);
             phase = BrewPhase.Delivering;
             BeginState(WorkerState.Moving);
+        }
+
+        /// Có nhân viên Phục vụ và quầy giao còn chỗ: để ly lên quầy rồi pha ly kế, không tự đi giao.
+        private bool TryHandOffToServer()
+        {
+            if (Game.Shelf == null || Game.Staff == null || !Game.Staff.HasRole(StaffRole.Server) || !Game.Shelf.HasRoom) return false;
+            Order o = order;
+            if (!Game.Shelf.TryAdd(o, quality, worker)) return false;
+            order = null;
+            holdsCup = false; // ly đã nằm trên quầy giao
+            CountJob();
+            GameEvents.RaiseOrderClaimChanged(o);
+            phase = BrewPhase.Idle;
+            elapsed = 0f;
+            return true;
         }
 
         private void TickDelivering()

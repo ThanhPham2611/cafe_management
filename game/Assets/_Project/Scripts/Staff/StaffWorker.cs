@@ -18,6 +18,9 @@ namespace Cafe
         public Vector3 Home { get; private set; }
         /// Số việc đã xong từ đầu ngày: để chẩn đoán và thống kê.
         public int JobsDoneToday { get { return behaviour != null ? behaviour.JobsDone : 0; } }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public string DebugState { get { return behaviour != null ? behaviour.DebugState() : ""; } }
+#endif
 
         public static StaffWorker Create(GameBootstrap game, StaffSave data, int index)
         {

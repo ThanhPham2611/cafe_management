@@ -105,10 +105,21 @@ namespace Cafe
                 if (synthesized == null) synthesized = new List<RecipeDef>(4);
                 synthesized.Add(r);
             }
+            for (int i = 0; i < Tier3RecipeData.All.Length; i++)
+            {
+                Tier3RecipeData.Entry e = Tier3RecipeData.All[i];
+                if (byId.ContainsKey(e.id)) continue;
+                RecipeDef r = ScriptableObject.CreateInstance<RecipeDef>();
+                r.hideFlags = HideFlags.HideAndDontSave;
+                Tier3RecipeData.Apply(r, e);
+                Index(r);
+                if (synthesized == null) synthesized = new List<RecipeDef>(4);
+                synthesized.Add(r);
+            }
             if (synthesized != null)
             {
                 Debug.LogWarning("[RecipeBook] GameBootstrap.recipes thiếu " + synthesized.Count +
-                                 " công thức Tier 2: dùng bản tạm trong bộ nhớ. Chạy menu Cafe/Data/Ensure Tier-2 Recipes rồi lưu scene.");
+                                 " công thức Tier 2/3: dùng bản tạm trong bộ nhớ. Chạy menu Cafe/Data/Ensure Tier-2 Recipes rồi lưu scene.");
                 int old = game.recipes != null ? game.recipes.Length : 0;
                 var merged = new RecipeDef[old + synthesized.Count];
                 if (old > 0) System.Array.Copy(game.recipes, merged, old);
@@ -387,7 +398,14 @@ namespace Cafe
         {
             if (r == null || !known.Contains(r.id)) return false;
             if (r.unlockTier > tier || day < r.unlockDay) return false;
+            if (!MachineReady(r)) return false;
             return !requireMenu || tier <= 1 || menu.Contains(r.id);
+        }
+
+        /// Món cần máy thì máy phải đang đặt trong quán.
+        public bool MachineReady(RecipeDef r)
+        {
+            return r == null || string.IsNullOrEmpty(r.requiredMachine) || (game.Grid != null && game.Grid.HasMachine(r.requiredMachine));
         }
 
         private RecipeDef Roll(int day, int tier, bool requireMenu)
@@ -558,7 +576,8 @@ namespace Cafe
         public float PerfectSeconds(RecipeDef r)
         {
             if (r == null) return 0f;
-            return r.hidden ? r.brewSeconds * RecipeBalance.PerfectTimeFactorHidden : r.brewSeconds;
+            float seconds = r.hidden ? r.brewSeconds * RecipeBalance.PerfectTimeFactorHidden : r.brewSeconds;
+            return seconds * MachineRules.PerfectTimeSlack(game.BrewTimeFactor); // máy tăng tốc: cửa sổ 3★ rộng hơn
         }
 
         /// 3 sao khi không sai bước nào và: món thường nhanh <= brewSeconds; món ẩn nhanh <= brewSeconds x 1,2 và dụng cụ >= cấp 2.

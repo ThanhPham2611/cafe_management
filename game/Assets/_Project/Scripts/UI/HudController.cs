@@ -53,6 +53,9 @@ namespace Cafe
         private StoryDialog storyDialog;
         public bool StoryOpen { get { return storyDialog != null && storyDialog.IsOpen; } }
         public void DebugAdvanceStory() { if (storyDialog != null) storyDialog.DebugAdvance(); }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public void DebugToggleStaffPanel() { if (staffPanel != null) staffPanel.DebugToggle(); }
+#endif
 
         private int lastMinute = -1;
         private bool xuInit;

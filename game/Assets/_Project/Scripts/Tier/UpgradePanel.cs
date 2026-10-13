@@ -4,9 +4,10 @@ using UnityEngine.UI;
 namespace Cafe
 {
     /// UI của chuyển cấp (phong cách "Clay Café"):
-    ///  - Cấp 1: thẻ tiến độ "Thuê mặt bằng" (Xu 12.400/18.000, RP 120/300) dưới tên quán, góc phải; đủ điều kiện thì thành nút vàng lớn.
-    ///  - Hộp xác nhận (đặt cọc 18.000 Xu), màn đen mờ chuyển cảnh, pháo giấy + chữ "Khai trương!".
-    ///  - Cấp 2: dòng nhỏ "Thuê nhà: còn N ngày / Nợ".
+    ///  - Cấp 1 / 2: thẻ tiến độ "Thuê mặt bằng" / "Mua nhà hàng" (Xu 12.400/18.000, RP 120/300) dưới tên quán, góc phải;
+    ///    đủ điều kiện thì thành nút vàng lớn.
+    ///  - Hộp xác nhận (đặt cọc 18.000 Xu / mua nhà hàng), màn đen mờ chuyển cảnh, pháo giấy + chữ "Khai trương!".
+    ///  - Cấp 2: dòng nhỏ "Thuê nhà: còn N ngày / Nợ" dưới thẻ; cấp 3: chỉ hiện nợ còn lại (nếu có).
     /// Dựng bằng code từ HudController.Init (UpgradePanel.Create); TierManager gọi Tick() mỗi frame (không đăng ký sự kiện).
     public class UpgradePanel
     {
@@ -26,12 +27,13 @@ namespace Cafe
         // chip trên HUD
         private RectTransform chipRoot;
         private ClayButton lockedCard;
+        private Text cardTitle, ctaTitle;
         private Text xuText, rpText;
         private BarView xuBar, rpBar;
         private RectTransform ctaWrap;
         private Text ctaSub;
         private Text infoText;
-        private int lastXu = int.MinValue, lastRp = int.MinValue, lastDays = int.MinValue, lastDebt = int.MinValue;
+        private int lastXu = int.MinValue, lastRp = int.MinValue, lastDays = int.MinValue, lastDebt = int.MinValue, lastNext = -1;
         private float pulse;
 
         // lớp phủ
@@ -39,7 +41,7 @@ namespace Cafe
         private Image fade;
         private float fadeAlpha;
         private GameObject dialog;
-        private Text dialogBody;
+        private Text dialogTitle, dialogBody, yesLabel;
 
         // pháo giấy + biểu ngữ
         private RectTransform confettiLayer;
@@ -88,9 +90,9 @@ namespace Cafe
             HudBuilder.Stretch((RectTransform)lockedCard.transform);
             RectTransform c = lockedCard.Content;
 
-            Text title = HudBuilder.AddText(c, "Title", Strings.TierCardTitle, 34, TextAnchor.MiddleLeft, HudBuilder.Ink, true, false);
-            HudBuilder.SetFixed(title.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -6f), new Vector2(384f, 38f));
-            HudBuilder.Fit(title, 22);
+            cardTitle = HudBuilder.AddText(c, "Title", Strings.TierCardTitle, 34, TextAnchor.MiddleLeft, HudBuilder.Ink, true, false);
+            HudBuilder.SetFixed(cardTitle.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -6f), new Vector2(384f, 38f));
+            HudBuilder.Fit(cardTitle, 22);
 
             xuText = HudBuilder.AddText(c, "Xu", "", 24, TextAnchor.MiddleLeft, HudBuilder.InkSoft, false, false);
             HudBuilder.SetFixed(xuText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -44f), new Vector2(384f, 26f));
@@ -105,7 +107,6 @@ namespace Cafe
             // --- nút vàng lớn (đủ điều kiện)
             ctaWrap = HudBuilder.NewRect("TierCtaWrap", chipRoot);
             HudBuilder.SetFixed(ctaWrap, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(CardW, CtaH));
-            Text ctaTitle;
             ClayButton cta = HudBuilder.AddLabelButton(ctaWrap, "TierCta", ClayStyle.Gold, Strings.TierCtaTitle, 52, OnTap, out ctaTitle);
             HudBuilder.Stretch((RectTransform)cta.transform);
             ctaTitle.rectTransform.offsetMin = new Vector2(10f, 46f);
@@ -114,9 +115,11 @@ namespace Cafe
                 28, TextAnchor.MiddleCenter, HudBuilder.Ink, false, false);
             HudBuilder.SetRect(ctaSub.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(10f, 6f), new Vector2(-10f, 46f));
 
-            // --- cấp 2: dòng thông tin thuê nhà
+            // --- cấp 2+: dòng thông tin thuê nhà / nợ, nằm dưới thẻ
             infoText = HudBuilder.AddText(chipRoot, "Info", "", 28, TextAnchor.UpperRight, HudBuilder.Cream, true, true);
             infoText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            HudBuilder.SetFixed(infoText.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(0f, -(CardH + 8f)), new Vector2(CardW, 84f));
 
             lockedCard.gameObject.SetActive(false);
             ctaWrap.gameObject.SetActive(false);
@@ -134,15 +137,15 @@ namespace Cafe
             Image panel = HudBuilder.Panel(dim.transform, "Card", true);
             HudBuilder.SetFixed(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(940f, 640f));
 
-            Text title = HudBuilder.AddText(panel.transform, "Title", Strings.TierConfirmTitle, 64, TextAnchor.MiddleCenter, HudBuilder.Ink, true, false);
-            HudBuilder.SetFixed(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -30f), new Vector2(860f, 90f));
+            dialogTitle = HudBuilder.AddText(panel.transform, "Title", Strings.TierConfirmTitle, 64, TextAnchor.MiddleCenter, HudBuilder.Ink, true, false);
+            HudBuilder.SetFixed(dialogTitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -30f), new Vector2(860f, 90f));
 
             dialogBody = HudBuilder.AddText(panel.transform, "Body", "", 36, TextAnchor.MiddleCenter, HudBuilder.Ink, false, false);
             HudBuilder.SetRect(dialogBody.rectTransform, Vector2.zero, Vector2.one, new Vector2(50f, 200f), new Vector2(-50f, -130f));
             HudBuilder.Fit(dialogBody, 24);
 
             Text lt;
-            ClayButton yes = HudBuilder.AddLabelButton(panel.transform, "Yes", ClayStyle.Green, Strings.TierYes, 52, OnYes, out lt);
+            ClayButton yes = HudBuilder.AddLabelButton(panel.transform, "Yes", ClayStyle.Green, Strings.TierYes, 52, OnYes, out yesLabel);
             HudBuilder.SetFixed((RectTransform)yes.transform, new Vector2(0.5f, 0f), new Vector2(0f, 0f), new Vector2(16f, 40f), new Vector2(380f, 130f));
             ClayButton no = HudBuilder.AddLabelButton(panel.transform, "No", ClayStyle.Cream, Strings.TierLater, 48, OnNo, out lt);
             HudBuilder.SetFixed((RectTransform)no.transform, new Vector2(0.5f, 0f), new Vector2(1f, 0f), new Vector2(-16f, 40f), new Vector2(380f, 130f));
@@ -183,10 +186,25 @@ namespace Cafe
         public void ShowConfirm()
         {
             if (dialog == null) return;
-            dialogBody.text = string.Format(Strings.TierConfirmBodyFmt,
-                Strings.FormatInt(GameBalance.Tier2Deposit),
-                Strings.FormatInt(GameBalance.Tier2RentPerWeek),
-                GameBalance.RentIntervalDays);
+            if (tier.NextTier >= 3)
+            {
+                dialogTitle.text = Strings.Tier3ConfirmTitle;
+                yesLabel.text = Strings.Tier3YesLabel;
+                dialogBody.text = string.Format(Strings.Tier3ConfirmBodyFmt,
+                    Strings.FormatInt(GameBalance.Tier3Price),
+                    Strings.FormatInt(tier.Deposit),
+                    Strings.FormatInt(tier.NextTierXu),
+                    Strings.FormatInt(GameBalance.Tier3DailyFixedCost));
+            }
+            else
+            {
+                dialogTitle.text = Strings.TierConfirmTitle;
+                yesLabel.text = Strings.TierYes;
+                dialogBody.text = string.Format(Strings.TierConfirmBodyFmt,
+                    Strings.FormatInt(GameBalance.Tier2Deposit),
+                    Strings.FormatInt(GameBalance.Tier2RentPerWeek),
+                    GameBalance.RentIntervalDays);
+            }
             dialog.SetActive(true);
         }
 
@@ -210,7 +228,7 @@ namespace Cafe
             HideConfirm();
             // Xu có thể vừa tụt xuống dưới mức cọc (mua nguyên liệu) trong lúc hộp thoại đang mở
             if (!tier.ConfirmUpgrade() && !tier.Transitioning)
-                GameEvents.RaiseToast(string.Format(Strings.TierNeedFmt, Strings.FormatInt(GameBalance.Tier2Deposit), Strings.FormatInt(GameBalance.Tier2StarRP)));
+                GameEvents.RaiseToast(tier.NeedMessage());
         }
 
         private void OnNo()
@@ -236,11 +254,12 @@ namespace Cafe
                           || (game.Builder != null && game.Builder.IsOpen)
                           || (game.Creator != null && game.Creator.IsOpen);
 
-            bool tier1 = tier.Current == 1;
-            bool affordable = tier1 && tier.CanUpgradeToT2;
-            bool showLocked = !hidden && tier1 && !affordable;
+            bool hasNext = tier.NextTier != 0;
+            bool affordable = hasNext && tier.CanUpgrade;
+            bool showLocked = !hidden && hasNext && !affordable;
             bool showCta = !hidden && affordable;
-            bool showInfo = !hidden && !tier1;
+            string info = hidden ? "" : RefreshInfo();
+            bool showInfo = info.Length > 0;
 
             SetActive(lockedCard.gameObject, showLocked);
             SetActive(ctaWrap.gameObject, showCta);
@@ -250,11 +269,12 @@ namespace Cafe
             if (showLocked) RefreshProgress();
             if (showCta)
             {
+                RefreshCta();
                 pulse += dt * 4.2f;
                 float s = 1f + 0.035f * Mathf.Sin(pulse);
                 ctaWrap.localScale = new Vector3(s, s, 1f);
             }
-            if (showInfo) RefreshInfo();
+            if (showInfo) infoText.text = info;
         }
 
         private static void SetActive(GameObject go, bool v)
@@ -262,34 +282,51 @@ namespace Cafe
             if (go.activeSelf != v) go.SetActive(v);
         }
 
+        private void RefreshCta()
+        {
+            bool restaurant = tier.NextTier >= 3;
+            ctaTitle.text = restaurant ? Strings.Tier3CtaTitle : Strings.TierCtaTitle;
+            ctaSub.text = restaurant
+                ? string.Format(Strings.Tier3CtaSubFmt, Strings.FormatInt(tier.NextTierXu))
+                : string.Format(Strings.TierCtaSubFmt, Strings.FormatInt(GameBalance.Tier2Deposit));
+        }
+
         private void RefreshProgress()
         {
             int xu = tier.XuNow;
             int rp = tier.RpNow;
-            if (xu == lastXu && rp == lastRp) return;
+            int next = tier.NextTier;
+            if (xu == lastXu && rp == lastRp && next == lastNext) return;
             lastXu = xu;
             lastRp = rp;
+            lastNext = next;
 
-            int needXu = GameBalance.Tier2Deposit;
-            int needRp = GameBalance.Tier2StarRP;
+            cardTitle.text = next >= 3 ? Strings.Tier3CardTitle : Strings.TierCardTitle;
+            int needXu = tier.NextTierXu;
+            int needRp = tier.NextTierRp;
             xuText.text = string.Format(Strings.TierXuFmt, Strings.FormatInt(xu), Strings.FormatInt(needXu));
             rpText.text = string.Format(Strings.TierRpFmt, Strings.FormatInt(rp), Strings.FormatInt(needRp));
             xuBar.Set(xu / (float)needXu, xu >= needXu ? HudBuilder.Good : HudBuilder.Accent);
             rpBar.Set(rp / (float)needRp, rp >= needRp ? HudBuilder.Good : HudBuilder.Accent);
         }
 
-        private void RefreshInfo()
+        private string infoCache = "";
+
+        /// Dòng dưới thẻ: cấp 2 = "Thuê nhà: còn N ngày" (+ nợ); cấp 3 = chỉ nợ còn lại. Rỗng = không hiện.
+        private string RefreshInfo()
         {
             RentLedger l = tier.Ledger;
-            if (l == null) return;
-            int days = l.DaysUntilRent;
+            if (l == null || tier.Current < 2) return "";
+            int days = tier.IsRented ? l.DaysUntilRent : -1;
             int debt = l.Debt;
-            if (days == lastDays && debt == lastDebt) return;
+            if (days == lastDays && debt == lastDebt) return infoCache;
             lastDays = days;
             lastDebt = debt;
 
+            string debtLine = debt > 0 ? string.Format(Strings.DebtInfoFmt, Strings.FormatInt(debt)) : "";
+            if (days < 0) return infoCache = debtLine;
             string rent = days <= 0 ? Strings.RentInfoTomorrow : string.Format(Strings.RentInfoFmt, days);
-            infoText.text = debt > 0 ? rent + "\n" + string.Format(Strings.DebtInfoFmt, Strings.FormatInt(debt)) : rent;
+            return infoCache = debt > 0 ? rent + "\n" + debtLine : rent;
         }
 
         // ------------------------------------------------------------------ pháo giấy

@@ -308,10 +308,11 @@ namespace Cafe
                 if (maxed) cv.reason.text = string.Format(Strings.MaxReachedFmt, d.maxCount);
                 else if (poor) cv.reason.text = string.Format(Strings.NeedMoreXuFmt, Strings.FormatInt(price - xu));
 
-                bool hasAttract = d.attract > 0;
+                bool isMachine = !string.IsNullOrEmpty(d.machineId);
+                bool hasAttract = d.attract > 0 || isMachine;
                 bool hasComfort = d.comfort > 0 || d.style > 0;
                 cv.attractChip.gameObject.SetActive(!blocked && hasAttract);
-                if (hasAttract) cv.attractText.text = string.Format(Strings.AttractBadgeFmt, d.attract);
+                if (hasAttract) cv.attractText.text = isMachine ? MachineRules.Effect(d.machineId) : string.Format(Strings.AttractBadgeFmt, d.attract);
                 cv.comfortChip.gameObject.SetActive(!blocked && hasComfort);
                 if (hasComfort)
                 {

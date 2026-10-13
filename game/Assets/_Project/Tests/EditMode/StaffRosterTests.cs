@@ -20,13 +20,62 @@ namespace Cafe.Tests
         }
 
         [Test]
-        public void Hire_ChargesExactFee_AndRejectsDuplicateRole()
+        public void Hire_ChargesExactFee_AndStopsAtRoleCap()
         {
-            Assert.That(roster.Hire(StaffRole.Cleaner, 0, "Lan"), Is.True);
+            var tier2 = new StaffRoster(wallet, ledger, () => 2);
+            tier2.Load(null);
+            Assert.That(tier2.Hire(StaffRole.Cleaner, 0, "Lan"), Is.True);
             Assert.That(wallet.Xu, Is.EqualTo(8500));
-            Assert.That(roster.Hire(StaffRole.Cleaner, 1, "Nam"), Is.False);
+            Assert.That(tier2.Hire(StaffRole.Cleaner, 1, "Nam"), Is.False, "cấp 2 chỉ 1 Dọn dẹp (đo: người thứ hai không thêm khách)");
             Assert.That(wallet.Xu, Is.EqualTo(8500));
-            Assert.That(roster.Count, Is.EqualTo(1));
+
+            var tier3 = new StaffRoster(wallet, ledger, () => 3);
+            tier3.Load(null);
+            Assert.That(tier3.Hire(StaffRole.Cleaner, 0, "A"), Is.True);
+            Assert.That(tier3.Hire(StaffRole.Cleaner, 1, "B"), Is.True);
+            Assert.That(tier3.Hire(StaffRole.Cleaner, 1, "C"), Is.True);
+            Assert.That(tier3.Hire(StaffRole.Cleaner, 1, "D"), Is.False, "cấp 3 tối đa 3 Dọn dẹp");
+            Assert.That(tier3.CountOf(StaffRole.Cleaner), Is.EqualTo(3));
+        }
+
+        [Test]
+        public void Hire_BrewerOnlyFromTier3()
+        {
+            var tier2 = new StaffRoster(wallet, ledger, () => 2);
+            tier2.Load(null);
+            Assert.That(tier2.CanHire(StaffRole.Brewer), Is.False);
+            Assert.That(tier2.Hire(StaffRole.Brewer, 1, "Bảo"), Is.False);
+            Assert.That(wallet.Xu, Is.EqualTo(10000));
+
+            var tier3 = new StaffRoster(wallet, ledger, () => 3);
+            tier3.Load(null);
+            Assert.That(tier3.Hire(StaffRole.Brewer, 1, null), Is.True);
+            Assert.That(tier3.Hire(StaffRole.Brewer, 2, null), Is.True);
+            Assert.That(tier3.Hire(StaffRole.Brewer, 3, null), Is.True);
+            Assert.That(tier3.Hire(StaffRole.Brewer, 3, null), Is.False, "tối đa 3 Pha chế ở cấp 3");
+            Assert.That(tier3.Members[0].name, Is.Not.EqualTo(tier3.Members[1].name), "mỗi người một tên mặc định");
+        }
+
+        [Test]
+        public void Hire_RejectedBelowTier2()
+        {
+            var tier1 = new StaffRoster(wallet, ledger, () => 1);
+            tier1.Load(null);
+            Assert.That(tier1.Hire(StaffRole.Cleaner, 0, "Lan"), Is.False);
+        }
+
+        [Test]
+        public void IndexOf_FindsKthMemberOfRole()
+        {
+            var tier3 = new StaffRoster(wallet, ledger, () => 3);
+            tier3.Load(null);
+            tier3.Hire(StaffRole.Cleaner, 0, "A");
+            tier3.Hire(StaffRole.Server, 0, "B");
+            tier3.Hire(StaffRole.Cleaner, 0, "C");
+            Assert.That(tier3.IndexOf(StaffRole.Cleaner, 0), Is.EqualTo(0));
+            Assert.That(tier3.IndexOf(StaffRole.Cleaner, 1), Is.EqualTo(2));
+            Assert.That(tier3.IndexOf(StaffRole.Cleaner, 2), Is.EqualTo(-1));
+            Assert.That(tier3.IndexOf(StaffRole.Server, 0), Is.EqualTo(1));
         }
 
         [Test]

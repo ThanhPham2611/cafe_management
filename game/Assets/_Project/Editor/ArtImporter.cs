@@ -28,8 +28,9 @@ namespace Cafe.EditorTools
             // Cửa hàng (GDD §2.1, economy §3.3/§3.6)
             public bool hidden;          // không bán (xe đẩy, ly)
             public int priceStep, maxCount, attract;
+            public string machineId;     // máy móc cấp 3 (MachineIds); rỗng = không phải máy
             // Cấp 2
-            public int minTier;          // 0 hoặc 1 = có từ vỉa hè
+            public int minTier;          // 0 hoặc 1 = có từ vỉa hè; 2 thuê mặt bằng; 3 nhà hàng
             public bool overhead;        // treo trên cao
             public float hangY;          // độ cao đáy model khi treo (m)
         }
@@ -68,6 +69,19 @@ namespace Cafe.EditorTools
             new Item { fbx = "SM_Bookshelf_Low", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Kệ sách thấp", minTier = 2, price = 1200, style = 5, footprint = new Vector2Int(2, 1) },
             new Item { fbx = "SM_Radio_Stand", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Radio cổ", minTier = 2, price = 700, style = 4, attract = 3, footprint = new Vector2Int(1, 1) },
             new Item { fbx = "SM_Lantern_Hoian", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Đèn lồng Hội An", minTier = 2, price = 650, style = 5, attract = 3, footprint = new Vector2Int(1, 1), overhead = true, hangY = 1.86f },
+            // Nội thất nhà hàng (cấp 3; art_source/blend/furniture_tier3.blend). Giá theo economy §3.6 (ghế 1.500–8.000, bàn 3.000–15.000, trang trí 3.000–30.000, máy lạnh 12.000–40.000).
+            new Item { fbx = "SM_Chair_Leather", folder = "Furniture", kind = FurnitureKind.Seat, displayName = "Ghế da", minTier = 3, price = 1800, comfort = 6, style = 3, footprint = new Vector2Int(1, 1), seatHeight = 0.46f },
+            new Item { fbx = "SM_Armchair_Velvet", folder = "Furniture", kind = FurnitureKind.Seat, displayName = "Ghế bành nhung", minTier = 3, price = 3500, comfort = 8, style = 5, footprint = new Vector2Int(2, 2), seatHeight = 0.48f },
+            new Item { fbx = "SM_Table_Marble_Round", folder = "Furniture", kind = FurnitureKind.Table, displayName = "Bàn đá cẩm thạch", minTier = 3, price = 4500, comfort = 2, style = 7, footprint = new Vector2Int(2, 2) },
+            new Item { fbx = "SM_Aircon_Standing", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Máy lạnh tủ đứng", minTier = 3, price = 14000, comfort = 10, style = 1, maxCount = 4, footprint = new Vector2Int(1, 1) },
+            new Item { fbx = "SM_Chandelier_Brass", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Đèn chùm đồng", minTier = 3, price = 9000, style = 12, attract = 4, maxCount = 4, footprint = new Vector2Int(2, 2), overhead = true, hangY = 1.79f },
+            new Item { fbx = "SM_Plant_Fig_Large", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Cây bàng lá đàn", minTier = 3, price = 3200, style = 8, attract = 6, maxCount = 6, footprint = new Vector2Int(2, 2) },
+            new Item { fbx = "SM_Easel_Art", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Giá vẽ tranh Hội An", minTier = 3, price = 6500, style = 10, attract = 3, maxCount = 3, footprint = new Vector2Int(2, 1) },
+            new Item { fbx = "SM_Piano_Upright", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Đàn piano", minTier = 3, price = 28000, style = 15, attract = 8, maxCount = 1, footprint = new Vector2Int(3, 1) },
+            // Máy móc (economy §3.5): đặt trong quán mới có tác dụng (MachineRules). Mỗi loại tối đa 1.
+            new Item { fbx = "SM_Machine_Grinder", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Máy xay 2 họng", minTier = 3, price = 25000, style = 4, maxCount = 1, machineId = "grinder", footprint = new Vector2Int(2, 1) },
+            new Item { fbx = "SM_Machine_ColdBrew", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Máy cold brew", minTier = 3, price = 60000, style = 6, maxCount = 1, machineId = "cold_brew", footprint = new Vector2Int(2, 1) },
+            new Item { fbx = "SM_Machine_Espresso", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Máy espresso", minTier = 3, price = 150000, style = 10, maxCount = 1, machineId = "espresso", footprint = new Vector2Int(2, 1) },
             new Item { fbx = "SM_Cup_Phin_SuaDa", folder = "Props", kind = FurnitureKind.Decor, displayName = "Ly cà phê", hidden = true, price = 0, comfort = 0, style = 0, footprint = new Vector2Int(1, 1) },
         };
 
@@ -191,6 +205,7 @@ namespace Cafe.EditorTools
             def.priceStep = it.priceStep;
             def.maxCount = it.maxCount;
             def.attract = it.attract;
+            def.machineId = it.machineId;
             def.icon = AssetDatabase.LoadAssetAtPath<Sprite>($"{ShopIconDir}/ICON_{id}.png");
             EditorUtility.SetDirty(def);
         }
@@ -203,6 +218,7 @@ namespace Cafe.EditorTools
             Recipe("ca_phe_sua", "Cà phê sữa", 100, 35, 5f, 0, 1.6f, BrewStep.Phin, BrewStep.SuaDac, BrewStep.Da);
             Recipe("bac_xiu", "Bạc xỉu", 120, 45, 6f, 3, 1.0f, BrewStep.SuaDac, BrewStep.SuaTuoi, BrewStep.Phin, BrewStep.Da);
             RecipeImporter.EnsureTier2Recipes(); // Trà chanh + 3 món ẩn (Phase 2)
+            RecipeImporter.EnsureTier3Recipes(); // Bạc xỉu kem muối, cold brew, robusta (Phase 3)
         }
 
         static void Recipe(string id, string name, int price, int cost, float seconds, int unlockDay,

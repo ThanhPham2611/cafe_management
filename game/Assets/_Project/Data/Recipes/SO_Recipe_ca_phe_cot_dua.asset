@@ -26,3 +26,4 @@ MonoBehaviour:
   requiredTools:
   - phin
   hintCostGems: 30
+  requiredMachine: 

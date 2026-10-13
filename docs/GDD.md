@@ -209,7 +209,9 @@ Thông báo đẩy: tối đa 1–2 lần/ngày, có thể tắt.
 ## 13. Phạm vi MVP (Vertical Slice)
 **Có:** cấp 1 + cấp 2, 8 món (4 cơ bản + 4 công thức, trong đó 2 món ẩn), dọn bàn, build mode khoảng 20 món nội thất, 3 khách quen (mỗi người 3 đoạn truyện), 1 loại nhân viên (dọn dẹp), save cục bộ, tiếng Việt + tiếng Anh.
 
-**Chưa có:** cấp 3–4, ads/IAP, Firebase, sự kiện, iOS.
+**Đã làm thêm ngoài MVP (2026-10-13):** khung cấp 3 (mua nhà hàng, sảnh 10 × 12 m, máy móc, 3 món cấp 3, nhân viên Phục vụ / Pha chế, 11 món nội thất cấp 3) — xem `phase3_spec.md` §0.6.
+
+**Chưa có:** 3 khu nhà hàng, ca làm, Thu ngân / Trưởng ca, cấp 4, ads/IAP, Firebase, sự kiện, iOS.
 
 ---
 

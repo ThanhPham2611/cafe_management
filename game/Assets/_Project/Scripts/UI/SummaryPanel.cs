@@ -58,6 +58,8 @@ namespace Cafe
             rowIngredients = MakeRow(card, 52f, -326f, 450f, HudBuilder.T.iconPhin, Strings.SumIngredients);
             rowFee = MakeRow(card, 52f, -390f, 450f, HudBuilder.T.iconClock, Strings.SumFee);
             rowStaffWages = MakeRow(card, 52f, -454f, 450f, HudBuilder.T.iconCoin, Strings.SumStaffWages);
+            HudBuilder.Fit(rowStaffWages.label, 22); // "Lương nhân viên" sát giá trị ở độ phân giải thấp
+            HudBuilder.Fit(rowFee.label, 22);
 
             // lãi ròng: chip vàng
             Image chip = HudBuilder.Chip(card, "ProfitChip", false);
@@ -164,11 +166,13 @@ namespace Cafe
             SetMoney(rowFee, -s.fee, true);
             SetMoney(rowStaffWages, -s.staffWages, true);
 
-            // Cấp 2: "Chi phí vận hành" thay "Phí vỉa hè", thêm dòng thuê nhà + nợ (panel cao hơn để chứa)
+            // Cấp 2+: "Chi phí vận hành" thay "Phí vỉa hè", thêm dòng nợ; cấp 2 còn dòng thuê nhà (cấp 3 đã mua nhà)
             bool rented = s.tier >= 2;
+            bool paysRent = s.tier == 2;
             rowFee.label.text = rented ? Strings.SumFixedCost : Strings.SumFee;
-            rowRentRoot.SetActive(rented);
+            rowRentRoot.SetActive(paysRent);
             rowDebtRoot.SetActive(rented);
+            ((RectTransform)rowDebtRoot.transform).anchoredPosition = new Vector2(52f, paysRent ? -708f : -644f);
             rowStaffWages.value.transform.parent.gameObject.SetActive(rented);
             DayAdvice advice = game.AdviseFor(s);
             string adviceMsg = DayAdvisor.Text(advice);
@@ -176,7 +180,7 @@ namespace Cafe
             adviceChip.SetActive(hasAdvice);
             if (hasAdvice) adviceText.text = "Gợi ý: " + adviceMsg;
             // cấp 2: thêm dòng thuê nhà + nợ, chừa chỗ để nút không che; có gợi ý thì cao thêm một dải
-            card.sizeDelta = new Vector2(1000f, (rented ? 960f : 800f) + (hasAdvice ? AdviceExtra : 0f));
+            card.sizeDelta = new Vector2(1000f, (paysRent ? 960f : (rented ? 900f : 800f)) + (hasAdvice ? AdviceExtra : 0f));
             if (rented)
             {
                 SetMoney(rowRent, -s.rent, true);

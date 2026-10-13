@@ -35,5 +35,9 @@ namespace Cafe
         public string[] requiredTools;
         [Tooltip("Giá gợi ý (Hạt cà phê vàng)")]
         public int hintCostGems = 30;
+
+        [Header("Giai đoạn 3 (máy móc)")]
+        [Tooltip("Máy cần đặt trong quán mới có khách gọi món này (id: grinder, cold_brew, espresso); rỗng = không cần")]
+        public string requiredMachine;
     }
 }

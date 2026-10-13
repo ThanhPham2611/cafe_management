@@ -12,7 +12,7 @@ namespace Cafe
         public const float MinPitch = 30f;
         public const float MaxPitch = 70f;
         public const float MinDistance = 5f;
-        public const float MaxDistance = 15f;
+        public const float MaxDistance = 15f;       // mặc định (phòng nhỏ); SetBounds nới ra cho phòng lớn hơn
 
         const float DefaultPitch = 48f;
         const float DefaultDistance = 11f;
@@ -29,6 +29,7 @@ namespace Cafe
         private float yaw = DefaultYaw, yawTarget = DefaultYaw, yawVelocity;
         private float pitch = DefaultPitch, pitchTarget = DefaultPitch;
         private float distance = DefaultDistance, distanceTarget = DefaultDistance;
+        private float maxDistance = MaxDistance;
         private float inertiaYaw;             // độ/giây sau khi thả tay
 
         // Trạng thái 1 con trỏ (1 ngón hoặc chuột trái)
@@ -86,9 +87,10 @@ namespace Cafe
             transform.position = new Vector3(gridBounds.center.x, PivotHeight, gridBounds.center.z + pivotZOffset);
             focusSaved = false;
             inertiaYaw = 0f;
+            maxDistance = Mathf.Max(MaxDistance, viewDistance * 1.2f);
             if (viewDistance > 0f)
             {
-                distance = distanceTarget = Mathf.Clamp(viewDistance, MinDistance, MaxDistance);
+                distance = distanceTarget = Mathf.Clamp(viewDistance, MinDistance, maxDistance);
                 yaw = yawTarget = DefaultYaw;
                 pitch = pitchTarget = DefaultPitch;
                 yawVelocity = 0f;
@@ -283,7 +285,7 @@ namespace Cafe
 
             Pan(mid - lastMid);
             if (len > 1f && lastSpan > 1f)
-                distanceTarget = Mathf.Clamp(distanceTarget * lastSpan / len, MinDistance, MaxDistance);
+                distanceTarget = Mathf.Clamp(distanceTarget * lastSpan / len, MinDistance, maxDistance);
             yawTarget -= Mathf.DeltaAngle(lastAngle, angle);
 
             lastMid = mid; lastSpan = len; lastAngle = angle;
@@ -297,7 +299,7 @@ namespace Cafe
 
             float scroll = Input.mouseScrollDelta.y;
             if (Mathf.Abs(scroll) > 0.01f && !TapInput.IsOverUI(mp, -1))
-                distanceTarget = Mathf.Clamp(distanceTarget * (1f - scroll * 0.1f), MinDistance, MaxDistance);
+                distanceTarget = Mathf.Clamp(distanceTarget * (1f - scroll * 0.1f), MinDistance, maxDistance);
 
             if (InputBlocked) EndOrbit();
             else if (Input.GetMouseButtonDown(0)) BeginOrbit(mp, TapInput.IsOverUI(mp, -1));

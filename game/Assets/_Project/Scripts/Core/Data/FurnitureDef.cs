@@ -43,5 +43,9 @@ namespace Cafe
         public int maxCount;
         [Tooltip("% khách tăng thêm mỗi món (chậu cây 5, bảng menu 12). Tổng bị chặn ở GameBalance.MaxAttractPercent")]
         public int attract;
+
+        [Header("Máy móc (cấp 3)")]
+        [Tooltip("Id máy (grinder, cold_brew, espresso); rỗng = không phải máy. Đặt trong quán mới có tác dụng (MachineRules)")]
+        public string machineId;
     }
 }

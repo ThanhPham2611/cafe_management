@@ -34,14 +34,22 @@ namespace Cafe
             return false;
         }
 
-        public static string DefaultName(StaffRole role)
+        private static readonly string[] CleanerNames = { "Cô Út", "Cô Hạnh", "Chị Mai" };
+        private static readonly string[] ServerNames = { "Bạn An", "Bạn Lộc" };
+        private static readonly string[] BrewerNames = { "Anh Bảo", "Anh Khoa" };
+
+        /// Tên mặc định cho người thứ n (từ 0) của vai trò; vượt danh sách thì quay vòng.
+        public static string DefaultName(StaffRole role, int n = 0)
         {
-            switch (role)
-            {
-                case StaffRole.Server: return "Bạn An";
-                case StaffRole.Brewer: return "Anh Bảo";
-                default: return "Cô Út";
-            }
+            string[] names = role == StaffRole.Server ? ServerNames : (role == StaffRole.Brewer ? BrewerNames : CleanerNames);
+            return names[((n % names.Length) + names.Length) % names.Length];
+        }
+
+        /// Dáng nhân viên (0..3 = PF_Char_Staff_M1, M2, F1, F2): mỗi vai trò một dáng riêng, người thứ hai đổi dáng.
+        public static int DefaultPreset(StaffRole role, int n = 0)
+        {
+            int baseLook = role == StaffRole.Server ? 0 : (role == StaffRole.Brewer ? 1 : 2);
+            return (baseLook + 3 * (n & 1)) % 4;
         }
     }
 }

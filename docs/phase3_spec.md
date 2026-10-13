@@ -1,4 +1,4 @@
-# Giai đoạn 3 – Đặc tả "Cấp 3: Mua nhà hàng" (bản nháp 1, 2026-10-11)
+# Giai đoạn 3 – Đặc tả "Cấp 3: Mua nhà hàng" (bản nháp 2, cập nhật 2026-10-13)
 
 > Nguồn: `GDD.md` §2, §8; `economy_monetization.md` §3.1, §3.5, §5–6, §11; `art_bible.md`. Bản này chỉ gom và sắp thứ tự, các con số lấy nguyên từ tài liệu kinh tế.
 > Trạng thái: **Giai đoạn 2 đã đủ tính năng** (cấp 2, dọn bàn, công thức, nhân viên dọn / phục vụ / **pha chế**, khách quen, **nhiệm vụ ngày + rương**). Chưa kiểm chứng trên máy thật.
@@ -37,7 +37,7 @@ Bot là người chơi "khá": thêm cờ `-autobuy` (mua bàn khi dư tiền), 
 ### 0.3 Việc nên làm tiếp ngay cho cấp 2 (đề xuất)
 
 1. ~~Ly pha xong giải phóng quầy ngay khi Phục vụ cầm đi~~ **Đã làm** (`BrewStation.TakeReadyDrink`): Phục vụ làm 24–34 lượt giao/ngày ở ngày tốt.
-2. Cho thuê **tối đa 2 nhân viên Dọn dẹp** (hiện 1 người/vai trò), hoặc nâng cấp rẻ hơn ở cấp 1→3 (dọn dẹp từng là cổ chai đo được, ~17–20 bàn/ngày ở cấp 1).
+2. ~~Cho thuê tối đa 2 nhân viên Dọn dẹp ở cấp 2~~ **Đã đo (2026-10-13), không làm:** người thứ hai không tăng khách (xem §0.6); từ cấp 3 mới cho 3 người.
 3. Tiền thuê 7.000/tuần: với lãi đo được (13–17k/tuần) vẫn chịu được; chưa cần giảm, xem lại khi có số liệu người chơi thật.
 4. Tutorial / gợi ý "mua thêm bàn ghế" khi khách bỏ về vì hết chỗ (mỗi bộ bàn + 2 ghế tự hoàn vốn trong ~1–2 ngày), và gợi ý nâng cấp nhân viên Dọn dẹp trước các vai trò khác.
 
@@ -65,6 +65,42 @@ Công cụ: `QuanCaPhe.exe … -perf` in `[Perf]` mỗi 30 giây (CPU/khung, p95
 
 Chưa đo được trên PC: GPU/draw call/nhiệt độ trên điện thoại thật.
 
+### 0.6 Cấp 3 — khung chơi được (2026-10-13)
+
+**Làm gì.** Mua nhà hàng (3.1), sảnh nhà hàng 10 × 12 m (3.2, chưa có 3 khu), nhân viên theo trần vai trò (3.3 một phần), máy móc + 3 món cấp 3 (3.5, 3.6), 11 model nội thất Blender (3.8). Chi tiết trạng thái ở §1.1.
+
+| Việc | Nội dung |
+|---|---|
+| Chuyển cấp | Cùng luồng với cấp 2 (tối dần → dọn khách/đơn/ly → cất đồ cũ vào kho → dựng phòng → bake NavMesh → "Khai trương!"). Mua nhà = 250.000 − cọc 18.000 hoàn = **232.000 Xu** + ★3 (4.000 RP). Thẻ tiến độ cấp kế tiếp hiện ngay dưới tên quán (cấp 1 → "Thuê mặt bằng", cấp 2 → "Mua nhà hàng") + dòng "Thuê nhà: còn N ngày / Nợ" |
+| Phòng | `RoomSpec` theo cấp (`RoomLayout.For`): cấp 3 lưới 20 × 24 ô, sàn gỗ ghép, cửa rộng 2,2 m, camera lùi 19,5. Bố cục mặc định: quầy, bồn, kệ ly sau tường; **6 bộ bàn ghế tặng** (hoặc nhiều hơn nếu kho có: đồ đã mua được bày ra trước, không nhận trùng) + quạt/đèn thả |
+| Nhân viên | Trần theo vai trò: cấp 2 = 1 Dọn dẹp + 1 Phục vụ; cấp 3 = 3 + 2 + 3 Pha chế (8). Đo ở cấp 2 (9 ngày, 14–16 ghế, `-cleaners 1` so với `2`): **người Dọn dẹp thứ hai không tăng khách** (40,1 so với 39,8 khách/ngày) mà tốn thêm 300/ngày (lãi ~2.700 so với ~2.300/ngày gồm cả ngày trả thuê); Pha chế cũng không bù lương (§0.2). Vì thế cả hai chỉ mở từ cấp 3. Bảng "Đội ngũ quán" dạng hàng, tự dài theo số vai trò mở |
+| Quầy giao | Nhà hàng rộng khiến Pha chế mất phần lớn thời gian đi bộ giao ly (đo: chỉ ~4 ly/ngày/người ở cấp 1 kỹ năng). Nay khi có Phục vụ, Pha chế đặt ly lên **quầy giao** (`ReadyShelf`, tối đa 6 ly) rồi pha ly kế; Phục vụ mang ra. Không có Phục vụ thì Pha chế tự giao như cũ. Đo sau khi sửa: 8–13 ly/ngày/người |
+| Máy móc | Là nội thất đặt trong quán (không có màn hình riêng): **máy xay 2 họng** 25.000 (Pha chế pha nhanh −15%), **máy cold brew** 60.000 (mở món cold brew), **máy espresso** 150.000 (Pha chế −25%, mở món Robusta); mỗi loại tối đa 1; hệ số cộng dồn và nới cửa sổ "pha hoàn hảo" của chủ quán. Món cần máy chỉ có khách gọi khi máy đang đặt trong quán |
+| Món cấp 3 | Bạc xỉu kem muối 230 (vốn 75, không cần máy), Cold brew cam sả 200 (60, cần cold brew), Phin Robusta Cầu Đất 300 (100, cần espresso). Dùng lại các bước khay có sẵn (khay nguyên liệu không đổi). Menu cấp 3 = 8 món nên người chơi phải chọn |
+| Kinh tế | Phí vận hành 700/ngày, hết tiền thuê (nợ cũ vẫn trả dần), Demand ×2,6, quay vòng 5, F_ref 400 (đã có từ trước) |
+| Tổng kết ngày | Cấp 3 ẩn dòng "Thuê nhà", giữ dòng "Nợ"; nhãn dòng dài tự co |
+
+**Số đo (bot, `-autoplay -autoupgrade3 -cheatt3`, bản Development, PC).** Mỗi lượt 4–6 ngày; bot lên cấp 2 rồi cấp 3 bằng cheat Xu/RP (nên lãi những ngày đầu bị ảnh hưởng bởi việc bot thuê đủ 8 nhân viên). Ngày ổn định (ngày 4–6):
+
+| Cấu hình | Ghế | Khách/ngày | Doanh thu | Lãi sau lương + phí 700 |
+|---|---|---|---|---|
+| 3 nhân viên (Dọn dẹp ×2, Phục vụ), không Pha chế | 25–27 | 53 (mất ~55 vì chỉ chủ quán pha) | 7.600 | 2.200–4.200 |
+| 8 nhân viên (lương 2.950/ngày), 14–23 ghế | 14–23 | 64–69 | 5.400–8.600 | 700–3.000 |
+| 8 nhân viên + cộng 120.000 Xu để mua bàn + máy | ~26–47 | 74–88 | 11.000–13.600 | 4.600–7.400 |
+
+- **Quay vòng chỗ ngồi thực tế ~3,2 khách/ghế/ngày** (công thức dùng 5): một lượt = đi bộ ~10 s + chờ ly ~25 s + uống 8–15 s + chờ lau bàn ~10 s, trong khi cửa sổ sinh khách chỉ ~165 giây. Vì vậy lỗi "hết chỗ" vẫn là lý do mất khách chính ở mọi cấu hình, trước cả nhân viên.
+- **Lãi cấp 3 ~5.000–7.000/ngày so với tài liệu 20.000–35.000** (§3.1): thiếu 3–4 lần. Nguyên nhân là hình học (sảnh 10 × 12 m, 1 ngày = 210 giây) khiến khách/ngày chỉ ~80–110 thay vì 100–260, chứ không phải lỗi mã. Núm chỉnh gợi ý: giá/biên món cấp 3, hệ số Demand cấp 3, chiều dài ngày cấp 3, lương nhân viên, giá mua nhà (232.000 ≈ 90 ngày lãi cấp 2).
+- Hiệu năng cảnh cấp 3 (có 8 nhân viên + ~40 khách): CPU script TB 0,44–0,49 ms/khung, cấp phát 49–77 B/khung, GC0 6–10 lần/phút, ~62k tam giác lúc đặt ít đồ (ngân sách 150k), 1 vật liệu.
+
+**Lỗi tìm ra khi kiểm chứng.** (a) Bot đặt đồ / thuê nhân viên **ngay trong lúc chuyển cấp** làm nhân viên Phục vụ / Pha chế hầu như đứng yên cả ngày (đã chặn bằng `Transitioning`; người chơi không chạm được vì màn đen). (b) Pha chế đi giao xuyên sảnh chỉ làm ~4 ly/ngày (đã sửa bằng quầy giao). (c) Bảng nhân viên cấp 3 cần 8 hàng: hàng cao 104 px, vừa màn 1080.
+
+### 0.7 Việc nên làm tiếp cho cấp 3 (đề xuất)
+
+1. Quyết định núm kinh tế ở trên (lãi cấp 3 đang thấp hơn tài liệu 3–4 lần).
+2. 3.2 phần còn lại: 3 khu (sân vườn / lầu / VIP) = mở rộng lưới + môi trường + CI theo khu.
+3. 3.3: Thu ngân, Trưởng ca; 3.4 ca làm.
+4. Mua nhiều nhân viên Phục vụ hoặc cho Phục vụ mang 2 ly/chuyến (Phục vụ là nút thắt kế tiếp sau quầy giao).
+
 ## 1. Phạm vi Giai đoạn 3 (Alpha)
 
 | Mã | Việc | Mô tả (số liệu theo economy) | Phụ thuộc |
@@ -80,11 +116,26 @@ Chưa đo được trên PC: GPU/draw call/nhiệt độ trên điện thoại t
 | **3.9** | Nhiệm vụ mở rộng | Nhiệm vụ tuần (7 nhiệm vụ: 1 món trang trí độc quyền + 40 Hạt), quà đăng nhập 7 ngày, reroll nhiệm vụ | MissionBook |
 | **3.10** | Thu nhập offline | Công thức §8 (T2 hệ số 0,25; T3 0,30; cần đủ nhân viên); chống chỉnh giờ | Server time (Firebase) |
 
+### 1.1 Trạng thái (2026-10-13)
+
+| Mã | Trạng thái | Ghi chú |
+|---|---|---|
+| 3.1 Chuyển cấp 3 | **Xong** | `TierManager` tổng quát 1→2→3; mua nhà = 250.000 − cọc 18.000 hoàn = 232.000 Xu + ★3 (4.000 RP); thẻ tiến độ + nút "Mua nhà hàng!" + hộp xác nhận; hết tiền thuê, phí vận hành 700/ngày; nợ cũ vẫn trả dần |
+| 3.2 Nhà hàng + 3 khu | **Một phần** | Sảnh chính 10 × 12 m (lưới 20 × 24 ô, sàn gỗ ghép, cửa rộng 2,2 m, camera xa hơn). **Chưa có 3 khu** sân vườn / lầu / VIP và CI theo khu (cần mở rộng lưới + môi trường) |
+| 3.3 Nhân viên cấp 3 | **Một phần** | Trần theo vai trò (`GameBalance.StaffMaxCount`): T2 = 1 Dọn dẹp + 1 Phục vụ (**Pha chế và người thứ hai chỉ từ T3**), T3 = 3 Dọn dẹp + 2 Phục vụ + 3 Pha chế (8, trong dải 4–10). **Chưa có** Thu ngân, Trưởng ca |
+| 3.4 Ca làm | Chưa | |
+| 3.5 Máy móc | **Xong (bản gọn)** | 3 máy là nội thất đặt trong quán (không có UI riêng): máy xay 25.000 (−15% thời gian pha NV), espresso 150.000 (−25%, cộng dồn), cold brew 60.000 (mở món). Hệ số cũng nới cửa sổ "pha hoàn hảo" của chủ quán |
+| 3.6 Món cấp 3 | **Xong** | Bạc xỉu kem muối 230 (không cần máy), Cold brew cam sả 200 (cần máy cold brew), Phin Robusta Cầu Đất 300 (cần máy espresso); tự mở khi lên cấp 3, vào menu nếu còn chỗ (menu T3 = 8 món) |
+| 3.7 Kinh tế cấp 3 | **Một phần** | Công thức, hệ số, giá đã vào code và đo bằng bot (xem §0.6); chưa chỉnh lại số vì cần quyết định thiết kế |
+| 3.8 Nội thất cấp 3 | **Xong (bản đầu)** | 11 model Blender: ghế bành nhung, ghế da, bàn đá cẩm thạch, máy lạnh tủ đứng, đèn chùm đồng, cây bàng lá đàn, giá vẽ, piano, 3 máy móc |
+| 3.9 Nhiệm vụ mở rộng | Chưa | |
+| 3.10 Thu nhập offline | Chưa | cần Firebase |
+
 ## 2. Việc CHƯA làm được nếu thiếu thông tin từ bạn (không đoán)
 
 - **Firebase** (Auth ẩn danh, Cloud Save, Remote Config, Analytics, Crashlytics): cần tài khoản Firebase + `google-services.json` của bạn.
 - **Quảng cáo thưởng / IAP**: cần tài khoản AdMob hoặc LevelPlay, Google Play Console (App ID, SKU). Gói `com.unity.purchasing` đã nằm trong manifest nhưng chưa có mã.
-- **Model 3D cấp 3**: cần quyết định kiểu (script Blender tự sinh hay asset pack) trước khi làm 3.8.
+- ~~Model 3D cấp 3~~: đã chốt dùng script Blender tự sinh (`tools/gen_furniture.py`, nhóm `ASSETS_T3`).
 
 ## 3. Thứ tự đề xuất
 

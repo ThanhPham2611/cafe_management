@@ -47,6 +47,8 @@ namespace Cafe
         public TierManager Tier { get; private set; }
         public CupStock Stock { get; private set; }
         public OrderQueue Orders { get; private set; }
+        /// Quầy giao: ly Pha chế đã pha xong chờ nhân viên Phục vụ mang đi.
+        public ReadyShelf Shelf { get; private set; }
         public BrewStation Station { get; private set; }
         public GridSystem Grid { get; private set; }
         public DayCycle Day { get; private set; }
@@ -142,6 +144,7 @@ namespace Cafe
             Recipes.Load(hasSave ? save : null);
             if (Tier != null) Tier.TierChanged += Recipes.NotifyTierChanged; // lên cấp: mở món thường của cấp mới, làm mới khay/sổ
             Stock.Init(GameBalance.StartCups);
+            Shelf = new ReadyShelf(() => Stock.Return()); // ly bị bỏ (khách đi mất) trả ly sạch về kho
             int startDay = hasSave ? Mathf.Max(1, save.day) : 1;
             dayStartXu = Wallet.Xu;
             dayStartRp = Reputation.RP;
@@ -300,6 +303,7 @@ namespace Cafe
             }
 
             Orders.Clear();
+            Shelf.Clear();
             Station.ResetAll();
             if (Owner != null) Owner.ResetForNewDay();
             if (Staff != null) Staff.ResetForNewDay();
@@ -310,6 +314,12 @@ namespace Cafe
             dayStartRp = Reputation.RP;
             Spawner.BeginDay(day, Reputation.Stars, Grid.Seats.Count);
             GameEvents.RaiseDayStarted(day);
+        }
+
+        /// Hệ số nhân thời gian pha của nhân viên Pha chế theo máy móc đang đặt trong quán (1 = không có máy).
+        public float BrewTimeFactor
+        {
+            get { return Grid != null ? MachineRules.BrewTimeFactor(Grid.HasMachine) : 1f; }
         }
 
         /// Bổ sung ly cho đủ theo số ghế (gọi khi bắt đầu ngày và mỗi khi bố cục / cấp quán đổi).

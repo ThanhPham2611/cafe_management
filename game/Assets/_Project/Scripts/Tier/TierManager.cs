@@ -5,12 +5,13 @@ using UnityEngine;
 
 namespace Cafe
 {
-    /// Cấp quán (phase2_spec §1). Truy cập qua GameBootstrap.Tier.
-    ///  - Điều kiện lên cấp 2: RP >= 300 và Xu >= 18.000 (cọc). Tiền cọc bị giữ lại (Deposit, có lưu).
-    ///  - Chuyển cảnh: tối dần -> dọn khách/đơn/ly -> cất đồ cấp 1 vào kho (Inventory) và hủy xe đẩy -> dựng phòng thuê
-    ///    (EnvironmentBuilder) + lưới 12x16 + bố cục mặc định -> bake NavMesh -> sáng dần -> pháo giấy + "Khai trương!".
-    ///  - Từ save cấp >= 2, game vào thẳng phòng thuê (PrepareRoomOnLoad).
-    ///  - Tiền thuê / nợ / chi phí cố định theo RentLedger.
+    /// Cấp quán (phase2_spec §1, phase3_spec 3.1/3.2). Truy cập qua GameBootstrap.Tier.
+    ///  - Lên cấp 2: RP >= 300 và Xu >= 18.000 (cọc). Tiền cọc bị giữ lại (Deposit, có lưu).
+    ///  - Lên cấp 3 (mua nhà hàng): RP >= 4.000 và Xu >= 250.000 - cọc; cọc được hoàn, hết tiền thuê.
+    ///  - Chuyển cảnh: tối dần -> dọn khách/đơn/ly -> cất đồ cũ vào kho (Inventory) và hủy xe đẩy -> dựng phòng
+    ///    (EnvironmentBuilder theo RoomSpec của cấp) + lưới + bố cục mặc định -> bake NavMesh -> sáng dần -> pháo giấy + "Khai trương!".
+    ///  - Từ save cấp >= 2, game vào thẳng phòng của cấp (PrepareRoomOnLoad).
+    ///  - Tiền thuê (chỉ cấp 2) / nợ / chi phí cố định theo RentLedger.
     public class TierManager : MonoBehaviour
     {
         private const float FadeSeconds = 0.6f;
@@ -30,11 +31,12 @@ namespace Cafe
         private UpgradePanel panel;
         private GameObject t1Env;
         private GameObject roomRoot;
+        private int roomTier;
         private readonly Dictionary<string, int> inventory = new Dictionary<string, int>();
 
-        /// 1 vỉa hè, 2 thuê mặt bằng (3, 4 chưa làm).
+        /// 1 vỉa hè, 2 thuê mặt bằng, 3 mua nhà hàng (4 chưa làm).
         public int Current { get; private set; }
-        /// Tiền cọc đang giữ (hoàn lại khi mua nhà hàng, cấp 3).
+        /// Tiền cọc đang giữ (hoàn lại khi mua nhà hàng, cấp 3; sau đó = 0).
         public int Deposit { get; private set; }
         /// Đang chạy chuyển cảnh: đồng hồ ngày đứng, HUD khóa.
         public bool Transitioning { get; private set; }
@@ -43,17 +45,19 @@ namespace Cafe
         public int StaffCount;
 
         public RentLedger Ledger { get { return ledger; } }
-        public bool IsRented { get { return Current >= 2; } }
+        /// Đang thuê mặt bằng (cấp 2): có tiền thuê hàng tuần. Cấp 3 đã mua nhà.
+        public bool IsRented { get { return Current == 2; } }
+        public RoomSpec Room { get { return RoomLayout.For(Current); } }
         public int RentDebt { get { return ledger != null ? ledger.Debt : 0; } }
 
         /// Cấp quán vừa đổi (đã dựng xong phòng mới). Recipes/Cleaning nghe để làm mới theo cấp.
         public event Action TierChanged;
         public event Action InventoryChanged;
 
-        /// Chi phí cố định mỗi ngày: phí vỉa hè 60 (cấp 1) / vận hành 150 (cấp 2).
+        /// Chi phí cố định mỗi ngày: phí vỉa hè 60 (cấp 1) / vận hành 150 (cấp 2) / 700 (cấp 3).
         public int DailyFixedCost
         {
-            get { return Current >= 2 ? GameBalance.Tier2DailyFixedCost : GameBalance.SidewalkFee; }
+            get { return GameBalance.FixedCostFor(Current); }
         }
 
         // ------------------------------------------------------------------ khởi tạo
@@ -100,8 +104,9 @@ namespace Cafe
         /// Gọi từ GameBootstrap.Build TRƯỚC khi tạo GridSystem khi save là cấp >= 2: dựng phòng, đặt điểm khách vào/ra.
         public void PrepareRoomOnLoad(out Vector3 gridOrigin, out Vector2Int gridSize)
         {
-            gridOrigin = RoomLayout.GridOrigin;
-            gridSize = RoomLayout.GridSize;
+            RoomSpec room = RoomLayout.For(Current);
+            gridOrigin = room.GridOrigin;
+            gridSize = room.GridSize;
             HideT1Env();
             BuildRoom();
             ConfigureWorldPoints();
@@ -113,11 +118,14 @@ namespace Cafe
             if (grid != null) grid.FRef = GameBalance.FRefFor(Current);
         }
 
-        /// Gọi ngay sau khi tạo CameraRig: cấp >= 2 dùng khung nhìn rộng hơn cho phòng thuê.
+        /// Gọi ngay sau khi tạo CameraRig: cấp >= 2 dùng khung nhìn rộng hơn cho phòng.
         public void OnCameraReady()
         {
             if (Current >= 2 && game.CameraRig != null)
-                game.CameraRig.SetBounds(game.Grid.WorldBounds, RoomLayout.CameraDistance, RoomLayout.CameraPivotZ);
+            {
+                RoomSpec room = RoomLayout.For(Current);
+                game.CameraRig.SetBounds(game.Grid.WorldBounds, room.CameraDistance, room.CameraPivotZ);
+            }
         }
 
         /// Gọi sau khi đặt layout đã lưu: cấp >= 2 mà chưa có đồ thì đặt bố cục mặc định; thiếu quầy pha thì bổ sung.
@@ -133,13 +141,19 @@ namespace Cafe
         public int XuNow { get { return game != null ? game.Wallet.Xu : 0; } }
         public int RpNow { get { return game != null ? Mathf.FloorToInt(game.Reputation.RP) : 0; } }
 
-        public bool CanUpgradeToT2
+        /// Cấp kế tiếp (2 hoặc 3); 0 khi đã ở cấp cao nhất hiện có.
+        public int NextTier { get { return Current >= 1 && Current < 3 ? Current + 1 : 0; } }
+        public int NextTierRp { get { return GameBalance.UpgradeStarRP(NextTier); } }
+        /// Xu phải có để lên cấp kế tiếp (cấp 2 = cọc; cấp 3 = giá nhà trừ cọc được hoàn).
+        public int NextTierXu { get { return GameBalance.UpgradeCost(NextTier, Deposit); } }
+
+        public bool CanUpgrade
         {
             get
             {
-                return Current == 1 && game != null
-                    && game.Reputation.RP >= GameBalance.Tier2StarRP
-                    && game.Wallet.Xu >= GameBalance.Tier2Deposit;
+                return NextTier != 0 && game != null
+                    && game.Reputation.RP >= NextTierRp
+                    && game.Wallet.Xu >= NextTierXu;
             }
         }
 
@@ -148,7 +162,7 @@ namespace Cafe
         {
             get
             {
-                if (Current != 1 || Transitioning || game == null || game.Day == null) return false;
+                if (NextTier == 0 || Transitioning || game == null || game.Day == null) return false;
                 if (game.Day.CurrentPhase == DayCycle.Phase.Idle) return false;
                 if (game.Creator != null && game.Creator.IsOpen) return false;
                 if (game.Builder != null && game.Builder.IsPlacing) return false;
@@ -160,10 +174,9 @@ namespace Cafe
         public void RequestUpgrade()
         {
             if (!UpgradeAllowedNow) return;
-            if (!CanUpgradeToT2)
+            if (!CanUpgrade)
             {
-                GameEvents.RaiseToast(string.Format(Strings.TierNeedFmt,
-                    Strings.FormatInt(GameBalance.Tier2Deposit), Strings.FormatInt(GameBalance.Tier2StarRP)));
+                GameEvents.RaiseToast(NeedMessage());
                 return;
             }
             if (game.Builder != null && game.Builder.IsOpen) game.Builder.Close();
@@ -171,10 +184,17 @@ namespace Cafe
             else ConfirmUpgrade();
         }
 
-        /// Người chơi bấm "Thuê ngay" (hoặc autopilot gọi thẳng). Trả về false nếu không bắt đầu được.
+        /// "Cần đủ X Xu và Y RP để ..." theo cấp kế tiếp.
+        public string NeedMessage()
+        {
+            return string.Format(NextTier >= 3 ? Strings.Tier3NeedFmt : Strings.TierNeedFmt,
+                Strings.FormatInt(NextTierXu), Strings.FormatInt(NextTierRp));
+        }
+
+        /// Người chơi bấm "Thuê ngay" / "Mua ngay" (hoặc autopilot gọi thẳng). Trả về false nếu không bắt đầu được.
         public bool ConfirmUpgrade()
         {
-            if (!CanUpgradeToT2 || !UpgradeAllowedNow) return false;
+            if (!CanUpgrade || !UpgradeAllowedNow) return false;
             Transitioning = true; // đặt đồng bộ để autopilot / UI thấy ngay
             StartCoroutine(UpgradeRoutine());
             return true;
@@ -193,23 +213,32 @@ namespace Cafe
         private IEnumerator UpgradeRoutine()
         {
             Transitioning = true;
+            int target = NextTier;
             try
             {
                 if (panel != null) panel.HideConfirm();
 
-                int paid = game.Wallet.Spend(GameBalance.Tier2Deposit);
-                Deposit += paid;
-                Debug.Log("[Tier] Thuê mặt bằng: cọc " + paid + " Xu");
+                int paid = game.Wallet.Spend(NextTierXu);
+                if (target >= 3)
+                {
+                    Debug.Log("[Tier] Mua nhà hàng: trả " + paid + " Xu, hoàn cọc " + Deposit + " Xu");
+                    Deposit = 0; // cọc được trừ vào giá nhà (đã tính trong NextTierXu)
+                }
+                else
+                {
+                    Deposit += paid;
+                    Debug.Log("[Tier] Thuê mặt bằng: cọc " + paid + " Xu");
+                }
 
                 yield return FadeTo(1f);
 
                 Step(ClearDayState, "dọn trạng thái ngày");
                 yield return null;
 
-                Step(StashLayout, "cất đồ cấp 1");
+                Step(() => StashLayout(target), "cất đồ cũ");
                 yield return null; // để Destroy của xe đẩy/đồ cũ chạy xong trước khi bake
 
-                Step(BuildTier2World, "dựng phòng thuê");
+                Step(() => BuildWorld(target), "dựng phòng");
                 yield return null;
                 Step(RebuildNavigation, "bake NavMesh");
                 Step(FinishWorldSwitch, "hoàn tất chuyển cấp");
@@ -254,6 +283,7 @@ namespace Cafe
         {
             if (game.Spawner != null) game.Spawner.PurgeAll();
             game.Orders.Clear();
+            game.Shelf.Clear();
             for (int i = game.LeftoverCups.Count - 1; i >= 0; i--)
             {
                 if (i >= game.LeftoverCups.Count) continue;
@@ -265,8 +295,8 @@ namespace Cafe
             if (game.Owner != null) game.Owner.ResetForNewDay();
         }
 
-        /// Đồ đã mua (ghế, bàn, trang trí) về kho; xe đẩy bị hủy. Đồ chỉ dùng được ở cấp 1 (onlyTier) được hoàn 50% giá.
-        private void StashLayout()
+        /// Đồ đã mua (ghế, bàn, trang trí) về kho; xe đẩy / quầy cũ bị hủy. Đồ chỉ dùng được ở cấp cũ (onlyTier) được hoàn 50% giá.
+        private void StashLayout(int toTier)
         {
             GridSystem grid = game.Grid;
             // Biển hiệu đang gắn vào xe đẩy: tháo ra trước để không bị hủy theo
@@ -278,23 +308,26 @@ namespace Cafe
                 PlacedFurniture pf = grid.Placed[i];
                 FurnitureDef d = pf != null ? pf.Def : null;
                 if (d == null || d.kind == FurnitureKind.BrewStation) continue;
-                if (d.onlyTier != 0 && d.onlyTier != 2) refund += Mathf.RoundToInt(d.price * ShopRules.SellRatio);
+                if (d.onlyTier != 0 && d.onlyTier != toTier) refund += Mathf.RoundToInt(d.price * ShopRules.SellRatio);
                 else AddToInventory(d.id, 1);
             }
             grid.RemoveAll();
             if (refund > 0) game.Wallet.Earn(refund);
         }
 
-        private void BuildTier2World()
+        private void BuildWorld(int tier)
         {
             HideT1Env();
+            Current = tier;
             BuildRoom();
             ConfigureWorldPoints();
 
             GridSystem grid = game.Grid;
-            grid.Reconfigure(RoomLayout.GridOrigin, RoomLayout.GridSize);
-            Current = 2;
-            ledger.Reset();
+            RoomSpec room = RoomLayout.For(tier);
+            grid.Reconfigure(room.GridOrigin, room.GridSize);
+            // Nợ cũ (thuê nhà, lương) vẫn phải trả; cấp 2 bắt đầu kỳ thuê mới, cấp 3 hết thuê.
+            if (tier == 2) ledger.Reset();
+            else ledger.ClearRentCycle();
             OnGridCreated(grid);
             RoomLayout.PlaceDefault(game, grid, this);
         }
@@ -309,7 +342,8 @@ namespace Cafe
         private void FinishWorldSwitch()
         {
             GridSystem grid = game.Grid;
-            if (game.CameraRig != null) game.CameraRig.SetBounds(grid.WorldBounds, RoomLayout.CameraDistance, RoomLayout.CameraPivotZ);
+            RoomSpec room = RoomLayout.For(Current);
+            if (game.CameraRig != null) game.CameraRig.SetBounds(grid.WorldBounds, room.CameraDistance, room.CameraPivotZ);
             if (game.Builder != null) game.Builder.RebindGrid();
             if (game.Spawner != null) game.Spawner.RefreshDemand();
             if (game.Owner != null) game.Owner.ResetForNewDay(); // đứng ở điểm phục vụ của quầy bar mới
@@ -355,18 +389,27 @@ namespace Cafe
             if (roomRoot != null) roomRoot.SetActive(!show);
         }
 
+        /// Dựng phòng của cấp hiện tại; phòng cũ (cấp thấp hơn) bị hủy ngay để collider không lọt vào NavMesh.
         private void BuildRoom()
         {
-            if (roomRoot != null) return;
-            if (game.toonMaterial == null) Debug.LogWarning("[Tier] GameBootstrap.toonMaterial trống: phòng thuê sẽ không có màu palette");
-            roomRoot = EnvironmentBuilder.BuildRoom(game.toonMaterial, null);
+            if (roomRoot != null && roomTier == Current) return;
+            if (roomRoot != null)
+            {
+                roomRoot.SetActive(false);
+                Destroy(roomRoot);
+                roomRoot = null;
+            }
+            if (game.toonMaterial == null) Debug.LogWarning("[Tier] GameBootstrap.toonMaterial trống: phòng sẽ không có màu palette");
+            roomRoot = EnvironmentBuilder.BuildRoom(game.toonMaterial, null, RoomLayout.For(Current));
+            roomTier = Current;
         }
 
         /// Điểm khách đi vào / đi ra nằm trên vỉa hè trước mặt tiền.
         private void ConfigureWorldPoints()
         {
-            game.spawnPoint = EnsureMarker(game.spawnPoint, "SpawnPoint", RoomLayout.SpawnPoint);
-            game.exitPoint = EnsureMarker(game.exitPoint, "ExitPoint", RoomLayout.ExitPoint);
+            RoomSpec room = RoomLayout.For(Current);
+            game.spawnPoint = EnsureMarker(game.spawnPoint, "SpawnPoint", room.SpawnPoint);
+            game.exitPoint = EnsureMarker(game.exitPoint, "ExitPoint", room.ExitPoint);
         }
 
         private Transform EnsureMarker(Transform t, string name, Vector3 pos)
@@ -386,7 +429,7 @@ namespace Cafe
         /// Đầu ngày (sau Day.Begin, trước khi chốt mốc Xu đầu ngày): tới kỳ thì thu tiền thuê nhà.
         public void OnDayBegin(DaySummary summary)
         {
-            if (Current < 2 || ledger == null) return;
+            if (!IsRented || ledger == null) return; // cấp 3: đã mua nhà, không còn tiền thuê
             int shortfall;
             int paid = ledger.OnDayBegin(game.Wallet, summary, out shortfall);
             if (paid > 0 || shortfall > 0)
@@ -426,6 +469,18 @@ namespace Cafe
         {
             int n;
             return !string.IsNullOrEmpty(id) && inventory.TryGetValue(id, out n) ? n : 0;
+        }
+
+        /// Số món trong kho thuộc một loại (vd. số bàn đã mua để bày ra khi mở nhà hàng).
+        public int InventoryKindCount(FurnitureKind kind)
+        {
+            int n = 0;
+            foreach (KeyValuePair<string, int> kv in inventory)
+            {
+                FurnitureDef d = game != null ? game.GetDef(kv.Key) : null;
+                if (d != null && d.kind == kind) n += kv.Value;
+            }
+            return n;
         }
 
         public void AddToInventory(string id, int count)

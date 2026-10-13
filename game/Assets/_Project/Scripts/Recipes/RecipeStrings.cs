@@ -19,6 +19,7 @@ namespace Cafe
         public const string HintBoughtFmt = "Đã mua gợi ý: {0}";
         public const string GemsFmt = "{0} Hạt";
         public const string RecipeCostFmt = "Giá {0} Xu - vốn {1} Xu";
+        public const string NeedMachineFmt = "Cần đặt {0} trong quán";
         public const string TeaserT1 = "Còn nhiều công thức bí truyền khi bạn thuê mặt bằng (Cấp 2).";
         public const string NoRecipes = "Chưa có công thức nào";
 

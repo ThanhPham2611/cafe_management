@@ -56,9 +56,17 @@ namespace Cafe
 
         private void TryPickUpDrink()
         {
+            if (Time.time < retryAt) return;
+            if (TryPickUpFromStation()) return;
+            TryPickUpFromShelf();
+        }
+
+        /// Ly chủ quán vừa pha xong ở quầy pha (ưu tiên: trả quầy rảnh cho ly kế).
+        private bool TryPickUpFromStation()
+        {
             BrewStation station = Game.Station;
-            if (Time.time < retryAt || station == null || station.State != BrewStation.Phase.Ready) return;
-            if (Game.Owner != null && Game.Owner.IsDelivering) return; // chủ quán đang tự giao ly này
+            if (station == null || station.State != BrewStation.Phase.Ready) return false;
+            if (Game.Owner != null && Game.Owner.IsDelivering) return false; // chủ quán đang tự giao ly này
 
             // Station.Selected đã bị xóa khi pha xong (BrewStation.Finish), nên chọn khách theo món đang cầm.
             Order pick = OrderPicker.NextForServer(Game.Orders.Items, station.Recipe, IsWaiting);
@@ -68,16 +76,35 @@ namespace Cafe
                 !customer.Seat.TryGetApproachPoint(worker.transform.position, out point))
             {
                 retryAt = Time.time + 0.5f;
-                return;
+                return false;
             }
 
             // Cầm ly đi ngay; giữ chỗ đơn để Pha chế không làm trùng.
-            if (!pick.TryClaim(worker)) { retryAt = Time.time + 0.5f; return; }
+            if (!pick.TryClaim(worker)) { retryAt = Time.time + 0.5f; return false; }
             int quality = station.TakeReadyDrink(pick.recipe);
-            if (quality <= 0) { pick.Release(worker); retryAt = Time.time + 0.5f; return; }
-            carriedOrder = pick;
+            if (quality <= 0) { pick.Release(worker); retryAt = Time.time + 0.5f; return false; }
+            BeginCarry(pick, quality, customer, point);
+            return true;
+        }
+
+        /// Ly Pha chế để lại quầy giao: lấy ly cũ nhất mà khách còn chờ và tới được.
+        private void TryPickUpFromShelf()
+        {
+            ReadyShelf shelf = Game.Shelf;
+            if (shelf == null || shelf.Count == 0) return;
+            shelf.Prune(IsWaiting);
+            Vector3 point = default(Vector3);
+            ReadyShelf.Drink drink;
+            bool taken = shelf.TryTake(worker, o => IsWaiting(o) && o.customer.Seat.TryGetApproachPoint(worker.transform.position, out point), out drink);
+            if (!taken) { retryAt = Time.time + 0.5f; return; }
+            BeginCarry(drink.order, drink.quality, drink.order.customer, point);
+        }
+
+        private void BeginCarry(Order order, int quality, Customer customer, Vector3 point)
+        {
+            carriedOrder = order;
             carriedQuality = quality;
-            GameEvents.RaiseOrderClaimChanged(pick);
+            GameEvents.RaiseOrderClaimChanged(order);
             serveTarget = customer;
             worker.Visual.SetCarry(true);
             if (!MoveTo(point)) { worker.StopWork(); retryAt = Time.time + 1f; }

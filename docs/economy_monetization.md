@@ -774,3 +774,19 @@ Bot autoplay `-autoplay -autobuy -autohidden -upgradestaff` chạy 10–12 ngày
 | Pha chế (lương 450/ngày) | bù lương bằng 3★ | chưa bù lương ở 14–16 ghế (cổ chai là chủ quán + dọn dẹp) |
 
 Kết luận: cấp 2 có lãi và ổn định; mua nhà hàng 250.000 Xu mất khoảng 110–130 ngày in-game thay vì ~58. Núm chỉnh nên thử trước: Demand cấp 2 (hệ số 1,5), giá bán món ẩn, tiền thuê, giá cấp 3 (`t3_price`).
+
+---
+
+## 18. Số liệu đo từ bản chạy thật (autoplay, cấp 3) — 2026-10-13
+
+Bot `-autoplay -autoupgrade3 -cheatt3` (lên cấp 2 rồi 3 bằng cheat Xu/RP, chơi 4–6 ngày ở nhà hàng; chi tiết cấu hình và lỗi đã sửa ở `phase3_spec.md` §0.6). Nhà hàng 10 × 12 m, mua nhà 232.000 Xu (đã trừ cọc hoàn), phí 700/ngày, 8 nhân viên (lương 2.950/ngày), máy xay + cold brew.
+
+| Chỉ số | Thiết kế (§3.1, §7) | Đo được |
+|---|---|---|
+| Khách/ngày | 100 → 260 | 53–88 (ổn định ~80 khi ~26–47 ghế) |
+| Quay vòng chỗ ngồi | 5 lượt/ngày | **~3,2 khách/ghế/ngày** (đi bộ + chờ ly + uống + chờ lau bàn so với cửa sổ sinh khách ~165 s) |
+| Doanh thu/ngày | ~22.000–26.000 | 11.000–13.600 |
+| Lãi ròng/ngày | 20.000–35.000 | **4.600–7.400** |
+| Pha chế (lương 450) | T3 | ~4 ly/ngày/người khi tự đi giao; 8–13 ly/ngày/người sau khi thêm quầy giao |
+
+Kết luận: cấp 3 chạy được và có lãi hơn cấp 2 khoảng 2–3 lần (~2.500 → ~5.000–7.000/ngày), nhưng **thấp hơn mục tiêu 3–4 lần**; cộng với cấp 2 ~2.500/ngày (§17) thì mua nhà hàng mất ~90–130 ngày và T3→T4 ~290 ngày. Hai núm có tác dụng lớn nhất vì chạm đúng nút thắt đo được: (1) **số khách mỗi ngày** — độ dài ngày cấp 3 hoặc tốc độ đi bộ / giao ly, hay Demand cấp 3; (2) **biên mỗi ly** — giá 3 món cấp 3 (200/230/300) và hệ số bán món ẩn. Giá nhà hàng 250.000 nên chỉnh sau khi chốt hai núm trên.
