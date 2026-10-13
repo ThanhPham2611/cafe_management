@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ba341d98cc92be48b208bac9574fcd8, type: 3}
+  m_Name: SO_Furniture_Machine_ColdBrew
+  m_EditorClassIdentifier: Cafe.Runtime::Cafe.FurnitureDef
+  id: Machine_ColdBrew
+  displayName: "M\xE1y cold brew"
+  prefab: {fileID: 7869407179847034420, guid: ad40526b8d9b0df429b0e07ef7c4faf4, type: 3}
+  footprint: {x: 2, y: 1}
+  price: 60000
+  kind: 2
+  comfort: 0
+  style: 6
+  seatHeight: 0
+  overhead: 0
+  hangY: 0
+  minTier: 3
+  onlyTier: 0
+  shopVisible: 1
+  icon: {fileID: 21300000, guid: bf7a50cfd93ac3d459c18e38a140a452, type: 3}
+  priceStep: 0
+  maxCount: 1
+  attract: 0
+  machineId: cold_brew

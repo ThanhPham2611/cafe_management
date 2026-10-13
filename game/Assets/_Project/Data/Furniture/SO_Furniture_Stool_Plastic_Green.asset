@@ -30,3 +30,4 @@ MonoBehaviour:
   priceStep: 75
   maxCount: 0
   attract: 0
+  machineId: 

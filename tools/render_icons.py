@@ -1,11 +1,11 @@
 """Render thumbnail cửa hàng cho mọi SM_*.fbx nội thất/prop: 256x256 PNG nền trong suốt, toon, góc 3/4.
 
-    blender --background --python tools/render_icons.py -- [--only Stool_Plastic_Red ...] [--tier 1|2] [--size 256]
+    blender --background --python tools/render_icons.py -- [--only Stool_Plastic_Red ...] [--tier 1|2|3] [--size 256]
 
 Kết quả: art_source/export/icons/ICON_<id>.png  (<id> = tên FBX bỏ "SM_", vd ICON_Board_Menu_A.png)
 Đọc FBX từ art_source/export/ (không đụng characters/). Vật thể phủ ~80% khung, có bóng tiếp xúc mềm
 (đồ treo trần — có custom prop mount_y/hang_top — không có bóng sàn). `--tier 2` = chỉ icon nội thất Tier 2
-(danh sách lấy từ gen_furniture.ASSETS_T2 + ASSETS_T2B). Bảng tổng hợp xem nhanh: python tools/make_icon_sheet.py [--tier 2].
+(danh sách lấy từ gen_furniture.ASSETS_T2 + ASSETS_T2B), `--tier 3` = ASSETS_T3 (nhà hàng). Bảng tổng hợp xem nhanh: python tools/make_icon_sheet.py [--tier 2].
 """
 import argparse
 import math
@@ -164,7 +164,7 @@ def main():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", nargs="*", help="chỉ render các id này (vd Board_Menu_A)")
-    ap.add_argument("--tier", type=int, choices=(1, 2), help="chỉ render icon của tier này")
+    ap.add_argument("--tier", type=int, choices=(1, 2, 3), help="chỉ render icon của tier này")
     ap.add_argument("--size", type=int, default=256)
     args = ap.parse_args(argv)
 
@@ -173,7 +173,7 @@ def main():
     if args.only:
         files = [f for f in files if f.stem[3:] in args.only]
     if args.tier:
-        group = gf.ASSETS_T1 if args.tier == 1 else {**gf.ASSETS_T2, **gf.ASSETS_T2B}
+        group = gf.ASSETS_T1 if args.tier == 1 else (gf.ASSETS_T3 if args.tier == 3 else {**gf.ASSETS_T2, **gf.ASSETS_T2B})
         files = [f for f in files if f.stem in group]
     scene = clear_scene()
     cam = setup_render(scene, args.size)
