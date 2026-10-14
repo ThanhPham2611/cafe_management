@@ -57,6 +57,7 @@ namespace Cafe
         public void DebugAdvanceStory() { if (storyDialog != null) storyDialog.DebugAdvance(); }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public void DebugToggleStaffPanel() { if (staffPanel != null) staffPanel.DebugToggle(); }
+        public void DebugScrollStaff(float normalized) { if (staffPanel != null) staffPanel.DebugScroll(normalized); }
         public void DebugOpenSettings(bool open) { if (settingsPanel != null) settingsPanel.DebugOpen(open); }
         public void DebugOpenZones(bool open) { if (zonePanel != null) zonePanel.DebugOpen(open); }
 #endif
@@ -81,6 +82,10 @@ namespace Cafe
                 var es = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
                 es.transform.SetParent(transform, false);
             }
+            // Ngưỡng kéo ~2 mm theo mật độ điểm ảnh (mặc định 10 px quá nhỏ trên điện thoại): ngón tay rung nhẹ không biến một lần chạm
+            // nút THUÊ / NÂNG / MUA trong bảng cuộn thành thao tác kéo làm hụt nút
+            EventSystem eventSystem = EventSystem.current != null ? EventSystem.current : FindAnyObjectByType<EventSystem>();
+            if (eventSystem != null && Screen.dpi > 0f) eventSystem.pixelDragThreshold = Mathf.Max(10, Mathf.RoundToInt(Screen.dpi * 0.08f));
 
             // Lớp bong bóng (dưới)
             Canvas bubbleCanvas = HudBuilder.CreateCanvas("BubbleCanvas", 0, false, transform);

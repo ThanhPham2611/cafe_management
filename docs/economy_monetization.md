@@ -151,9 +151,11 @@ Chất lượng ly quyết định bởi: đúng nguyên liệu, đúng dụng c
 | Giá TB/ly | ~75–80 | ~120 | ~150 | ~150 |
 | Chi phí cố định/ngày | 60 | 150 + thuê 1.000 + lương | 700 + lương | lương quản lý + 15% doanh thu CN |
 | Lãi ròng/ngày (TB) | 1.200–2.500 | 4.000–9.700 | 20.000–35.000 | CN: ~45% lãi quán chính |
-| Nhân viên | 0 (người chơi tự làm) | 1–3 | 4–10, chia ca | quản lý CN |
+| Nhân viên | 0 (người chơi tự làm) | 1–3 | 4–10 ở sảnh, chia ca; **mỗi khu phụ đã mở +3** (đủ 3 khu 17, §6, §19.6) | quản lý CN |
 | Cơ chế mới | phục vụ, thu ly | dọn bàn, công thức, build mode, NV | zone, ca, nâng cấp máy, khu VIP | quản lý idle, offline lớn |
 | Thời điểm mục tiêu | phút 0 | **phút 45–60** (ngày in-game ~13–16) | **ngày thực 5–10** (in-game ~55–90) | **tuần thực 3–4** (in-game ~170–230) |
+
+> Dòng "Nhân viên" là dải thiết kế. Bản cài đặt (2026-10-14): T2 tối đa 2 (1 Dọn dẹp + 1 Phục vụ; Pha chế chỉ từ T3 vì đo không bù lương, §17); T3 sảnh 8 (3 Dọn dẹp + 2 Phục vụ + 3 Pha chế), mỗi khu phụ đã mở nới thêm 1 chỗ cho mỗi vai trò — bảng trần ở §6.
 
 ### 3.2 Nhu cầu khách (Demand)
 
@@ -279,13 +281,15 @@ Bàn bẩn > 2 giờ in-game (~26 s thực): thêm −5 CI mỗi bàn (ruồi/ki
 |---|---|---|
 | Người chơi (giữ chạm) | 1,2 | — |
 | NV dọn Lv1 | 6,0 | (tuyển 1.500) |
-| Lv2 | 5,0 | 2.000 |
-| Lv3 | 4,0 | 5.000 |
-| Lv4 | 3,0 | 12.000 |
-| Lv5 | 2,2 | 30.000 (yêu cầu T3) |
+| Lv2 | 5,0 | 1.000 |
+| Lv3 | 4,0 | 2.500 |
+| Lv4 | 3,0 | 6.250 |
+| Lv5 | 2,2 | 15.625 (yêu cầu T3) |
 | Tốc độ di chuyển NV (giày tốt) Lv1–3 | +0 / +15% / +30% | 1.500 / 6.000 |
 | Khay to (dọn 2 bàn/lượt) | — | 8.000 |
 | Robot hút bụi (T3) | lau sàn tự động | 20.000 |
+
+Giá nâng cấp NV dọn ở bảng trên là giá của công thức chung cho mọi vai trò ở §6 (không nhân TierScale), không còn là dải 2.000 / 5.000 / 12.000 / 30.000 của v0.1.
 
 Mục tiêu cảm giác: T2 không có NV dọn → CI rơi xuống ~60 sau ~1 giờ in-game cao điểm nếu người chơi bận pha → **nhu cầu thuê NV đầu tiên rõ ràng** trong ~2 ngày đầu T2.
 
@@ -297,13 +301,33 @@ Mục tiêu cảm giác: T2 không có NV dọn → CI rơi xuống ~60 sau ~1 g
 |---|---|---|---|---|
 | Phục vụ | T2 | 350 | 1.500 | tốc độ order/mang ly |
 | Dọn dẹp | T2 | 300 | 1.500 | §5 |
-| Pha chế | T2 | 450 | 2.500 | Lv3+ cho 3★ không tốn thêm thời gian |
+| Pha chế | T3 (v0.1: T2) | 450 | 2.500 | Lv3+ cho 3★ không tốn thêm thời gian |
 | Thu ngân | T3 | 400 | 3.000 | giảm hàng chờ thanh toán |
 | Trưởng ca | T3 | 800 | 6.000 | +10% tốc độ cả ca, giảm 50% sự cố |
 | Quản lý chi nhánh | T4 | 2.500 | 25.000 | hiệu suất CN 45% → 70% |
 
-- Lương T3 ×1,2 cho ca tối. Nâng cấp kỹ năng: `Cost(Lv) = 1.000 × 2,5^(Lv−1) × TierScale`.
+- Lương T3 ×1,2 cho ca tối (chưa có ca làm nên chưa áp dụng).
 - Lương trả cuối ngày; nếu thiếu Xu, NV vẫn làm (ghi nợ như tiền thuê) — không có cơ chế NV bỏ việc gây stress.
+- **Nâng cấp kỹ năng (mọi vai trò):** `Cost(Lv) = 1.000 × 2,5^(Lv−1)`, Lv là cấp hiện tại trước khi nâng, **không nhân TierScale** (`GameBalance.StaffUpgradeCost`). v0.1 ghi thêm `× TierScale` (×12 ở T3); bỏ theo quyết định 2026-10-14 (lý do ở §19.6). TierScale vẫn áp cho thưởng nhiệm vụ / login / sự kiện (§1.1), chỉ không áp cho giá nâng cấp NV. Cấp 5 chỉ nâng được từ cấp 4 khi quán ở cấp 3.
+
+| Nâng từ → lên | Chi phí (Xu) | Cộng dồn từ Lv1 |
+|---|---|---|
+| Lv1 → Lv2 | 1.000 | 1.000 |
+| Lv2 → Lv3 | 2.500 | 3.500 |
+| Lv3 → Lv4 | 6.250 | 9.750 |
+| Lv4 → Lv5 | 15.625 | 25.375 |
+
+- **Trần số người** (`GameBalance.StaffMaxCount(role, tier, openZones)`): T2 chỉ 1 Dọn dẹp + 1 Phục vụ (đo ở §17: người thứ hai và Pha chế không bù lương). T3 sảnh 3 Dọn dẹp + 2 Phục vụ + 3 Pha chế = 8 (trong dải 4–10 của §3.1). **Mỗi khu phụ đã mở nới thêm 1 chỗ cho MỖI vai trò** (`StaffSlotsPerZone = 1`, +3 người mỗi khu), chỉ ở T3:
+
+| Cấu hình | Dọn dẹp | Phục vụ | Pha chế | Tổng | Lương tối đa (Xu/ngày) |
+|---|---|---|---|---|---|
+| T2 | 1 | 1 | 0 | 2 | 650 |
+| T3, chỉ sảnh | 3 | 2 | 3 | 8 | 2.950 |
+| T3 + 1 khu | 4 | 3 | 4 | 11 | 4.050 |
+| T3 + 2 khu | 5 | 4 | 5 | 14 | 5.150 |
+| T3 + đủ 3 khu | 6 | 5 | 6 | 17 | 6.250 |
+
+Lương tối đa = thuê đủ trần, lương cơ bản của bảng trên, chưa tính ca tối ×1,2. Lý do nới trần theo khu và hệ quả đầu tư: §19.6.
 
 ---
 
@@ -779,7 +803,7 @@ Kết luận: cấp 2 có lãi và ổn định; mua nhà hàng 250.000 Xu mất
 
 ## 18. Số liệu đo từ bản chạy thật (autoplay, cấp 3) — 2026-10-13
 
-Bot `-autoplay -autoupgrade3 -cheatt3` (lên cấp 2 rồi 3 bằng cheat Xu/RP, chơi 4–6 ngày ở nhà hàng; chi tiết cấu hình và lỗi đã sửa ở `phase3_spec.md` §0.6). Nhà hàng 10 × 12 m, mua nhà 232.000 Xu (đã trừ cọc hoàn), phí 700/ngày, 8 nhân viên (lương 2.950/ngày), máy xay + cold brew.
+Bot `-autoplay -autoupgrade3 -cheatt3` (lên cấp 2 rồi 3 bằng cheat Xu/RP, chơi 4–6 ngày ở nhà hàng; chi tiết cấu hình và lỗi đã sửa ở `phase3_spec.md` §0.6). Nhà hàng 10 × 12 m, mua nhà 232.000 Xu (đã trừ cọc hoàn), phí 700/ngày, 8 nhân viên (trần lúc đó, chưa nới theo khu; lương 2.950/ngày), máy xay + cold brew.
 
 | Chỉ số | Thiết kế (§3.1, §7) | Đo được |
 |---|---|---|
@@ -795,7 +819,7 @@ Kết luận: cấp 3 chạy được và có lãi hơn cấp 2 khoảng 2–3 l
 
 ## 19. Ba khu của nhà hàng & ngày cấp 3 (2026-10-14)
 
-Cập nhật theo bản đã chạy thật trong Unity (142 test EditMode đạt, chụp màn hình cả 3 khu mở được, bot mở khu không lỗi). Chi tiết kỹ thuật ở `phase3_spec.md` §0.8; mục này ghi các quyết định kinh tế, lý do và phát hiện đo. Mọi con số vẫn là giá trị khởi điểm. Các chỗ cần số đo mà chưa có được đánh dấu riêng để điền sau (gom lại ở §19.5).
+Cập nhật theo bản đã chạy thật trong Unity (147 test EditMode đạt: 142 lúc thêm khu, 147 sau khi thêm trần nhân viên theo khu; chụp màn hình cả 3 khu mở được, bot mở khu không lỗi). Chi tiết kỹ thuật ở `phase3_spec.md` §0.8; mục này ghi các quyết định kinh tế, lý do và phát hiện đo. Mọi con số vẫn là giá trị khởi điểm. Các chỗ cần số đo mà chưa có được đánh dấu riêng để điền sau (gom lại ở §19.5; số đo mới nhất nằm ở `phase3_spec.md` §0.7 mục 6). Trần nhân viên theo khu và chi phí nâng cấp nhân viên: §19.6.
 
 ### 19.1 Giá & hiệu ứng từng khu
 
@@ -836,7 +860,7 @@ Từ cấp 3 một ngày in-game dài **300 giây thực** thay vì 210 (`GameBa
 
 ### 19.3 Phát hiện đo được: nút thắt chuyển từ "hết chỗ" sang "hết kiên nhẫn"
 
-Bot cấp 3, 8 nhân viên, chưa nâng cấp nhân viên trừ khi ghi khác. Mỗi dòng là một lượt chạy riêng nên là xu hướng, chưa phải số chốt.
+Bot cấp 3, 8 nhân viên (trần lúc đó; nay đã nới theo khu, §19.6), chưa nâng cấp nhân viên trừ khi ghi khác. Mỗi dòng là một lượt chạy riêng nên là xu hướng, chưa phải số chốt.
 
 | Cấu hình | Đo được |
 |---|---|
@@ -846,7 +870,7 @@ Bot cấp 3, 8 nhân viên, chưa nâng cấp nhân viên trừ khi ghi khác. M
 
 - **Nút thắt dời chỗ.** `phase3_spec.md` §0.6 ghi lý do mất khách chính là hết chỗ (khớp quay vòng ~3,2 ở §18). Với ngày 300 s và đủ ghế, "hết chỗ" về 0 và khách mất vì hết kiên nhẫn: nút thắt nay là **thông lượng Pha chế / Phục vụ**, không còn là chỗ ngồi. §3.2 mô tả hai nút thắt thay phiên (Capacity rồi Demand / ★); ở cấp 3 có thêm nút thắt thứ ba là nhân viên.
 - **Mở khu mà nhân viên còn cấp 1 thì quá tải.** Nhu cầu ×1,6 cộng với ~78 ghế làm đơn dồn lại, mất 100–130 khách/ngày và lãi gần 0. Thứ tự đầu tư nên là nhân viên trước hoặc cùng lúc với khu mới (đề xuất; nên gợi ý trong UI / `DayAdvisor`).
-- **Nâng cấp nhân viên là phần thưởng đầu tư chính của cấp 3.** `Cost(Lv) = 1.000 × 2,5^(Lv−1)`: Lv1→2 = 1.000, →3 = 2.500, →4 = 6.250, →5 = 15.625, tức 25.375 Xu để đưa một người lên Lv5 và 203.000 Xu cho cả 8 người (so với 310.000 cho ba khu). Lưu ý: §6 ghi thêm `× TierScale` (×12 ở T3) nhưng bản cài đặt hiện chưa nhân hệ số này; cần chốt một trong hai vì nó đổi hẳn bài toán đầu tư ở đây.
+- **Nâng cấp nhân viên là phần thưởng đầu tư chính của cấp 3.** `Cost(Lv) = 1.000 × 2,5^(Lv−1)`: Lv1→2 = 1.000, →3 = 2.500, →4 = 6.250, →5 = 15.625, tức 25.375 Xu để đưa một người lên Lv5; cả 8 người ở sảnh 203.000 Xu, đủ 17 người (đủ 3 khu) ≈ 431.000 Xu (so với 310.000 cho ba khu). Đã chốt (2026-10-14): **không nhân TierScale**, sửa §6 cho khớp với bản cài đặt; lý do và con số ở §19.6.
 - **Lãi vẫn thấp hơn mục tiêu.** Dòng cuối (giá TB 148, sát ~150 ở §3.1) cho lãi 6.400–6.600/ngày, nằm trong dải 4.600–7.400 đo ở §18 (cấu hình khác) và thấp hơn dải 20.000–35.000 của §3.1 khoảng 3 lần. Vì mỗi lượt khác cấu hình, chưa tách được ảnh hưởng riêng của ngày 300 s, của khu và của nâng cấp nhân viên lên lãi.
 
 ### 19.4 Tunables mới (đưa vào §15 khi làm Remote Config)
@@ -859,6 +883,7 @@ Bot cấp 3, 8 nhân viên, chưa nâng cấp nhân viên trừ khi ghi khác. M
 | `zone_vip_price_mult` | 1.5 | `VipPriceMult` | giá ly và tip của khách ngồi VIP |
 | `f_ref_zone` | 150 | `FRefZone` | khu phụ; sảnh vẫn theo `f_ref_per_tier` (400) |
 | `zone_starter_sets` | 2 | `ZoneStarterSets` | bộ bàn ghế tặng khi mở mỗi khu |
+| `staff_slots_per_zone` | 1 | `StaffSlotsPerZone` | chỗ nhân viên thêm cho MỖI vai trò với mỗi khu phụ đã mở (chỉ cấp 3); trần cơ bản theo vai trò xem §6, §19.6 |
 
 ### 19.5 Số đo còn thiếu
 
@@ -866,13 +891,48 @@ Các chỗ này cần chạy bot rồi điền; chưa có thì không suy ra t�
 
 1. **Đã đo (bot, 7 ngày, TB ngày 3–7, một lượt mỗi cấu hình).** Cờ bot: `-autoplay -autoupgrade3 -cheatt3 -autostaff -fullstaff -autobuy -bestmenu -autohidden -upgradestaff` (+ `-autozones` cho hai dòng dưới); menu 8 món giá TB 148 (dòng giữa 127 vì không mua máy cold brew); 18–22 lần nâng cấp nhân viên (Pha chế cấp 3, Dọn dẹp cấp 3–5, Phục vụ cấp 3); không có lỗi / exception. **Mỗi cấu hình chỉ một lượt** (ngày lẻ dao động ±2.000), và bot mua bàn ở sảnh trước nên **mỗi khu phụ chỉ có 4 ghế tặng**.
 
-| Cấu hình (bot, 7 ngày, TB ngày 3–7) | Ghế cuối | Nhu cầu | Phục vụ/ngày | Mất: hết chỗ / hết kiên nhẫn | Doanh thu | Lãi ròng/ngày |
-|---|---|---|---|---|---|---|
-| Chỉ sảnh chính (120.000 Xu dư) | 44 | ×1,0 | 91 | 8,0 / 12,8 | 14.102 | **7.246** |
-| Sân vườn + lầu (200.000 Xu dư; VIP không đủ tiền mở) | 48 (40 + 4 + 4) | ×1,4 | 114 | 26,6 / 16,4 | 14.210 | **7.035** |
-| Đủ 3 khu (500.000 Xu dư) | 57 (45 + 4 + 4 + 4) | ×1,6 | 104 | 34,0 / 38,8 | 16.904 | **8.760** |
+| Cấu hình (bot, 7 ngày, TB ngày 3–7, lãi in ra) | Nhân viên | Ghế cuối | Nhu cầu | Phục vụ/ngày | Mất: hết chỗ / hết kiên nhẫn | Doanh thu | Lãi ròng/ngày |
+|---|---|---|---|---|---|---|---|
+| Chỉ sảnh chính (2 lượt) | 8 | 44–45 | ×1,0 | 88–101 | 2–4 / 9–20 | 14.300–15.600 | **7.249 / 8.949** |
+| Sân vườn + lầu (200.000 Xu dư; 2 lượt) | 14 | 38–44 | ×1,4 | 145–148 | 8–11 / 0 | 18.000–19.000 | **9.165 / 9.612** |
+| Đủ 3 khu (500.000 Xu dư; 4 lượt) | 17 | 66–74 | ×1,6 | 174–178 | 0–3 / 0–1 | 28.400–28.600 | **17.240 / 18.197 / 18.532 / 18.145** |
 
-   Lãi 7.000–8.800/ngày so với dải 20.000–35.000 (§3.1): thấp hơn 2,5–3 lần. Nghi can chính là thông lượng 3 Pha chế (ước tính ~120–130 ly/ngày tối đa; xem phase3_spec §0.8). Quyết định các núm còn lại (giá / biên 3 món cấp 3, Demand cấp 3, lương, giá nhà 250.000, trần nhân viên) nên làm SAU khi chốt trần nhân viên, vì thông lượng đang là giới hạn.
-2. **Hoàn vốn khu — chưa đo được tin cậy.** Đủ 3 khu hơn "chỉ sảnh" ~1.500/ngày (8.760 so với 7.246) ⇒ > 200 ngày để hoàn 310.000 Xu; sân vườn + lầu không hơn chỉ sảnh. Là cận dưới vì khu phụ chưa kê bàn (4 ghế mỗi khu) và nhân viên chưa đủ. Cần đo lại khi khu có đủ bàn và nhân viên đủ năng lực; gồm cả hệ số ×1,5 của VIP (VIP chỉ có 4 ghế ở lượt đủ 3 khu nên đóng góp nhỏ).
-3. **Cấp nhân viên tối thiểu — chưa tìm được.** Với Pha chế cấp 3 (cả 3 người) mở đủ 3 khu vẫn mất ~39 khách/ngày vì hết kiên nhẫn (so với ~13 khi chỉ sảnh). Cần đo với nhân viên cấp 5 và/hoặc nới trần Pha chế; chưa nên chặn mở khu khi nhân viên yếu cho tới khi có số này.
+   Lãi **~18.000/ngày** khi đủ 3 khu + 17 nhân viên (thấp hơn dải 20.000–35.000 của §3.1 một chút; ~16.000–16.500 nếu trừ lương bot trả thiếu); chỉ sảnh 8 người ~7.200–8.900. Phát hiện và sửa kèm theo (A/B `avoidancePriority`, sửa dựng lại cả đội): xem `phase3_spec.md` §0.8. Các núm còn lại (giá / biên 3 món cấp 3, Demand cấp 3, lương, giá nhà 250.000) có thể chỉnh sau; chưa cần vì cấu hình đủ khu đã gần dải mục tiêu.
+2. **Hoàn vốn khu (ước tính thô).** Đủ 3 khu hơn chỉ sảnh ~9.000–10.000/ngày ⇒ ~31–35 ngày cho 310.000 Xu (~39–44 nếu trừ lương trả thiếu, chưa tính 9 người thêm và nâng cấp); sân vườn + lầu hơn chỉ sảnh 0–2.400/ngày (trong sai số, chưa kết luận). Khu phụ mới có 4 ghế tặng nên là cận dưới; cần đo lại khi khu có đủ bàn (gồm ×1,5 của VIP).
+3. **Cấp nhân viên tối thiểu — không còn là vấn đề với trần theo khu.** Với 17 người (Pha chế cấp 3, Dọn dẹp cấp 3–5, Phục vụ cấp 3 sau ~7 ngày) mất khách vì hết kiên nhẫn về ~0; chưa cần chặn mở khu khi nhân viên yếu.
 4. Quay vòng thực ở ngày 300 s: đã đánh dấu ở §19.2.
+5. **Đo lại sau khi nới trần nhân viên theo khu** (đủ 3 khu, thuê đủ 17 người, nâng cấp nhân viên): số đo chờ điền nằm ở một chỗ duy nhất, `phase3_spec.md` §0.7 mục 6 (lãi ròng/ngày so với 8.760, khách mất vì hết kiên nhẫn so với ~39/ngày); điền xong thì cập nhật lại mục 1 và 3 ở trên.
+
+### 19.6 Trần nhân viên theo khu & chi phí nâng cấp nhân viên (2026-10-14)
+
+Hai quyết định đi cùng nhau vì cùng trả lời một câu hỏi: người chơi cấp 3 cần bao nhiêu nhân viên, mạnh đến đâu, để nhu cầu +20% mỗi khu (§19.1) không biến thành khách bỏ về. Đã chạy thật: 147 test EditMode đạt.
+
+**Quyết định 1 — mỗi khu phụ đã mở nới thêm 1 chỗ cho MỖI vai trò.** `GameBalance.StaffMaxCount(role, tier, openZones)` với `StaffSlotsPerZone = 1`:
+
+| Số khu phụ đã mở | Dọn dẹp | Phục vụ | Pha chế | Tổng |
+|---|---|---|---|---|
+| 0 (chỉ sảnh) | 3 | 2 | 3 | 8 |
+| 1 | 4 | 3 | 4 | 11 |
+| 2 | 5 | 4 | 5 | 14 |
+| 3 | 6 | 5 | 6 | **17** |
+
+- **Cấp 2 không đổi** (1 Dọn dẹp + 1 Phục vụ, không Pha chế; §6, §17). Số khu âm không làm giảm trần.
+- **Lý do.** Bot đo ở trần cũ (8 người): mở đủ 3 khu (nhu cầu ×1,6) chỉ làm khách mất vì hết kiên nhẫn tăng từ ~13 lên ~39/ngày (§19.5 mục 1), vì thông lượng Pha chế / Phục vụ là giới hạn (§19.3). Nhu cầu tăng theo khu thì chỗ làm việc cũng phải tăng theo khu, nếu không khu mới chỉ thêm khách mất.
+- **Trần ở UI và save.** `StaffRoster` nhận `zonesProvider` (số khu đã mở). Nạp save dùng trần lớn nhất (đủ 3 khu) nên không cắt bớt người đã thuê. Bảng "Đội ngũ quán" dựng sẵn số hàng lớn nhất và cuộn được (`ScrollRect`, panel cao tối đa 1.040 px), chân bảng nhắc "Mỗi khu mở thêm 1 chỗ cho mỗi vai trò".
+- **Lương tăng theo.** Thuê đủ trần: 2.950 Xu/ngày (8 người) lên 4.050 / 5.150 / 6.250 (1 / 2 / 3 khu), tức đủ 17 người tốn thêm 3.300/ngày so với 8 người (bảng ở §6). Đã đo: doanh thu giữ lại thêm ~13.000/ngày (nguyên liệu +~3.000) vượt xa lương thêm +3.300, nên thuê đủ trần có lời khi mở đủ khu (bot trả thiếu lương vì tiêu hết Xu, xem §19.5).
+- **Công thức Capacity_T3 (§3.2)** cộng 0,15 cho mỗi nhân viên đang có (`CapacityFor`): 8 người ×2,2; 17 người ×3,55. Trần nhân viên mới vì thế cũng nới trần sức chứa theo công thức. Chưa kiểm chứng đây có phải cận trên thực tế của số khách sinh ra.
+- **Đã đo lại với trần mới:** ~18.000/ngày khi đủ 3 khu (§19.5 mục 1).
+
+**Quyết định 2 — giữ nguyên giá nâng cấp trong code, không nhân TierScale.** `Cost(Lv) = 1.000 × 2,5^(Lv−1)` (Lv là cấp trước khi nâng; `GameBalance.StaffUpgradeCost`):
+
+| Nâng | Xu | Cộng dồn từ Lv1 |
+|---|---|---|
+| Lv1 → 2 | 1.000 | 1.000 |
+| Lv2 → 3 | 2.500 | 3.500 |
+| Lv3 → 4 | 6.250 | 9.750 |
+| Lv4 → 5 | 15.625 | **25.375** |
+
+- **Lý do bỏ TierScale.** v0.1 ghi `× TierScale` (×12 ở T3), tức 25.375 × 12 ≈ 305.000 Xu cho một người lên Lv5. Lãi cấp 3 đo được chỉ ~7–9k/ngày (§19.5), nên con số đó bằng hơn 30 ngày in-game lãi (305.000 / 8.760 ≈ 35 ngày) cho riêng một người, còn nâng cả đội thì ngoài tầm: không khả thi. Quyết định theo yêu cầu "nới" của chủ dự án.
+- **Quy mô đầu tư khi không nhân TierScale.** Một người Lv1→5 = 25.375 Xu; 8 người ở sảnh = 203.000; 17 người đều Lv5 ≈ **431.000** Xu (17 × 25.375 = 431.375), cùng bậc với giá ba khu (310.000, §19.1), bằng khoảng 1,4 lần. Vẫn là khoản đầu tư lớn, chỉ không còn nằm ngoài tầm với.
+- **Cấp 5 vẫn chỉ nâng được từ cấp 4 khi quán ở cấp 3** (`StaffRoster.Upgrade`).
+- **Phạm vi TierScale.** Vẫn áp cho thưởng nhiệm vụ / login / sự kiện (§1.1); chỉ không áp cho giá nâng cấp nhân viên. Giá cơ sở 1.000 và hệ số 2,5 hiện viết thẳng trong `StaffUpgradeCost`, chưa là tunable trong §19.4.

@@ -137,18 +137,24 @@ namespace Cafe
         public const int StaffBrewerDailyWage = 450;
         public const int StaffMaxLevel = 5;
 
-        /// Số nhân viên tối đa mỗi vai trò theo cấp quán (tổng cấp 2 = 2, cấp 3 = 8; economy §3.1 "4–10 NV" ở cấp 3).
+        /// Mỗi khu phụ đã mở nới thêm 1 chỗ cho MỖI vai trò (nhà hàng cấp 3): sảnh 3 Dọn dẹp + 2 Phục vụ + 3 Pha chế = 8,
+        /// đủ 3 khu 6 + 5 + 6 = 17. Đo bằng bot: với trần cũ (8 người) mở khu làm khách mất vì hết kiên nhẫn tăng 13 -> 39/ngày
+        /// vì thông lượng Pha chế / Phục vụ là giới hạn, nên nhu cầu +20% mỗi khu phải đi cùng thêm người làm.
+        public const int StaffSlotsPerZone = 1;
+
+        /// Số nhân viên tối đa mỗi vai trò theo cấp quán (tổng cấp 2 = 2, cấp 3 sảnh = 8 và +3 mỗi khu phụ đã mở; economy §3.1).
         /// Đo bằng autoplay ở cấp 2 (14–16 ghế, 9 ngày): người Dọn dẹp thứ hai và Pha chế đều KHÔNG tăng số khách (~40/ngày dù có hay
         /// không) mà tốn thêm lương, nên cấp 2 chỉ 1 Dọn dẹp + 1 Phục vụ; người thứ hai và Pha chế mở từ cấp 3 (sảnh lớn, nhiều khách).
-        public static int StaffMaxCount(StaffRole role, int tier)
+        public static int StaffMaxCount(StaffRole role, int tier, int openZones = 0)
         {
             if (tier < 2) return 0;
             bool restaurant = tier >= 3;
+            int extra = restaurant ? StaffSlotsPerZone * Mathf.Max(0, openZones) : 0;
             switch (role)
             {
-                case StaffRole.Server: return restaurant ? 2 : 1;
-                case StaffRole.Brewer: return restaurant ? 3 : 0;
-                default: return restaurant ? 3 : 1;
+                case StaffRole.Server: return (restaurant ? 2 : 1) + extra;
+                case StaffRole.Brewer: return (restaurant ? 3 : 0) + extra;
+                default: return (restaurant ? 3 : 1) + extra;
             }
         }
 

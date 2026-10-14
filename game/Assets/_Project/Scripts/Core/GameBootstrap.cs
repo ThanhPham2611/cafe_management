@@ -200,7 +200,7 @@ namespace Cafe
             // Chủ quán (người chơi) đứng ở xe đẩy; phải có trước HUD vì BrewPanel nghe sự kiện của chủ quán
             Owner = OwnerController.Create(this, OwnerLook);
             Sign = ShopSign.Create(this);
-            Staff = new StaffRoster(Wallet, Tier.Ledger, () => Tier != null ? Tier.Current : 1);
+            Staff = new StaffRoster(Wallet, Tier.Ledger, () => Tier != null ? Tier.Current : 1, () => Tier != null ? Tier.OpenZoneCount : 0);
             Staff.Load(hasSave ? save : null);
             Staff.Attach(this);
             Regulars = new RegularsManager();

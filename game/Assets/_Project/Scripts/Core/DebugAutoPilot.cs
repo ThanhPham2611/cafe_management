@@ -20,6 +20,7 @@ namespace Cafe
     ///   -autodecor3           như -autodecor nhưng ở nhà hàng (cấp 3): mua và đặt bộ nội thất cấp 3 rồi chụp màn hình
     ///   -nomachines           bot không mua máy móc cấp 3 (đối chứng)
     ///   -t3xu <n>             (chỉ bản Development) cộng thêm n Xu ngay sau khi mua nhà hàng (thử máy móc / nội thất)
+    ///   -staffprio <n>        ưu tiên né nhau của NavMeshAgent nhân viên (mặc định 50 = Unity; 90 làm đội nhường đường quá mức); -homerow <n> số người mỗi hàng chỗ đứng chờ (mặc định 9)
     ///   -bestmenu             từ cấp 2, bot chọn menu là các món GIÁ CAO nhất đang gọi được (như người chơi biết tối ưu); in "[AutoPilot] MENU"
     ///   -autozones            ở nhà hàng (cấp 3) bot mở lần lượt sân vườn -> lầu -> VIP khi dư tiền (giữ quỹ dự phòng) và mua bàn ghế trong khu
     ///   -shotzones            mở lần lượt 3 khu bằng đường mua thật và chụp từng khu + bảng Mở rộng (cần -autoshot, -t3xu để đủ Xu)
@@ -89,6 +90,12 @@ namespace Cafe
             p.shotSettings = Has(args, "-shotsettings");
             p.autoZones = Has(args, "-autozones");
             p.bestMenu = Has(args, "-bestmenu");
+            string sp = Arg(args, "-staffprio");
+            int spn;
+            if (sp != null && int.TryParse(sp, out spn)) StaffWorker.AvoidancePriority = Mathf.Clamp(spn, 0, 99);
+            string hr = Arg(args, "-homerow");
+            int hrn;
+            if (hr != null && int.TryParse(hr, out hrn)) StaffWorker.HomeRowSize = Mathf.Clamp(hrn, 1, 20);
             p.shotZones = Has(args, "-shotzones");
             p.gfxCycle = Has(args, "-gfxcycle");
             p.autoDecor3 = Has(args, "-autodecor3");
@@ -321,13 +328,16 @@ namespace Cafe
         /// chỉ khi còn dư tiền sau phí tuyển (đi qua đúng StaffRoster.Hire). Gọi lại mỗi chu kỳ mua để thuê dần.
         void HireStaff(GameBootstrap g)
         {
-            StaffRole[] order =
+            // Vòng Dọn dẹp -> Phục vụ -> Pha chế lặp tới trần lớn nhất (cấp 3 đủ khu: 6 / 5 / 6); trần thật do CanHire quyết định
+            var order = new System.Collections.Generic.List<StaffRole>();
+            for (int round = 0; round < 6; round++)
             {
-                StaffRole.Cleaner, StaffRole.Server, StaffRole.Brewer,
-                StaffRole.Cleaner, StaffRole.Server, StaffRole.Brewer, StaffRole.Cleaner
-            };
+                order.Add(StaffRole.Cleaner);
+                order.Add(StaffRole.Server);
+                order.Add(StaffRole.Brewer);
+            }
             var hired = new System.Text.StringBuilder();
-            for (int i = 0; i < order.Length; i++)
+            for (int i = 0; i < order.Count; i++)
             {
                 StaffRole role = order[i];
                 if (role == StaffRole.Brewer && noBrewer) continue; // -nobrewer: đối chứng "trước khi có Pha chế"
@@ -848,6 +858,19 @@ namespace Cafe
             yield return new WaitForSecondsRealtime(1.5f);
             if (shotDir != null) { Shot("zones_all"); yield return null; }
             g.CameraRig.ClearFocus();
+            // Đủ khu => trần nhân viên 6 / 5 / 6: thuê đầy rồi chụp bảng Nhân viên (đầu + cuối danh sách cuộn)
+            g.Wallet.Earn(60000); // đủ phí thuê 17 người (bản Development)
+            HireStaff(g);
+            yield return new WaitForSecondsRealtime(1.5f);
+            g.Hud.DebugToggleStaffPanel();
+            yield return new WaitForSecondsRealtime(1f);
+            if (shotDir != null) { Shot("staff_top"); yield return null; }
+            g.Hud.DebugScrollStaff(0f);
+            yield return new WaitForSecondsRealtime(0.6f);
+            if (shotDir != null) { Shot("staff_bottom"); yield return null; }
+            g.Hud.DebugToggleStaffPanel();
+            Debug.Log($"[AutoPilot] STAFFCAP sau khi mở đủ khu: dọn dẹp {g.Staff.CountOf(StaffRole.Cleaner)}/{g.Staff.MaxFor(StaffRole.Cleaner)}, " +
+                      $"phục vụ {g.Staff.CountOf(StaffRole.Server)}/{g.Staff.MaxFor(StaffRole.Server)}, pha chế {g.Staff.CountOf(StaffRole.Brewer)}/{g.Staff.MaxFor(StaffRole.Brewer)}");
             Debug.Log("[AutoPilot] ZONESHOT xong: " + ZoneSummary(g));
         }
 
