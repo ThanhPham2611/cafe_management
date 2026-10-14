@@ -8,11 +8,15 @@ namespace Cafe
     /// chip trên (xu / sao + RP / ngày + giờ), cột thẻ order bên trái, bàn pha giữa-dưới, chip ly, tổng kết cuối ngày.
     public class HudController : MonoBehaviour
     {
-        private const int MaxCards = 6;
+        private const int MaxCards = 4; // 5+ thẻ chạm nút Cửa hàng ở canvas HUD 900
         private const float CardHeight = 112f;
         private const float CardSpacing = 12f;
         private const float Margin = 24f;
         private const float ChipH = 96f;
+        private const float MenuBtnH = 108f; // >= 44 pt ở canvas HUD 900
+        private const float MenuItemW = 260f;
+        private const float MenuBtnW = 200f;
+        private const float MenuRight = Margin + 310f + 64f; // chừa chip ngày (310) + icon đồng hồ nhô ra trái (~48)
 
         private class CardView
         {
@@ -59,6 +63,9 @@ namespace Cafe
         public void DebugOpenSettings(bool open) { if (settingsPanel != null) settingsPanel.DebugOpen(open); }
 #endif
 
+        private RectTransform menuRoot;
+        private GameObject menuDot;     // chấm đỏ trên nút MENU khi có nhiệm vụ nhận được
+        private GameObject missionDot;
         private int lastMinute = -1;
         private bool xuInit;
         private int xuTarget;
@@ -86,7 +93,7 @@ namespace Cafe
             HudBuilder.Stretch(bubbleLayer);
 
             // HUD chính
-            Canvas canvas = HudBuilder.CreateCanvas("HudCanvas", 10, true, transform);
+            Canvas canvas = HudBuilder.CreateCanvas("HudCanvas", 10, true, transform, HudBuilder.HudRefHeight);
             hudCanvasGo = canvas.gameObject;
             RectTransform safe = HudBuilder.NewRect("SafeArea", canvas.transform);
             HudBuilder.Stretch(safe);
@@ -104,6 +111,7 @@ namespace Cafe
             regularsBook = new RegularsBookPanel(game, safe, canvas.transform);
             missionPanel = new MissionPanel(game, safe, canvas.transform);
             settingsPanel = new SettingsPanel(game, safe, canvas.transform); // nút "ĐỒ HỌA" + chọn Thấp / Vừa / Cao
+            BuildMenu(safe); // gom 4 nút phụ vào popup MENU
             storyDialog = new StoryDialog(game, canvas.transform);
 
             // Chữ nổi (trên cùng)
@@ -193,7 +201,7 @@ namespace Cafe
             HudBuilder.SetFixed(starChip.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(Margin + 46f + 310f + 16f + 46f, -Margin), new Vector2(440f, ChipH));
             starCountText = HudBuilder.AddText(starChip.transform, "Stars", "", 56, TextAnchor.MiddleCenter, HudBuilder.Ink, true, false);
             HudBuilder.SetFixed(starCountText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(68f, -4f), new Vector2(54f, 70f));
-            rpText = HudBuilder.AddText(starChip.transform, "Rp", "", 24, TextAnchor.MiddleLeft, HudBuilder.InkSoft, false, false);
+            rpText = HudBuilder.AddText(starChip.transform, "Rp", "", 28, TextAnchor.MiddleLeft, HudBuilder.InkSoft, false, false);
             HudBuilder.SetFixed(rpText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(128f, -8f), new Vector2(290f, 32f));
             rpBar = HudBuilder.CreateBar(starChip.transform, "RpBar");
             HudBuilder.SetFixed(rpBar.root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(128f, -42f), new Vector2(286f, 28f));
@@ -202,7 +210,7 @@ namespace Cafe
             Image clockIcon;
             Image dayChip = MakeChip(safe, "DayChip", HudBuilder.T.iconClock, out clockIcon);
             HudBuilder.SetFixed(dayChip.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-Margin, -Margin), new Vector2(310f, ChipH));
-            dayText = HudBuilder.AddText(dayChip.transform, "Day", "", 24, TextAnchor.MiddleLeft, HudBuilder.InkSoft, false, false);
+            dayText = HudBuilder.AddText(dayChip.transform, "Day", "", 28, TextAnchor.MiddleLeft, HudBuilder.InkSoft, false, false);
             HudBuilder.SetFixed(dayText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(74f, -6f), new Vector2(220f, 30f));
             timeText = HudBuilder.AddText(dayChip.transform, "Time", "", 46, TextAnchor.MiddleLeft, HudBuilder.Ink, true, false);
             HudBuilder.SetFixed(timeText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(74f, -30f), new Vector2(220f, 46f));
@@ -221,6 +229,64 @@ namespace Cafe
             cupText = HudBuilder.AddText(cupChip.transform, "Cups", "", 48, TextAnchor.MiddleRight, HudBuilder.Ink, true, false);
             HudBuilder.SetRect(cupText.rectTransform, Vector2.zero, Vector2.one, new Vector2(70f, 22f), new Vector2(-30f, -4f));
         }
+
+        /// Nút phụ (Khách quen, Nhân viên, Nhiệm vụ, Đồ họa) gom vào popup MENU: HUD gọn, nút đủ to để chạm.
+        /// Các panel tự dựng nút của mình trong `safe`; ở đây chuyển chúng vào cột popup (xếp dọc, nút ẩn thì bỏ qua).
+        private void BuildMenu(RectTransform safe)
+        {
+            menuRoot = HudBuilder.NewRect("MenuRoot", safe);
+            HudBuilder.Stretch(menuRoot);
+            var scrim = menuRoot.gameObject.AddComponent<Image>(); // nền trong suốt: chạm ra ngoài để đóng
+            scrim.color = Color.clear;
+            menuRoot.gameObject.AddComponent<Button>().onClick.AddListener(CloseMenu);
+
+            RectTransform column = HudBuilder.NewRect("Column", menuRoot);
+            HudBuilder.SetFixed(column, new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-MenuRight, -(Margin + MenuBtnH + 8f)), new Vector2(MenuItemW, 0f));
+            var layout = column.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = 12f;
+            layout.childAlignment = TextAnchor.UpperRight;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+            column.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            foreach (string name in new[] { "RegularsButton", "StaffButton", "MissionButton", "GraphicsButton" })
+            {
+                Transform t = safe.Find(name);
+                if (t == null) continue;
+                t.SetParent(column, false);
+                var le = t.gameObject.AddComponent<LayoutElement>();
+                le.preferredWidth = MenuItemW;
+                le.preferredHeight = MenuBtnH;
+                Text label = t.GetComponentInChildren<Text>();
+                if (label != null) { label.fontSize = 32; label.resizeTextMaxSize = 32; }
+                if (name == "MissionButton") { Transform d = t.Find("Dot"); if (d != null) missionDot = d.gameObject; }
+            }
+            foreach (Button b in column.GetComponentsInChildren<Button>(true)) b.onClick.AddListener(CloseMenu);
+
+            Text menuLabel;
+            ClayButton menuBtn = HudBuilder.AddLabelButton(safe, "MenuButton", ClayStyle.Coffee, "MENU", 32, ToggleMenu, out menuLabel);
+            HudBuilder.SetFixed((RectTransform)menuBtn.transform, new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-MenuRight, -Margin), new Vector2(MenuBtnW, MenuBtnH));
+            Image dot = HudBuilder.Img(menuBtn.transform, "Dot", HudBuilder.T.disc, HudBuilder.Red, false, false);
+            HudBuilder.SetFixed(dot.rectTransform, new Vector2(1f, 1f), new Vector2(0.5f, 0.5f), new Vector2(-6f, -6f), new Vector2(32f, 32f));
+            menuDot = dot.gameObject;
+            menuRoot.gameObject.SetActive(false);
+
+            // MENU + popup nằm dưới bảng Cửa hàng (bảng này phủ lên hàng trên cùng), trên mọi thứ dựng trước nó.
+            Transform shop = safe.Find("ShopPanel");
+            if (shop != null)
+            {
+                int i = shop.GetSiblingIndex();
+                menuRoot.SetSiblingIndex(i);
+                menuBtn.transform.SetSiblingIndex(i + 1);
+            }
+        }
+
+        private void ToggleMenu() { menuRoot.gameObject.SetActive(!menuRoot.gameObject.activeSelf); }
+        private void CloseMenu() { menuRoot.gameObject.SetActive(false); }
 
         private void BuildOrderColumn(RectTransform parent)
         {
@@ -249,7 +315,7 @@ namespace Cafe
                 HudBuilder.SetFixed(cv.nameText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(102f, -6f), new Vector2(176f, 44f));
                 HudBuilder.Fit(cv.nameText, 22);
 
-                cv.priceText = HudBuilder.AddText(btn.Content, "Price", "", 26, TextAnchor.MiddleLeft, HudBuilder.InkSoft, false, false);
+                cv.priceText = HudBuilder.AddText(btn.Content, "Price", "", 30, TextAnchor.MiddleLeft, HudBuilder.InkSoft, false, false);
                 HudBuilder.SetFixed(cv.priceText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(102f, -48f), new Vector2(176f, 34f));
 
                 RectTransform ringRoot;
@@ -402,6 +468,7 @@ namespace Cafe
         {
             if (game == null) return;
             if (storyDialog != null) storyDialog.Tick();
+            if (menuDot != null) menuDot.SetActive(!menuRoot.gameObject.activeSelf && missionDot != null && missionDot.activeSelf);
             float dt = Time.unscaledDeltaTime;
 
             // Vòng kiên nhẫn trên thẻ order
