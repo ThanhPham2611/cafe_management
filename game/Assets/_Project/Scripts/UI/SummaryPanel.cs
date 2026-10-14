@@ -46,6 +46,7 @@ namespace Cafe
 
             Image panel = HudBuilder.Panel(dim.transform, "Card", true);
             card = panel.rectTransform;
+            card.gameObject.AddComponent<FitInCanvas>();
             HudBuilder.SetFixed(card, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1000f, 800f));
 
             title = HudBuilder.AddText(card, "Title", "", 58, TextAnchor.MiddleCenter, HudBuilder.Ink, true, false);

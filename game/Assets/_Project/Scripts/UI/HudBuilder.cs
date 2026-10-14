@@ -92,8 +92,12 @@ namespace Cafe
 
         // ---------- canvas / rect ----------
 
-        /// Canvas ScreenSpaceOverlay, CanvasScaler 1920x1080 match height.
-        public static Canvas CreateCanvas(string name, int sortingOrder, bool withRaycaster, Transform parent)
+        /// Chiều cao tham chiếu của canvas HUD: 900 (thay vì 1080) để nút/chữ to ~1,2 lần trên điện thoại.
+        /// Bảng cao hơn 900 tự thu nhỏ qua FitInCanvas.
+        public const float HudRefHeight = 900f;
+
+        /// Canvas ScreenSpaceOverlay, CanvasScaler 16:9 theo chiều cao (mặc định 1080), match height.
+        public static Canvas CreateCanvas(string name, int sortingOrder, bool withRaycaster, Transform parent, float refHeight = 1080f)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
             if (parent != null) go.transform.SetParent(parent, false);
@@ -102,7 +106,7 @@ namespace Cafe
             canvas.sortingOrder = sortingOrder;
             var scaler = go.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.referenceResolution = new Vector2(refHeight * 16f / 9f, refHeight);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             scaler.matchWidthOrHeight = 1f;
             if (withRaycaster) go.AddComponent<GraphicRaycaster>();
@@ -364,6 +368,24 @@ namespace Cafe
             Fit(t, 20);
             labelText = t;
             return b;
+        }
+    }
+
+    /// Thu nhỏ bảng cao hơn khung chứa nó (trừ lề 40; khung thường là vùng an toàn) cho vừa màn hình;
+    /// giữ nguyên bố cục bên trong.
+    public class FitInCanvas : MonoBehaviour
+    {
+        private RectTransform rt;
+
+        private void LateUpdate()
+        {
+            if (rt == null) rt = (RectTransform)transform;
+            var host = rt.parent as RectTransform;
+            if (host == null) return;
+            float avail = host.rect.height - 40f;
+            float h = rt.rect.height;
+            float k = h > avail && h > 0f ? avail / h : 1f;
+            if (!Mathf.Approximately(rt.localScale.x, k)) rt.localScale = new Vector3(k, k, 1f);
         }
     }
 }

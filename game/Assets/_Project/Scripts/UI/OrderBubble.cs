@@ -19,7 +19,8 @@ namespace Cafe
         private bool shown;
         private bool contentVisible;
         private float lastPatience = -1f;
-        private readonly Vector3 offset = new Vector3(0f, 2.0f, 0f);
+        // Chibi cao ~1.15 m (ngồi thấp hơn): đuôi bóng cách đầu ~0.2 m để không trôi xa khỏi khách.
+        private readonly Vector3 offset = new Vector3(0f, 1.35f, 0f);
 
         public static OrderBubble Create(RectTransform layer, Transform target)
         {
