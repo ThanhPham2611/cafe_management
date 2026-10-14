@@ -1,0 +1,15 @@
+{
+ "file": "ui_hand_pointer.png",
+ "size": [
+  256,
+  256
+ ],
+ "fingertip_pivot_px_from_top_left": [
+  28,
+  18
+ ],
+ "pivot_normalized_unity_bottom_left": [
+  0.109375,
+  0.9296875
+ ]
+}

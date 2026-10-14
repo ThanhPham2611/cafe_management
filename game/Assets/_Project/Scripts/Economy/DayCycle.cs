@@ -67,6 +67,7 @@ namespace Cafe
         private void Update()
         {
             if (game != null && game.Tier != null && game.Tier.Transitioning) return; // đang chuyển cấp quán: đồng hồ ngày đứng
+            if (CurrentPhase == Phase.Open && TutorialGate.ClockHold) return; // hướng dẫn ngày 1: đồng hồ đứng tới khi xong các bước đầu
             float dt = Time.deltaTime;
             switch (CurrentPhase)
             {

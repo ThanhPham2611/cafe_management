@@ -29,6 +29,8 @@ namespace Cafe
     ///   -gfx low|medium|high  ép mức đồ họa (bản Development); log "[Gfx]" cho biết mức đang dùng
     ///   -cleaners <n>         số nhân viên Dọn dẹp bot thuê (mặc định = tối đa của cấp)
     ///   -fullstaff            thuê đủ nhân viên của cấp ngay khi đủ tiền tuyển (không chờ đủ ghế / quỹ dự phòng)
+    ///   -tutorial             bot đi qua hướng dẫn người chơi mới (mặc định bot BỎ QUA hướng dẫn để số đo kinh tế không đổi); bấm TIẾP,
+    ///                         làm gợi ý mua ghế; log "[Tutorial] step <id> start/done", cảnh báo nếu một bước kẹt > 90 s. Dùng với -freshsave -days 3
     ///   -days <n>             chơi n ngày rồi thoát (mặc định 1; 4 khi có -autoupgrade). Cuối ngày in "[AutoPilot] TIER=<n>"
     /// Không chạy trong bản phát hành thường vì không ai truyền các tham số này.
     public class DebugAutoPilot : MonoBehaviour
@@ -43,7 +45,8 @@ namespace Cafe
         int targetDays = 1;
         int daysPlayed;
         float timeScale = 1f;
-        float nextShot = 5f;
+        float nextShot = float.MaxValue; // đặt lại sau khi GameBootstrap dựng xong (thời gian boot không tính)
+        bool showTitle;
         int shotIndex;
         DaySummary summary;
 
@@ -63,6 +66,8 @@ namespace Cafe
             bool tierTest = Has(args, "-cheatxu") || Has(args, "-cheatrp") || Has(args, "-autoupgrade") || Has(args, "-autoupgrade3");
             if (dir == null && !play && !recipesTest && !tierTest) return;
 
+            if (Has(args, "-tutorial")) TutorialDirector.BotDriven = true;
+            else TutorialDirector.DisabledForAutomation = true;
             if (Has(args, "-freshsave")) SaveSystem.Delete();
             string ts = Arg(args, "-timescale");
             if (ts != null && float.TryParse(ts, System.Globalization.NumberStyles.Float,
@@ -138,7 +143,36 @@ namespace Cafe
         void Start()
         {
             Time.timeScale = timeScale; // đặt sau khi scene load để không bị reset
+            showTitle = Has(Environment.GetCommandLineArgs(), "-title");
+            StartCoroutine(BootThenRun());
+        }
+
+        /// Chờ GameBootstrap dựng xong (boot + nạp scene không tính vào các bộ đếm cố định của bot). Có -title: chụp màn tiêu đề rồi
+        /// tự bấm MỞ QUÁN sau ~4 giây thật (autoshot đầu tiên rơi vào lúc màn tiêu đề còn mở).
+        IEnumerator BootThenRun()
+        {
+            float t0 = Time.realtimeSinceStartup;
+            while (!GameBootstrap.IsBuilt && Time.realtimeSinceStartup - t0 < 60f) yield return null;
+            if (showTitle && GameBootstrap.IsBuilt)
+            {
+                nextShot = Time.time + 2f;
+                yield return new WaitForSecondsRealtime(4f);
+                GameBootstrap g = GameBootstrap.Instance;
+                if (g != null && g.Title != null && g.Title.IsOpen)
+                {
+                    Debug.Log("[AutoPilot] TITLE bấm MỞ QUÁN");
+                    g.Title.Dismiss();
+                }
+                yield return null;
+            }
+            nextShot = Time.time + 5f;
+            RunLoops();
+        }
+
+        void RunLoops()
+        {
             if (autoplay) { StartCoroutine(PlayLoop()); StartCoroutine(StoryAdvanceLoop()); }
+            if (TutorialDirector.BotDriven) StartCoroutine(TutorialLoop());
             if (autoshop) StartCoroutine(ShopTest());
             if (autorecipes) StartCoroutine(RecipesTest());
             if (cheatXu || cheatRp) StartCoroutine(CheatLoop());
@@ -421,6 +455,30 @@ namespace Cafe
                 if (g == null || g.Hud == null || !g.Hud.StoryOpen) continue;
                 g.Hud.DebugAdvanceStory();
                 Debug.Log("[AutoPilot] STORY bấm TIẾP");
+            }
+        }
+
+        /// -tutorial: bấm TIẾP / Đã hiểu khi hướng dẫn chờ; khi gợi ý mua ghế hiện thì đặt ghế đẩu qua build mode (DebugPlace).
+        IEnumerator TutorialLoop()
+        {
+            bool stoolDone = false;
+            while (true)
+            {
+                yield return new WaitForSecondsRealtime(0.6f);
+                var g = GameBootstrap.Instance;
+                if (g == null || g.Tutorial == null) continue;
+                if (g.Tutorial.DebugAdvance()) Debug.Log("[AutoPilot] TUTORIAL bấm TIẾP");
+                if (!stoolDone && g.Tutorial.ActiveTipId == TutorialTips.Stool)
+                {
+                    FurnitureDef def = g.GetDef("Stool_Plastic_Red");
+                    bool ok = false;
+                    if (def != null)
+                        for (int y = 0; y < g.Grid.Size.y && !ok; y++)
+                            for (int x = 0; x < g.Grid.Size.x && !ok; x++)
+                                ok = g.Builder.DebugPlace(def, new Vector2Int(x, y));
+                    stoolDone = true;
+                    Debug.Log($"[AutoPilot] TUTORIAL mua ghế đẩu: {(ok ? "đã đặt" : "không có chỗ")}");
+                }
             }
         }
 

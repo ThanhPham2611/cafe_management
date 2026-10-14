@@ -73,7 +73,8 @@ namespace Cafe
             forceTimer = 0f;
             active.Clear();
             scheduledRegular = null;
-            if (game.Regulars != null) game.Regulars.TryScheduleVisit(day, game.Tier.Current, out scheduledRegular);
+            // Hướng dẫn ngày 1: chưa xếp khách quen (món của họ không bị ép)
+            if (game.Regulars != null && !(TutorialGate.Active && day <= 1)) game.Regulars.TryScheduleVisit(day, game.Tier.Current, out scheduledRegular);
         }
 
         /// Co giãn thời điểm sinh của các khách chưa tới (schedule[from..]) theo tỉ lệ ratio.
@@ -119,7 +120,7 @@ namespace Cafe
             if (game.Day.CurrentPhase == DayCycle.Phase.Open)
             {
                 float t = game.Day.Elapsed;
-                while (next < schedule.Length && t >= schedule[next])
+                while (next < schedule.Length && TutorialGate.SpawnIsDue(next, schedule[next], t))
                 {
                     Spawn();
                     next++;
@@ -145,6 +146,13 @@ namespace Cafe
             scheduledRegular = null;
             c.Init(game, regular);
             active.Add(c);
+        }
+
+        /// Hướng dẫn: thả thêm một khách ngoài lịch (khách kịch bản đã bỏ về). Không đụng tới hạn mức của TutorialGate.
+        public void SpawnExtra()
+        {
+            Spawn();
+            next++;
         }
 
         public void ForceAllLeave()

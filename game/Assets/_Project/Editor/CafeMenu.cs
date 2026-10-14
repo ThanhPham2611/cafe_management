@@ -31,7 +31,9 @@ namespace Cafe.EditorTools
         {
             ApplySettings();
             ImportArt();
+            BrandingSetup.Apply();
             BuildScene();
+            BootSceneBuilder.Build();
             AssetDatabase.SaveAssets();
             Debug.Log("[Cafe] Setup All xong.");
         }

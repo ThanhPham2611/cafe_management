@@ -72,6 +72,12 @@ namespace Cafe
         /// Lớp UI chứa bong bóng order (dưới HUD, không chặn chạm).
         public RectTransform BubbleLayer { get { return bubbleLayer; } }
 
+        /// Thẻ món trong Cửa hàng (hướng dẫn mua ghế chỉ vào đây); null nếu bảng chưa mở.
+        public RectTransform ShopCardRect(string furnitureId)
+        {
+            return shopPanel != null ? shopPanel.CardRectFor(furnitureId) : null;
+        }
+
         public void Init(GameBootstrap g)
         {
             game = g;

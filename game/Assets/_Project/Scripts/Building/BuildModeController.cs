@@ -94,6 +94,12 @@ namespace Cafe
         public bool IsOpen { get { return open; } }
         public bool IsPlacing { get { return open && mode == Mode.Placing; } }
 
+        /// Nút "Đặt" trên thanh đặt đồ (hướng dẫn chỉ tay); null khi thanh chưa hiện.
+        public RectTransform PlaceConfirmRect
+        {
+            get { return placeBar != null && placeBar.gameObject.activeInHierarchy ? placeBar.Find("Btn1") as RectTransform : null; }
+        }
+
         public BuildModeController()
         {
             tapHandler = OnWorldTap;

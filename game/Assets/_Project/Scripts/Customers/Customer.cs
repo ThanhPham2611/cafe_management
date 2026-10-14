@@ -237,6 +237,7 @@ namespace Cafe
                 RecipeDef favorite = game.Recipes.Get(regular.favoriteRecipe);
                 if (favorite != null && game.Recipes.InMenu(favorite)) recipe = favorite;
             }
+            if (recipe == null && regular == null) recipe = TutorialGate.TakeForcedRecipe(game); // hướng dẫn: 2 đơn đầu ép món
             if (recipe == null) recipe = game.PickRecipe(game.Day.Day);
             if (recipe == null)
             {
@@ -254,6 +255,11 @@ namespace Cafe
 
         private void UpdateWait(float dt)
         {
+            if (TutorialGate.PatiencePaused) // hướng dẫn: đang ở bước có kịch bản, khách chờ không mất kiên nhẫn
+            {
+                if (bubble != null) bubble.SetPatience(PatienceNormalized);
+                return;
+            }
             waited += dt;
             // Ghế êm (comfort cao) làm thanh kiên nhẫn giảm chậm hơn
             patienceUsed += dt / (1f + 0.05f * seat.Def.comfort);

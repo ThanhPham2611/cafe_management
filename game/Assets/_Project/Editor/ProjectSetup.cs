@@ -8,11 +8,14 @@ namespace Cafe.EditorTools
     public static class ProjectSetup
     {
         public const string BundleId = "com.quancaphe.viet";
+        /// Tên sản phẩm (hiện dưới icon / thanh tiêu đề). Một chỗ duy nhất; BrandingSetup dùng lại.
+        /// Có dấu tiếng Việt: đổi tên làm thư mục save Windows (persistentDataPath) đổi theo, save dev cũ ở thư mục tên cũ.
+        public const string ProductName = "Quán Cà Phê Việt";
 
         public static void Apply()
         {
             PlayerSettings.companyName = "QuanCaPhe";
-            PlayerSettings.productName = "Quan Ca Phe Viet";
+            PlayerSettings.productName = ProductName;
             PlayerSettings.colorSpace = ColorSpace.Linear;
 
             // Chỉ màn hình ngang, tự xoay giữa 2 chiều ngang

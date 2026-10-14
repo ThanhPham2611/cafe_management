@@ -117,6 +117,19 @@ namespace Cafe
             RefreshTabs();
         }
 
+        /// Thẻ của món trong danh sách đang hiện (cho hướng dẫn chỉ tay); null nếu bảng đóng hoặc không có.
+        public RectTransform CardRectFor(string furnitureId)
+        {
+            if (panelRoot == null || !panelRoot.gameObject.activeInHierarchy) return null;
+            for (int i = 0; i < cards.Count; i++)
+            {
+                CardView cv = cards[i];
+                if (cv.def != null && cv.def.id == furnitureId && cv.button.gameObject.activeSelf && !cv.fromInventory)
+                    return (RectTransform)cv.button.transform;
+            }
+            return null;
+        }
+
         public void Dispose()
         {
             GameEvents.MoneyChanged -= OnMoney;
