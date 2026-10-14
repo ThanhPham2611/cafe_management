@@ -3,13 +3,14 @@ using UnityEngine.UI;
 
 namespace Cafe
 {
-    /// Bong bóng order phía trên đầu khách: bóng thoại clay + icon món + vòng kiên nhẫn + tên ngắn.
+    /// Bong bóng order phía trên đầu khách: bóng thoại clay + icon món + vòng kiên nhẫn (+ trái tim nhỏ nếu là khách quen).
+    /// Không có chữ: nhận món qua icon, tên món vẫn ở thẻ "Đơn chờ".
     /// Vẽ ở lớp UI overlay riêng (chiếu từ tọa độ thế giới) để không bị mái dù/mô hình che.
     public class OrderBubble : MonoBehaviour
     {
         private RectTransform rect;
         private GameObject content;
-        private Text label;
+        private Image heart;
         private Image ringFill;
         private Image drinkIcon;
         private Customer customer;
@@ -28,7 +29,7 @@ namespace Cafe
             rt.anchorMin = Vector2.zero;
             rt.anchorMax = Vector2.zero;
             rt.pivot = new Vector2(0.5f, 0f);
-            rt.sizeDelta = new Vector2(140f, 190f);
+            rt.sizeDelta = new Vector2(116f, 150f);
             var b = rt.gameObject.AddComponent<OrderBubble>();
             b.Build(rt, target, layer.GetComponentInParent<Canvas>());
             return b;
@@ -57,20 +58,20 @@ namespace Cafe
             ringFill = HudBuilder.CreateRing(body.transform, "Ring", 92f, out ring);
             HudBuilder.SetFixed(ring, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -12f), new Vector2(92f, 92f));
 
-            drinkIcon = HudBuilder.Icon(ring, "Drink", null, 58f);
-            HudBuilder.SetFixed(drinkIcon.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(58f, 58f));
+            drinkIcon = HudBuilder.Icon(ring, "Drink", null, 64f);
+            HudBuilder.SetFixed(drinkIcon.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(64f, 64f));
 
-            label = HudBuilder.AddText(body.transform, "Label", "", 26, TextAnchor.MiddleCenter, HudBuilder.Ink, false, false);
-            HudBuilder.SetRect(label.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(8f, 16f), new Vector2(-8f, 50f));
-            HudBuilder.Fit(label, 16);
+            heart = HudBuilder.Icon(body.transform, "Regular", HudBuilder.T.iconHeart, 44f);
+            HudBuilder.SetFixed(heart.rectTransform, new Vector2(1f, 1f), new Vector2(0.5f, 0.5f), new Vector2(-6f, -6f), new Vector2(44f, 44f));
+            heart.enabled = false;
 
             content.SetActive(false);
         }
 
-        public void Show(string text)
+        public void Show(bool regular)
         {
             shown = true;
-            label.text = text;
+            heart.enabled = regular && HudBuilder.T.iconHeart != null;
             Sprite icon = customer != null && customer.CurrentOrder != null
                 ? HudBuilder.T.IconFor(customer.CurrentOrder.recipe)
                 : HudBuilder.T.iconCup;
