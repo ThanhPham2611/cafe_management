@@ -2,9 +2,11 @@ using UnityEngine;
 
 namespace Cafe
 {
-    /// Hình học một phòng của quán (cấp 2: nhà ống ~6 x 8 m; cấp 3: nhà hàng ~10 x 12 m).
+    /// Hình học một phòng của quán (cấp 2: nhà ống ~6 x 8 m; cấp 3: nhà hàng ~10 x 12 m + các khu phụ ở hai bên).
     /// Hệ toạ độ: tâm phòng ở gốc (0,0,0); mặt tiền / cửa ở -Z (phía camera), tường sau ở +Z.
     /// Lưới 0.5 m, ô (0,0) ở góc trước-trái; trục y của ô = trục Z thế giới.
+    /// Width / Depth là kích thước SẢNH CHÍNH; AnnexWidth là bề rộng mỗi dải khu phụ ở hai bên sảnh (0 = không có khu phụ):
+    /// lưới rộng Width + 2 x AnnexWidth nên toạ độ ô của sảnh không đổi khi mở thêm khu.
     public sealed class RoomSpec
     {
         public readonly int Tier;
@@ -15,8 +17,10 @@ namespace Cafe
         public readonly float CameraPivotZ;
         public readonly float SidewalkHalfWidthCollider;
         public readonly float WalkInset;             // khách đi vào/ra cách tường hông bao xa trên vỉa hè
+        public readonly float AnnexWidth;            // bề rộng mỗi dải khu phụ (trái / phải sảnh), 0 = không có
 
-        public RoomSpec(int tier, float width, float depth, float doorHalfWidth, float cameraDistance, float cameraPivotZ, float walkInset)
+        public RoomSpec(int tier, float width, float depth, float doorHalfWidth, float cameraDistance, float cameraPivotZ, float walkInset,
+                        float annexWidth = 0f)
         {
             Tier = tier;
             Width = width;
@@ -25,15 +29,38 @@ namespace Cafe
             CameraDistance = cameraDistance;
             CameraPivotZ = cameraPivotZ;
             WalkInset = walkInset;
+            AnnexWidth = annexWidth;
             SidewalkHalfWidthCollider = Mathf.Max(10f, width * 0.5f + walkInset + 1.5f);
         }
 
+        public bool HasZones { get { return AnnexWidth > 0f; } }
+        /// Bề rộng cả lưới (sảnh + hai dải khu phụ).
+        public float TotalWidth { get { return Width + 2f * AnnexWidth; } }
+        public int AnnexCells { get { return Mathf.RoundToInt(AnnexWidth / GameBalance.CellSize); } }
+
         public Vector2Int GridSize
         {
-            get { return new Vector2Int(Mathf.RoundToInt(Width / GameBalance.CellSize), Mathf.RoundToInt(Depth / GameBalance.CellSize)); }
+            get { return new Vector2Int(Mathf.RoundToInt(TotalWidth / GameBalance.CellSize), Mathf.RoundToInt(Depth / GameBalance.CellSize)); }
         }
 
-        public Vector3 GridOrigin { get { return new Vector3(-Width * 0.5f, 0f, -Depth * 0.5f); } }
+        public Vector3 GridOrigin { get { return new Vector3(-TotalWidth * 0.5f, 0f, -Depth * 0.5f); } }
+
+        /// Bản đồ khu của lưới; null khi phòng không có khu phụ (cấp 2).
+        public ZoneMap CreateZoneMap()
+        {
+            if (!HasZones) return null;
+            return new ZoneMap(AnnexCells, Mathf.RoundToInt(Width / GameBalance.CellSize), Mathf.RoundToInt(Depth / GameBalance.CellSize));
+        }
+
+        /// Hình chữ nhật (x, z thế giới) của một khu; chỉ dùng khi HasZones.
+        public Rect ZoneWorldRect(ZoneId zone)
+        {
+            ZoneMap m = CreateZoneMap();
+            RectInt c = m.Rects[(int)zone];
+            Vector3 o = GridOrigin;
+            float cs = GameBalance.CellSize;
+            return new Rect(o.x + c.xMin * cs, o.z + c.yMin * cs, c.width * cs, c.height * cs);
+        }
         public float InteriorFrontZ { get { return -Depth * 0.5f; } }
         public float InteriorBackZ { get { return Depth * 0.5f; } }
         public float FrontWallOuterZ { get { return InteriorFrontZ - RoomLayout.WallThickness; } }
@@ -57,7 +84,7 @@ namespace Cafe
 
         // camera: lùi xa hơn và kéo tâm về phía mặt tiền để thấy cả vỉa hè
         public static readonly RoomSpec Tier2 = new RoomSpec(2, 6f, 8f, 0.75f, 13f, 0.2f, 5.5f);
-        public static readonly RoomSpec Tier3 = new RoomSpec(3, 10f, 12f, 1.1f, 19.5f, 0.4f, 5.5f);
+        public static readonly RoomSpec Tier3 = new RoomSpec(3, 10f, 12f, 1.1f, 19.5f, 0.4f, 5.5f, 6f);
 
         public static RoomSpec For(int tier)
         {
@@ -93,9 +120,32 @@ namespace Cafe
             if (g == null || grid == null) return;
             bool restaurant = tm != null && tm.Current >= 3;
             PlaceBackWall(g, grid, tm);
-            PlaceTableSets(g, grid, tm, restaurant ? SpotsTier3 : SpotsTier2, restaurant ? Tier3BaselineSets : SpotsTier2.Length, restaurant);
+            PlaceTableSets(g, grid, tm, restaurant ? SpotsTier3 : SpotsTier2, restaurant ? Tier3BaselineSets : SpotsTier2.Length, restaurant,
+                HallOrigin(grid));
             if (restaurant) PlaceDecorTier3(g, grid, tm);
             else PlaceDecorTier2(g, grid, tm);
+        }
+
+        /// Ô góc dưới-trái của sảnh chính (lưới cấp 3 có thêm dải khu phụ bên trái nên sảnh không bắt đầu ở ô 0).
+        public static Vector2Int HallOrigin(GridSystem grid)
+        {
+            return grid.Zones != null ? grid.Zones.Hall.min : Vector2Int.zero;
+        }
+
+        /// Chỗ đặt bộ bàn ghế tặng khi mở khu: toạ độ ô trong khu (từ góc dưới-trái của khu), chừa lối vào từ lỗ mở trên tường sảnh.
+        private static readonly Vector2Int[] StarterSpotsGarden = { new Vector2Int(2, 4), new Vector2Int(8, 4) };
+        private static readonly Vector2Int[] StarterSpotsAnnex = { new Vector2Int(6, 1), new Vector2Int(6, 9) };
+
+        /// Tặng GameBalance.ZoneStarterSets bộ bàn + 2 ghế khi mở khu (đồ trong kho được dùng trước, thiếu thì tặng cho đủ).
+        /// Trả về số bộ đã đặt.
+        public static int PlaceZoneStarter(GameBootstrap g, GridSystem grid, TierManager tm, ZoneId zone)
+        {
+            if (g == null || grid == null || grid.Zones == null || zone == ZoneId.Hall) return 0;
+            Vector2Int[] spots = zone == ZoneId.Garden ? StarterSpotsGarden : StarterSpotsAnnex;
+            int before = grid.Seats.Count;
+            Vector2Int origin = grid.Zones.Rects[(int)zone].min;
+            PlaceTableSets(g, grid, tm, spots, GameBalance.ZoneStarterSets, true, origin);
+            return (grid.Seats.Count - before) / 2;
         }
 
         /// Chỉ đảm bảo có quầy pha (save lỗi / bị thiếu quầy).
@@ -141,7 +191,8 @@ namespace Cafe
             }
         }
 
-        private static void PlaceTableSets(GameBootstrap g, GridSystem grid, TierManager tm, Vector2Int[] spots, int baseline, bool inventoryFirst)
+        private static void PlaceTableSets(GameBootstrap g, GridSystem grid, TierManager tm, Vector2Int[] spots, int baseline, bool inventoryFirst,
+                                           Vector2Int origin)
         {
             // Cấp 3: mọi bàn đang nằm trong kho được bày ra trước (tối đa số chỗ), thiếu thì tặng thêm cho đủ baseline.
             int sets = baseline;
@@ -153,7 +204,7 @@ namespace Cafe
                 bool tableFromInv;
                 FurnitureDef table = Acquire(g, tm, TierConfig.IdTable, TierConfig.IdTableFallback, FurnitureKind.Table, inventoryFirst, out tableFromInv);
                 if (table == null) return;
-                PlacedFurniture t = TryPlace(grid, table, spots[i], 0);
+                PlacedFurniture t = TryPlace(grid, table, spots[i] + origin, 0);
                 if (t == null) continue;
                 if (tableFromInv && tm != null) tm.TakeFromInventory(table.id);
 
@@ -182,14 +233,15 @@ namespace Cafe
 
         private static void PlaceDecorTier3(GameBootstrap g, GridSystem grid, TierManager tm)
         {
-            // Quạt và đèn thả treo trên cao (không chiếm ô): rải đều trên các hàng bàn
-            int w = grid.Size.x;
-            PlaceOverhead(g, grid, tm, TierConfig.IdFan, new Vector2Int(w / 4, 12));
-            PlaceOverhead(g, grid, tm, TierConfig.IdFan, new Vector2Int(w * 3 / 4, 12));
-            PlaceOverhead(g, grid, tm, TierConfig.IdLamp, new Vector2Int(w / 4, 8));
-            PlaceOverhead(g, grid, tm, TierConfig.IdLamp, new Vector2Int(w * 3 / 4, 8));
-            PlaceOverhead(g, grid, tm, TierConfig.IdLamp, new Vector2Int(w / 4, 16));
-            PlaceOverhead(g, grid, tm, TierConfig.IdLamp, new Vector2Int(w * 3 / 4, 16));
+            // Quạt và đèn thả treo trên cao (không chiếm ô): rải đều trên các hàng bàn của sảnh chính
+            Vector2Int o = HallOrigin(grid);
+            int w = grid.Zones != null ? grid.Zones.Hall.width : grid.Size.x;
+            PlaceOverhead(g, grid, tm, TierConfig.IdFan, new Vector2Int(o.x + w / 4, 12));
+            PlaceOverhead(g, grid, tm, TierConfig.IdFan, new Vector2Int(o.x + w * 3 / 4, 12));
+            PlaceOverhead(g, grid, tm, TierConfig.IdLamp, new Vector2Int(o.x + w / 4, 8));
+            PlaceOverhead(g, grid, tm, TierConfig.IdLamp, new Vector2Int(o.x + w * 3 / 4, 8));
+            PlaceOverhead(g, grid, tm, TierConfig.IdLamp, new Vector2Int(o.x + w / 4, 16));
+            PlaceOverhead(g, grid, tm, TierConfig.IdLamp, new Vector2Int(o.x + w * 3 / 4, 16));
         }
 
         private static void PlaceOverhead(GameBootstrap g, GridSystem grid, TierManager tm, string id, Vector2Int cell)

@@ -27,6 +27,28 @@ namespace Cafe
         public const float CloseHour = 22f;
         public const float InGameSecondsPerRealSecond = (CloseHour - OpenHour) * 3600f / DayRealSeconds;
 
+        /// Ngày ở nhà hàng (cấp 3) dài 300 giây thực. Đo bằng autoplay: một lượt khách (đi bộ + chờ ly + uống + chờ lau bàn) mất ~55 giây,
+        /// nên cửa sổ sinh khách 165 giây chỉ quay vòng ~3,2 khách/ghế (công thức dùng 5); 300 giây đưa con số này về ~4,5.
+        public const float Tier3DayRealSeconds = 300f;
+
+        /// Độ dài một ngày (giây thực) theo cấp quán.
+        public static float DayRealSecondsFor(int tier)
+        {
+            return tier >= 3 ? Tier3DayRealSeconds : DayRealSeconds;
+        }
+
+        /// Giây in-game trôi qua mỗi giây thực theo cấp quán.
+        public static float InGameSecondsPerRealSecondFor(int tier)
+        {
+            return InGameSecondsPerRealSecondForLength(DayRealSecondsFor(tier));
+        }
+
+        /// Giây in-game trôi qua mỗi giây thực của một ngày dài lengthSeconds giây thực (06:00 -> 22:00).
+        public static float InGameSecondsPerRealSecondForLength(float lengthSeconds)
+        {
+            return (CloseHour - OpenHour) * 3600f / Mathf.Max(1f, lengthSeconds);
+        }
+
         // Khách
         public const float PatienceSeconds = 60f;
         public const float NoSeatSeconds = 10f;
@@ -39,7 +61,8 @@ namespace Cafe
 
         // Ly để lại (đơn vị: giây TRONG GAME, tức theo đồng hồ DayCycle)
         // Ghế bị chặn khi ly để quá 30 giây THỰC (economy §3.3), quy ra đồng hồ in-game
-        public const float LeftoverBlockInGameSeconds = 30f * InGameSecondsPerRealSecond;
+        public const float LeftoverBlockRealSeconds = 30f;
+        public const float LeftoverBlockInGameSeconds = LeftoverBlockRealSeconds * InGameSecondsPerRealSecond;
         public const float LeftoverFullDecayInGameSeconds = 7200f;
 
         // Dọn dẹp (T2+, Scripts/Cleaning; economy §5)
@@ -82,6 +105,21 @@ namespace Cafe
         public const int Tier3StarRP = 4000;                  // ★3
         public const int Tier3Price = 250000;                 // cọc cấp 2 được hoàn: thực trả Tier3Price - cọc
         public const int Tier3DailyFixedCost = 700;           // vận hành nhà hàng/ngày; hết tiền thuê
+
+        // ---- Các khu của nhà hàng (economy §3.5, phase3_spec 3.2) ----
+        public const int ZoneGardenCost = 40000;              // sân vườn
+        public const int ZoneTerraceCost = 90000;             // lầu (view)
+        public const int ZoneVipCost = 180000;                // VIP
+        public const float ZoneDemandBonus = 0.20f;           // mỗi khu đã mở: +20% khách (Demand_T3 "+ zone bonus")
+        public const float VipPriceMult = 1.5f;               // khách ngồi khu VIP trả 1,5x (đơn đặc biệt 1,5–2x, economy §2)
+        public const float FRefZone = 150f;                   // F_ref riêng mỗi khu phụ (sảnh chính giữ FRefTier3)
+        public const int ZoneStarterSets = 2;                 // bộ bàn ghế tặng khi mở khu
+
+        /// Nhân nhu cầu theo số khu phụ đã mở: 1 + 0,2 mỗi khu.
+        public static float ZoneDemandMult(int openZones)
+        {
+            return 1f + ZoneDemandBonus * Mathf.Max(0, openZones);
+        }
 
         public const float Tier2DemandMult = 1.5f;
         public const float Tier3DemandMult = 2.6f;
@@ -189,11 +227,11 @@ namespace Cafe
             return Mathf.RoundToInt(DemandT1(stars, day) * mult);
         }
 
-        /// DemandFor × (1 + clamp(Σattract)/100). tier = 1 cho kết quả y hệt DemandWithAttract(stars, day, attractSum).
-        public static int DemandWithAttract(int tier, int stars, int day, int attractSum)
+        /// DemandFor × (1 + clamp(Σattract)/100) × zoneMult. tier = 1, zoneMult = 1 cho kết quả y hệt DemandWithAttract(stars, day, attractSum).
+        public static int DemandWithAttract(int tier, int stars, int day, int attractSum, float zoneMult = 1f)
         {
             float mult = 1f + Mathf.Clamp(attractSum, 0, MaxAttractPercent) / 100f;
-            return Mathf.RoundToInt(DemandFor(tier, stars, day) * mult);
+            return Mathf.RoundToInt(DemandFor(tier, stars, day) * mult * Mathf.Max(0f, zoneMult));
         }
 
         /// Sức chứa/ngày: T1 = ghế x 4; T2 = chỗ x 4,5 x (1 + 0,25·NV); T3 = chỗ x 5 x (1 + 0,15·NV).

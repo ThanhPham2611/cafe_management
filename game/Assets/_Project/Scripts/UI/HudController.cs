@@ -51,12 +51,14 @@ namespace Cafe
         private RegularsBookPanel regularsBook;
         private MissionPanel missionPanel;
         private SettingsPanel settingsPanel;
+        private ZonePanel zonePanel;
         private StoryDialog storyDialog;
         public bool StoryOpen { get { return storyDialog != null && storyDialog.IsOpen; } }
         public void DebugAdvanceStory() { if (storyDialog != null) storyDialog.DebugAdvance(); }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public void DebugToggleStaffPanel() { if (staffPanel != null) staffPanel.DebugToggle(); }
         public void DebugOpenSettings(bool open) { if (settingsPanel != null) settingsPanel.DebugOpen(open); }
+        public void DebugOpenZones(bool open) { if (zonePanel != null) zonePanel.DebugOpen(open); }
 #endif
 
         private int lastMinute = -1;
@@ -104,6 +106,7 @@ namespace Cafe
             regularsBook = new RegularsBookPanel(game, safe, canvas.transform);
             missionPanel = new MissionPanel(game, safe, canvas.transform);
             settingsPanel = new SettingsPanel(game, safe, canvas.transform); // nút "ĐỒ HỌA" + chọn Thấp / Vừa / Cao
+            zonePanel = new ZonePanel(game, safe, canvas.transform);         // nút "MỞ RỘNG" (cấp 3) + bảng Sân vườn / Lầu / VIP
             storyDialog = new StoryDialog(game, canvas.transform);
 
             // Chữ nổi (trên cùng)
@@ -164,6 +167,7 @@ namespace Cafe
             if (regularsBook != null) regularsBook.Dispose();
             if (missionPanel != null) missionPanel.Dispose();
             if (settingsPanel != null) settingsPanel.Dispose();
+            if (zonePanel != null) zonePanel.Dispose();
             if (storyDialog != null) storyDialog.Dispose();
         }
 

@@ -2,12 +2,18 @@ using UnityEngine;
 
 namespace Cafe
 {
-    /// Một ngày: 210 giây thực = 06:00 -> 22:00. Hết giờ -> đóng cửa, khi khách ra hết thì tổng kết.
+    /// Một ngày: 210 giây thực (cấp 1-2) hoặc 300 giây (nhà hàng cấp 3) = 06:00 -> 22:00. Hết giờ -> đóng cửa, khi khách ra hết thì tổng kết.
     public class DayCycle : MonoBehaviour
     {
         public enum Phase { Idle, Open, Closing, Summary }
 
         private GameBootstrap game;
+        private float length = GameBalance.DayRealSeconds;
+
+        /// Độ dài ngày đang chạy (giây thực), đặt lúc bắt đầu ngày theo cấp quán.
+        public float Length { get { return length; } }
+        /// Giây in-game trôi qua mỗi giây thực của ngày đang chạy.
+        public float InGameRate { get { return GameBalance.InGameSecondsPerRealSecondForLength(length); } }
 
         public Phase CurrentPhase { get; private set; }
         public int Day { get; private set; }
@@ -22,7 +28,7 @@ namespace Cafe
 
         public float Normalized
         {
-            get { return Mathf.Clamp01(Elapsed / GameBalance.DayRealSeconds); }
+            get { return Mathf.Clamp01(Elapsed / length); }
         }
 
         /// Giờ trong ngày (6.0 .. 22.0).
@@ -39,10 +45,23 @@ namespace Cafe
         public void Begin(int day)
         {
             Day = day;
+            length = GameBalance.DayRealSecondsFor(game != null && game.Tier != null ? game.Tier.Current : 1);
             Elapsed = 0f;
             ClosingSeconds = 0f;
             Summary = new DaySummary { day = day };
             CurrentPhase = Phase.Open;
+        }
+
+        /// Lên cấp giữa ngày: đổi độ dài ngày mà giữ nguyên giờ trên đồng hồ (Elapsed co giãn theo tỉ lệ).
+        /// Trả về tỉ lệ co giãn (mới / cũ; 1 = không đổi) để lịch sinh khách còn lại co giãn theo.
+        public float OnTierChanged()
+        {
+            float newLength = GameBalance.DayRealSecondsFor(game != null && game.Tier != null ? game.Tier.Current : 1);
+            if (Mathf.Approximately(newLength, length)) return 1f;
+            float ratio = newLength / length;
+            Elapsed *= ratio;
+            length = newLength;
+            return ratio;
         }
 
         private void Update()
@@ -53,10 +72,10 @@ namespace Cafe
             {
                 case Phase.Open:
                     Elapsed += dt;
-                    InGameSeconds += dt * GameBalance.InGameSecondsPerRealSecond;
-                    if (Elapsed >= GameBalance.DayRealSeconds)
+                    InGameSeconds += dt * InGameRate;
+                    if (Elapsed >= length)
                     {
-                        Elapsed = GameBalance.DayRealSeconds;
+                        Elapsed = length;
                         CurrentPhase = Phase.Closing;
                         ClosingSeconds = 0f;
                         GameEvents.RaiseDayClosing();
@@ -65,7 +84,7 @@ namespace Cafe
 
                 case Phase.Closing:
                     ClosingSeconds += dt;
-                    InGameSeconds += dt * GameBalance.InGameSecondsPerRealSecond;
+                    InGameSeconds += dt * InGameRate;
                     if (game.Spawner.ActiveCount == 0) EndDay();
                     break;
             }

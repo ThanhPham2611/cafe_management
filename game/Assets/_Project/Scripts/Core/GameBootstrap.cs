@@ -164,6 +164,8 @@ namespace Cafe
             LayoutEntry[] layout = (hasSave && save.layout != null && save.layout.Length > 0) ? save.layout : (Tier.Current >= 2 ? null : defaultLayout);
             if (layout != null)
             {
+                // Save nhà hàng cũ (lưới 20 x 24): sảnh nay bắt đầu ở ô x = 12 của lưới 44 x 24
+                int shiftX = hasSave ? TierManager.LayoutShiftCells(save) : 0;
                 for (int i = 0; i < layout.Length; i++)
                 {
                     LayoutEntry e = layout[i];
@@ -173,8 +175,9 @@ namespace Cafe
                         Debug.LogWarning("[GameBootstrap] Không có FurnitureDef id=" + e.furnitureId);
                         continue;
                     }
-                    if (Grid.Place(d, e.cell, e.rotation) == null)
-                        Debug.LogWarning("[GameBootstrap] Không đặt được " + e.furnitureId + " tại " + e.cell);
+                    Vector2Int cell = new Vector2Int(e.cell.x + shiftX, e.cell.y);
+                    if (Grid.Place(d, cell, e.rotation) == null)
+                        Debug.LogWarning("[GameBootstrap] Không đặt được " + e.furnitureId + " tại " + cell);
                 }
             }
 
@@ -421,10 +424,23 @@ namespace Cafe
                 hasCleaner = Staff != null && Staff.HasRole(StaffRole.Cleaner),
                 debt = Tier != null && Tier.Ledger != null ? Tier.Ledger.Debt : 0,
                 missionReady = Missions != null && Missions.HasClaimable,
+                canOpenZone = CanAffordAnyZone(),
                 lastAdvice = LastAdvice
             });
             LastAdvice = advice;
             return advice;
+        }
+
+        /// Cấp 3 và còn một khu chưa mở mà ví đủ tiền (để gợi ý ở bảng tổng kết).
+        private bool CanAffordAnyZone()
+        {
+            if (Tier == null || Tier.Current < 3 || Wallet == null) return false;
+            for (int i = 0; i < ZoneInfo.Buyable.Length; i++)
+            {
+                ZoneId z = ZoneInfo.Buyable[i];
+                if (!Tier.IsZoneOpen(z) && Wallet.Xu >= ZoneInfo.Cost(z)) return true;
+            }
+            return false;
         }
 
         // ---- Nhiệm vụ ngày ----

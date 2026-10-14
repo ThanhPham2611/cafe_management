@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -10,12 +11,26 @@ namespace Cafe
     ///    NavMesh bị chặn ở tường vì sàn chỉ tồn tại trong phòng, ở ngưỡng cửa và ở vỉa hè.
     ///  - Collider "Ground" (BoxCollider) cho NavMesh + raycast chạm.
     /// Tường quay mặt về camera tự hạ thấp (RoomWall) để thấy bên trong khi xoay camera 360°.
+    /// Cấp 3 có thêm các khu phụ hai bên sảnh (ZoneEnvironment): khu đã mở có sàn + tường riêng và lỗ mở trên tường sảnh,
+    /// khu chưa mở là bãi đất rào chờ xây.
     public static class EnvironmentBuilder
     {
         private const float Cell = GameBalance.CellSize;
 
+        /// Màu của một bức tường: chân tường, nẹp, thân tường.
+        internal struct WallStyle
+        {
+            public int lower, cap, upper;
+        }
+
+        internal static readonly WallStyle HallStyle = new WallStyle
+        {
+            lower = TierConfig.CellWainscot, cap = TierConfig.CellWoodDark, upper = TierConfig.CellWallCream
+        };
+
         /// Dựng phòng theo RoomSpec của cấp, trả về root "Room_T{cấp}" (con của parent nếu có). mat = GameBootstrap.toonMaterial.
-        public static GameObject BuildRoom(Material mat, Transform parent, RoomSpec r)
+        /// zoneMask: các khu phụ đã mở (bit ZoneInfo.Bit), chỉ có tác dụng khi phòng có khu (cấp 3).
+        public static GameObject BuildRoom(Material mat, Transform parent, RoomSpec r, int zoneMask = 0)
         {
             var root = new GameObject("Room_T" + r.Tier);
             if (parent != null) root.transform.SetParent(parent, false);
@@ -25,8 +40,42 @@ namespace Cafe
             BuildStreet(rt, mat, r);
             BuildColliders(rt, r);
             BuildWalls(rt, mat, r);
+            RefreshZones(rt, mat, r, zoneMask);
             BuildDetails(rt, mat, r);
             return root;
+        }
+
+        /// Dựng (hoặc dựng lại) phần phụ thuộc các khu đang mở: hai tường hông của sảnh (có lỗ mở sang khu đã mở), bãi đất của khu
+        /// chưa mở, sàn + tường + collider của khu đã mở (chỉ dựng một lần). Gọi lúc mở thêm khu; mọi thứ bị phá ở đây đều
+        /// KHÔNG có collider nên NavMesh có thể bake lại ngay trong cùng frame.
+        public static void RefreshZones(Transform room, Material mat, RoomSpec r, int zoneMask)
+        {
+            DestroyChild(room, "Wall_Left");
+            DestroyChild(room, "Wall_Right");
+            for (int i = 0; i < ZoneInfo.Buyable.Length; i++) DestroyChild(room, "Lot_" + ZoneInfo.Buyable[i]);
+            BuildSideWalls(room, mat, r, zoneMask);
+            if (!r.HasZones) return;
+            for (int i = 0; i < ZoneInfo.Buyable.Length; i++)
+            {
+                ZoneId z = ZoneInfo.Buyable[i];
+                if ((zoneMask & ZoneInfo.Bit(z)) != 0)
+                {
+                    if (room.Find("Zone_" + z) == null) ZoneEnvironment.BuildZone(room, mat, r, z);
+                }
+                else
+                {
+                    ZoneEnvironment.BuildLot(room, mat, r, z);
+                }
+            }
+        }
+
+        private static void DestroyChild(Transform room, string name)
+        {
+            Transform t = room.Find(name);
+            if (t == null) return;
+            t.name = "_destroyed"; // Destroy chỉ chạy cuối khung: đổi tên để Find lần sau (cùng khung) không thấy bản cũ
+            t.gameObject.SetActive(false);
+            Object.Destroy(t.gameObject);
         }
 
         // ------------------------------------------------------------------ sàn
@@ -134,8 +183,10 @@ namespace Cafe
         private static void BuildColliders(Transform root, RoomSpec r)
         {
             float zFront = r.FrontWallOuterZ;
-            // Sàn trong nhà (NavMesh + chạm). Mặt trên ở y = 0.
-            AddCollider(root, "Ground", new Vector3(0f, -0.05f, 0f), new Vector3(r.Width, 0.1f, r.Depth));
+            // Sàn trong nhà (NavMesh + chạm). Mặt trên ở y = 0. Phòng có khu phụ: sàn sảnh thu vào 0,1 m mỗi bên (tường hông nằm
+            // đúng trên đường biên) để giữa sàn sảnh và sàn khu phụ có khe 0,2 m, nối với nhau chỉ qua collider ở lỗ mở.
+            float groundW = r.HasZones ? r.Width - 0.2f : r.Width;
+            AddCollider(root, "Ground", new Vector3(0f, -0.05f, 0f), new Vector3(groundW, 0.1f, r.Depth));
             // Ngưỡng cửa nối sàn trong nhà với vỉa hè (chồng lên 2 bên một chút để NavMesh liền mạch)
             AddCollider(root, "Ground_Door", new Vector3(RoomLayout.DoorCenterX, -0.05f, (zFront + r.InteriorFrontZ) * 0.5f),
                 new Vector3(r.DoorHalfWidth * 2f, 0.1f, RoomLayout.WallThickness + 0.1f));
@@ -156,19 +207,43 @@ namespace Cafe
 
         private static void BuildWalls(Transform root, Material mat, RoomSpec r)
         {
-            float hw = r.Width * 0.5f;
             float hd = r.Depth * 0.5f;
             float t = RoomLayout.WallThickness;
 
-            MakeWall(root, mat, r, "Wall_Back", new Vector3(0f, 0f, hd + t * 0.5f), true, r.Width, Vector3.forward, false, false, true);
-            MakeWall(root, mat, r, "Wall_Front", new Vector3(0f, 0f, -(hd + t * 0.5f)), true, r.Width, Vector3.back, true, false, false);
-            MakeWall(root, mat, r, "Wall_Left", new Vector3(-(hw + t * 0.5f), 0f, 0f), false, r.Depth + 2f * t, Vector3.left, false, true, false);
-            MakeWall(root, mat, r, "Wall_Right", new Vector3(hw + t * 0.5f, 0f, 0f), false, r.Depth + 2f * t, Vector3.right, false, true, false);
+            MakeWall(root, mat, r, "Wall_Back", new Vector3(0f, 0f, hd + t * 0.5f), true, r.Width, Vector3.forward, null, false, true, HallStyle);
+            MakeWall(root, mat, r, "Wall_Front", new Vector3(0f, 0f, -(hd + t * 0.5f)), true, r.Width, Vector3.back,
+                new[] { new Vector2(RoomLayout.DoorCenterX, r.DoorHalfWidth) }, false, false, HallStyle);
+        }
+
+        /// Lỗ mở trên tường hông sảnh sang khu phụ (toạ độ dọc tường = z): sân vườn ở giữa tường trái, lầu và VIP ở nửa trước / nửa sau tường phải.
+        internal const float AnnexOpeningHalf = 1.5f;
+        internal const float AnnexOpeningZ = 3f;
+
+        /// Tường hông sảnh. Cấp 3 (có khu phụ) tường nằm đúng trên đường biên giữa sảnh và khu phụ.
+        private static void BuildSideWalls(Transform root, Material mat, RoomSpec r, int zoneMask)
+        {
+            float hw = r.Width * 0.5f;
+            float t = RoomLayout.WallThickness;
+            float x = r.HasZones ? hw : hw + t * 0.5f;
+            float len = r.Depth + 2f * t;
+
+            Vector2[] left = null, right = null;
+            if (r.HasZones)
+            {
+                if ((zoneMask & ZoneInfo.Bit(ZoneId.Garden)) != 0) left = new[] { new Vector2(0f, AnnexOpeningHalf) };
+                var rl = new List<Vector2>(2);
+                if ((zoneMask & ZoneInfo.Bit(ZoneId.Terrace)) != 0) rl.Add(new Vector2(-AnnexOpeningZ, AnnexOpeningHalf));
+                if ((zoneMask & ZoneInfo.Bit(ZoneId.Vip)) != 0) rl.Add(new Vector2(AnnexOpeningZ, AnnexOpeningHalf));
+                if (rl.Count > 0) right = rl.ToArray();
+            }
+            MakeWall(root, mat, r, "Wall_Left", new Vector3(-x, 0f, 0f), false, len, Vector3.left, left, true, false, HallStyle);
+            MakeWall(root, mat, r, "Wall_Right", new Vector3(x, 0f, 0f), false, len, Vector3.right, right, true, false, HallStyle);
         }
 
         /// center: tâm đáy tường (y = 0). alongX: tường chạy dọc trục X (tường trước/sau) hay Z (tường hông).
-        private static void MakeWall(Transform root, Material mat, RoomSpec r, string name, Vector3 center, bool alongX, float length,
-                                     Vector3 outward, bool withDoor, bool windows, bool pictures)
+        /// openings: các lỗ mở (cửa ra vào, lỗ sang khu phụ) dạng (tâm, nửa rộng) theo trục dọc tường; null = tường liền.
+        internal static GameObject MakeWall(Transform root, Material mat, RoomSpec r, string name, Vector3 center, bool alongX, float length,
+                                            Vector3 outward, IList<Vector2> openings, bool windows, bool pictures, WallStyle style)
         {
             var go = new GameObject(name);
             go.transform.SetParent(root, false);
@@ -186,35 +261,40 @@ namespace Cafe
             var lower = new PaletteMeshBuilder();
             var upper = new PaletteMeshBuilder();
 
-            // đoạn tường (theo trục s); cửa cắt tường trước làm đôi
+            // đoạn tường (theo trục s) giữa các lỗ mở; mỗi lỗ có lintel + nẹp gỗ + trụ khung
             float half = length * 0.5f;
-            float dc = RoomLayout.DoorCenterX, dh = r.DoorHalfWidth;
-            if (withDoor)
+            float cursor = -half;
+            if (openings != null && openings.Count > 0)
             {
-                AddWallSegment(lower, upper, alongX, -half, dc - dh, t, lowH, capH, upH);
-                AddWallSegment(lower, upper, alongX, dc + dh, half, t, lowH, capH, upH);
-
-                // lintel trên cửa + nẹp gỗ + trụ khung cửa
-                float lintelH = RoomLayout.WallHeight - RoomLayout.DoorHeight;
-                upper.AddBox(Pos(alongX, dc, RoomLayout.DoorHeight + lintelH * 0.5f - upBase), Size(alongX, dh * 2f, lintelH, t), TierConfig.CellWallCream);
-                upper.AddBox(Pos(alongX, dc, RoomLayout.DoorHeight - 0.06f - upBase), Size(alongX, dh * 2f + 0.2f, 0.12f, t + 0.06f), TierConfig.CellWoodDark);
-                for (int side = -1; side <= 1; side += 2)
+                var sorted = new List<Vector2>(openings);
+                sorted.Sort((a, b) => a.x.CompareTo(b.x));
+                for (int k = 0; k < sorted.Count; k++)
                 {
-                    float s = dc + side * (dh + 0.04f);
-                    lower.AddBox(Pos(alongX, s, upBase * 0.5f), Size(alongX, 0.08f, upBase, t + 0.06f), TierConfig.CellWoodDark);
-                    float postH = RoomLayout.DoorHeight - upBase;
-                    upper.AddBox(Pos(alongX, s, postH * 0.5f), Size(alongX, 0.08f, postH, t + 0.06f), TierConfig.CellWoodDark);
+                    float oc = sorted[k].x, oh = sorted[k].y;
+                    AddWallSegment(lower, upper, alongX, cursor, oc - oh, t, lowH, capH, upH, style);
+                    cursor = oc + oh;
+
+                    float lintelH = RoomLayout.WallHeight - RoomLayout.DoorHeight;
+                    upper.AddBox(Pos(alongX, oc, RoomLayout.DoorHeight + lintelH * 0.5f - upBase), Size(alongX, oh * 2f, lintelH, t), style.upper);
+                    upper.AddBox(Pos(alongX, oc, RoomLayout.DoorHeight - 0.06f - upBase), Size(alongX, oh * 2f + 0.2f, 0.12f, t + 0.06f), TierConfig.CellWoodDark);
+                    for (int side = -1; side <= 1; side += 2)
+                    {
+                        float s = oc + side * (oh + 0.04f);
+                        lower.AddBox(Pos(alongX, s, upBase * 0.5f), Size(alongX, 0.08f, upBase, t + 0.06f), TierConfig.CellWoodDark);
+                        float postH = RoomLayout.DoorHeight - upBase;
+                        upper.AddBox(Pos(alongX, s, postH * 0.5f), Size(alongX, 0.08f, postH, t + 0.06f), TierConfig.CellWoodDark);
+                    }
                 }
             }
-            else
-            {
-                AddWallSegment(lower, upper, alongX, -half, half, t, lowH, capH, upH);
-            }
+            AddWallSegment(lower, upper, alongX, cursor, half, t, lowH, capH, upH, style);
 
             if (windows)
             {
                 foreach (float s in Spots(r, length, 3.0f, 1.5f))
+                {
+                    if (NearOpening(s, openings, 0.95f)) continue; // cửa sổ không đè lên lỗ mở
                     AddWindow(upper, alongX, s, 1.85f - upBase, inward, t);
+                }
             }
             if (pictures)
             {
@@ -228,17 +308,26 @@ namespace Cafe
             lo.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
             up.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
             wall.Upper = up.transform;
+            return go;
+        }
+
+        private static bool NearOpening(float s, IList<Vector2> openings, float margin)
+        {
+            if (openings == null) return false;
+            for (int i = 0; i < openings.Count; i++)
+                if (Mathf.Abs(s - openings[i].x) < openings[i].y + margin) return true;
+            return false;
         }
 
         private static void AddWallSegment(PaletteMeshBuilder lower, PaletteMeshBuilder upper, bool alongX, float a, float b,
-                                           float t, float lowH, float capH, float upH)
+                                           float t, float lowH, float capH, float upH, WallStyle style)
         {
             float len = b - a;
             if (len <= 0.001f) return;
             float mid = (a + b) * 0.5f;
-            lower.AddBox(Pos(alongX, mid, lowH * 0.5f), Size(alongX, len, lowH, t), TierConfig.CellWainscot);
-            lower.AddBox(Pos(alongX, mid, lowH + capH * 0.5f), Size(alongX, len, capH, t + 0.04f), TierConfig.CellWoodDark);
-            upper.AddBox(Pos(alongX, mid, upH * 0.5f), Size(alongX, len, upH, t), TierConfig.CellWallCream);
+            lower.AddBox(Pos(alongX, mid, lowH * 0.5f), Size(alongX, len, lowH, t), style.lower);
+            lower.AddBox(Pos(alongX, mid, lowH + capH * 0.5f), Size(alongX, len, capH, t + 0.04f), style.cap);
+            upper.AddBox(Pos(alongX, mid, upH * 0.5f), Size(alongX, len, upH, t), style.upper);
         }
 
         /// Cửa sổ ở mặt trong tường: khung gỗ + kính (ô bạc hà) + chấn song.
@@ -258,7 +347,7 @@ namespace Cafe
         }
 
         /// Vị trí chi tiết dọc tường (cửa sổ, tranh). Cấp 2: hai điểm ±fixedHalf; cấp 3: chia đều theo khoảng spacing.
-        private static System.Collections.Generic.IEnumerable<float> Spots(RoomSpec r, float length, float spacing, float fixedHalf)
+        private static IEnumerable<float> Spots(RoomSpec r, float length, float spacing, float fixedHalf)
         {
             if (r.Tier < 3)
             {

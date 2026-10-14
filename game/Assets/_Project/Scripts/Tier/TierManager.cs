@@ -44,6 +44,14 @@ namespace Cafe
         /// Số nhân viên đang làm: Staff đặt vào đây để sức chứa T2 (1 + 0,25·NV) tính đúng. Mặc định 0.
         public int StaffCount;
 
+        /// Mặt nạ các khu phụ đã mở (cấp 3): bit ZoneInfo.Bit(ZoneId). Sảnh chính luôn mở nên không nằm trong mặt nạ.
+        public int ZonesOpen { get; private set; }
+        /// Số khu phụ đã mở; mỗi khu +20% khách.
+        public int OpenZoneCount { get { return ZoneInfo.OpenCount(ZonesOpen); } }
+        public float ZoneDemandMult { get { return Current >= 3 ? GameBalance.ZoneDemandMult(OpenZoneCount) : 1f; } }
+        /// Mở thêm khu xong (đã dựng sàn, bake NavMesh, tặng bàn ghế): UI vẽ lại.
+        public event Action ZonesChanged;
+
         public RentLedger Ledger { get { return ledger; } }
         /// Đang thuê mặt bằng (cấp 2): có tiền thuê hàng tuần. Cấp 3 đã mua nhà.
         public bool IsRented { get { return Current == 2; } }
@@ -71,6 +79,7 @@ namespace Cafe
             {
                 Current = Mathf.Max(1, save.tier);
                 Deposit = Mathf.Max(0, save.deposit);
+                ZonesOpen = Current >= 3 ? save.zonesOpen & ValidZoneMask : 0;
                 ledger.Load(save.rentDebt, save.daysSinceRent);
                 if (save.inventory != null)
                 {
@@ -112,10 +121,24 @@ namespace Cafe
             ConfigureWorldPoints();
         }
 
-        /// Gọi ngay sau khi tạo GridSystem (mọi cấp): chỉ số nội thất tham chiếu theo cấp.
+        private static int ValidZoneMask
+        {
+            get
+            {
+                int m = 0;
+                for (int i = 0; i < ZoneInfo.Buyable.Length; i++) m |= ZoneInfo.Bit(ZoneInfo.Buyable[i]);
+                return m;
+            }
+        }
+
+        /// Gọi ngay sau khi tạo GridSystem (mọi cấp): chỉ số nội thất tham chiếu theo cấp, bản đồ khu (cấp 3).
         public void OnGridCreated(GridSystem grid)
         {
-            if (grid != null) grid.FRef = GameBalance.FRefFor(Current);
+            if (grid == null) return;
+            grid.FRef = GameBalance.FRefFor(Current);
+            ZoneMap map = Current >= 3 ? RoomLayout.For(Current).CreateZoneMap() : null;
+            if (map != null) map.SetOpen(ZonesOpen);
+            grid.SetZones(map);
         }
 
         /// Gọi ngay sau khi tạo CameraRig: cấp >= 2 dùng khung nhìn rộng hơn cho phòng.
@@ -134,6 +157,13 @@ namespace Cafe
             if (Current < 2 || grid == null) return;
             if (grid.Placed.Count == 0) RoomLayout.PlaceDefault(game, grid, this);
             else RoomLayout.EnsureBar(game, grid);
+        }
+
+        /// Save nhà hàng cũ (lưới 20 x 24, chưa có khu) -> lưới 44 x 24: dời mọi món sang phải bằng số ô dải sân vườn.
+        public static int LayoutShiftCells(SaveData save)
+        {
+            if (save == null || save.tier < 3 || save.gridVersion >= 1) return 0;
+            return RoomLayout.For(3).AnnexCells;
         }
 
         // ------------------------------------------------------------------ điều kiện lên cấp
@@ -328,6 +358,7 @@ namespace Cafe
             // Nợ cũ (thuê nhà, lương) vẫn phải trả; cấp 2 bắt đầu kỳ thuê mới, cấp 3 hết thuê.
             if (tier == 2) ledger.Reset();
             else ledger.ClearRentCycle();
+            ZonesOpen = 0; // mua nhà hàng: chỉ có sảnh chính, các khu phụ mua dần
             OnGridCreated(grid);
             RoomLayout.PlaceDefault(game, grid, this);
         }
@@ -345,6 +376,11 @@ namespace Cafe
             RoomSpec room = RoomLayout.For(Current);
             if (game.CameraRig != null) game.CameraRig.SetBounds(grid.WorldBounds, room.CameraDistance, room.CameraPivotZ);
             if (game.Builder != null) game.Builder.RebindGrid();
+            if (game.Day != null)
+            {
+                float ratio = game.Day.OnTierChanged(); // ngày cấp 3 dài hơn: giữ nguyên giờ trên đồng hồ
+                if (game.Spawner != null) game.Spawner.RescaleRemaining(ratio);
+            }
             if (game.Spawner != null) game.Spawner.RefreshDemand();
             if (game.Owner != null) game.Owner.ResetForNewDay(); // đứng ở điểm phục vụ của quầy bar mới
             Step(RaiseTierChanged, "báo đổi cấp");                // Recipes/Cleaning cập nhật trước khi lưu
@@ -400,7 +436,7 @@ namespace Cafe
                 roomRoot = null;
             }
             if (game.toonMaterial == null) Debug.LogWarning("[Tier] GameBootstrap.toonMaterial trống: phòng sẽ không có màu palette");
-            roomRoot = EnvironmentBuilder.BuildRoom(game.toonMaterial, null, RoomLayout.For(Current));
+            roomRoot = EnvironmentBuilder.BuildRoom(game.toonMaterial, null, RoomLayout.For(Current), Current >= 3 ? ZonesOpen : 0);
             roomTier = Current;
         }
 
@@ -451,6 +487,66 @@ namespace Cafe
         public void AddDebt(int amount)
         {
             if (ledger != null) ledger.AddDebt(amount);
+        }
+
+        // ------------------------------------------------------------------ các khu của nhà hàng (cấp 3)
+
+        public bool IsZoneOpen(ZoneId z)
+        {
+            return z == ZoneId.Hall || (ZonesOpen & ZoneInfo.Bit(z)) != 0;
+        }
+
+        public bool CanAffordZone(ZoneId z)
+        {
+            return game != null && game.Wallet.Xu >= ZoneInfo.Cost(z);
+        }
+
+        /// Được phép mở khu này ngay lúc này (cấp 3, khu phụ chưa mở, không đang chuyển cấp, ngày đã bắt đầu). Chưa kể tiền.
+        public bool CanUnlockZone(ZoneId z)
+        {
+            if (Current < 3 || z == ZoneId.Hall || IsZoneOpen(z) || Transitioning) return false;
+            if (game == null || game.Grid == null || game.Grid.Zones == null || roomRoot == null) return false;
+            return game.Day != null && game.Day.CurrentPhase != DayCycle.Phase.Idle;
+        }
+
+        /// Lối sang khu (lỗ mở rộng 3 m trên tường sảnh) còn thông ít nhất 1 m, không bị đồ của sảnh chặn.
+        public bool OpeningClear(ZoneId z)
+        {
+            GridSystem grid = game != null ? game.Grid : null;
+            if (grid == null || grid.Zones == null) return true;
+            return grid.Zones.OpeningClear(z, c => grid.GetAt(c) == null);
+        }
+
+        /// Mua khu: trừ Xu, dựng sàn + tường + bỏ bãi đất rào, mở ô lưới, tặng 2 bộ bàn ghế, bake lại NavMesh, lưu.
+        /// Không cần màn tối: sàn khu mới là collider mới còn phần bị phá (tường hông, bãi rào) không có collider.
+        public bool UnlockZone(ZoneId z)
+        {
+            if (!CanUnlockZone(z) || !CanAffordZone(z)) return false;
+            if (!OpeningClear(z))
+            {
+                GameEvents.RaiseToast(string.Format(Strings.ZoneBlockedFmt, ZoneInfo.Name(z)));
+                return false; // chưa trừ Xu: người chơi dọn lối đi rồi mở lại
+            }
+            int paid = game.Wallet.Spend(ZoneInfo.Cost(z));
+            ZonesOpen |= ZoneInfo.Bit(z);
+
+            EnvironmentBuilder.RefreshZones(roomRoot.transform, game.toonMaterial, RoomLayout.For(Current), ZonesOpen);
+            GridSystem grid = game.Grid;
+            grid.Zones.SetOpen(ZonesOpen);
+            int sets = RoomLayout.PlaceZoneStarter(game, grid, this, z);
+
+            RebuildNavigation();
+            NavMeshBaker.RepairCustomers(game.Spawner != null ? game.Spawner.Active : null);
+            if (game.Builder != null) game.Builder.RebindGrid();
+            if (game.Spawner != null) game.Spawner.RefreshDemand();
+            game.NotifyShopTransaction(-paid); // dời mốc Xu đầu ngày theo giao dịch rồi lưu (thoát-vào không hoàn tiền)
+
+            Debug.Log("[Tier] Mở khu " + z + ": trả " + paid + " Xu, tặng " + sets + " bộ bàn ghế, ghế=" + grid.Seats.Count +
+                      ", khu đã mở=" + OpenZoneCount + ", nhu cầu x" + ZoneDemandMult.ToString("0.00"));
+            GameEvents.RaiseToast(string.Format(Strings.ZoneOpenedToastFmt, ZoneInfo.Name(z)));
+            if (panel != null) panel.PlayConfetti();
+            if (ZonesChanged != null) ZonesChanged();
+            return true;
         }
 
         // ------------------------------------------------------------------ kho đồ
@@ -532,6 +628,8 @@ namespace Cafe
         {
             if (data == null) return;
             data.tier = Current;
+            data.zonesOpen = Current >= 3 ? ZonesOpen : 0;
+            data.gridVersion = 1;
             data.deposit = Deposit;
             data.rentDebt = ledger != null ? ledger.Debt : 0;
             data.daysSinceRent = ledger != null ? ledger.DaysSinceRent : 0;

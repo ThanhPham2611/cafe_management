@@ -7,6 +7,8 @@ namespace Cafe
     ///   CI = 100 - 40·(bàn_bẩn / tổng_bàn) - 0,4·FloorDirt - 5·(số bàn bẩn quá 26 s thực)      (kẹp 0..100)
     ///   FloorDirt += 0,6 mỗi khách phục vụ; -= 8 mỗi lần lau sàn; sang ngày mới: max(0, FloorDirt - 10).
     /// Hệ quả: C của S = CI/100; walk-away +15% mỗi 10 CI dưới 60; tip ×0,5 dưới 60; -1 RP mỗi giờ in-game khi CI < 40.
+    /// Nhà hàng cấp 3 có nhiều khu: mỗi khu có CI riêng (phần bàn bẩn tính theo bàn của khu, FloorDirt dùng chung vì lau sàn là việc
+    /// của cả quán). Khách tính walk-away / tip / hài lòng theo CI của khu mình ngồi (CiOf); con số CI chung (HUD, phạt RP) vẫn tính trên mọi bàn.
     /// Mô hình thuần dữ liệu; CleaningSystem gọi Tick() ~4 lần/giây.
     public class CleanlinessModel
     {
@@ -24,6 +26,11 @@ namespace Cafe
         /// Con số đổi (CI làm tròn, số bàn bẩn, FloorDirt, bật/tắt luật): HUD nghe để vẽ lại.
         public event Action Changed;
 
+        private readonly float[] zoneCi = new float[ZoneInfo.Count];
+        private readonly int[] zoneTables = new int[ZoneInfo.Count];
+        private readonly int[] zoneDirty = new int[ZoneInfo.Count];
+        private readonly int[] zoneOld = new int[ZoneInfo.Count];
+
         private float avgSum;
         private float avgTime;
         private float lowCiInGameSeconds;
@@ -36,25 +43,33 @@ namespace Cafe
         {
             game = g;
             CI = 100f;
+            for (int i = 0; i < zoneCi.Length; i++) zoneCi[i] = 100f;
         }
 
         // ------------------------------------------------------------------ truy vấn
 
-        /// Xác suất khách bỏ đi khi tới ghế: +15% mỗi 10 CI dưới 60 (liên tục).
-        public float WalkAwayChance
+        /// CI của một khu (0..100). Cấp < 3 chỉ có sảnh chính, bằng CI chung.
+        public float CiOf(ZoneId zone)
         {
-            get
-            {
-                if (CI >= GameBalance.CiWalkAwayBelow) return 0f;
-                return Mathf.Clamp01(GameBalance.CiWalkAwayPer10 * (GameBalance.CiWalkAwayBelow - CI) / 10f);
-            }
+            return zoneCi[(int)zone];
+        }
+
+        /// Xác suất khách bỏ đi khi tới ghế: +15% mỗi 10 CI dưới 60 (liên tục).
+        public static float WalkAwayChanceFor(float ci)
+        {
+            if (ci >= GameBalance.CiWalkAwayBelow) return 0f;
+            return Mathf.Clamp01(GameBalance.CiWalkAwayPer10 * (GameBalance.CiWalkAwayBelow - ci) / 10f);
         }
 
         /// Hệ số tip: ×0,5 khi CI < 60.
-        public float TipMultiplier
+        public static float TipMultiplierFor(float ci)
         {
-            get { return CI < GameBalance.CiWalkAwayBelow ? GameBalance.CiTipMultiplier : 1f; }
+            return ci < GameBalance.CiWalkAwayBelow ? GameBalance.CiTipMultiplier : 1f;
         }
+
+        public float WalkAwayChance { get { return WalkAwayChanceFor(CI); } }
+
+        public float TipMultiplier { get { return TipMultiplierFor(CI); } }
 
         /// Hiện nút "Lau sàn" khi sàn đủ bẩn.
         public bool WantsMop
@@ -99,6 +114,7 @@ namespace Cafe
         {
             bool enabled = CleaningRules.Enabled;
             int total = 0, dirty = 0, old = 0;
+            for (int z = 0; z < zoneTables.Length; z++) zoneTables[z] = zoneDirty[z] = zoneOld[z] = 0;
             if (game != null && game.Grid != null)
             {
                 var tables = game.Grid.Tables;
@@ -106,10 +122,13 @@ namespace Cafe
                 for (int i = 0; i < tables.Count; i++)
                 {
                     PlacedFurniture t = tables[i];
+                    int zi = (int)game.Grid.ZoneOf(t);
+                    zoneTables[zi]++;
                     TableDirt td = t != null ? t.Dirt : null;
                     if (td == null || !td.IsDirty) continue;
                     dirty++;
-                    if (td.IsOld) old++;
+                    zoneDirty[zi]++;
+                    if (td.IsOld) { old++; zoneOld[zi]++; }
                 }
             }
             TotalTables = total;
@@ -127,6 +146,17 @@ namespace Cafe
                 ci = Mathf.Clamp(ci, 0f, 100f);
             }
             CI = ci;
+            for (int z = 0; z < zoneCi.Length; z++)
+            {
+                float zc = 100f;
+                if (enabled)
+                {
+                    float zr = zoneTables[z] > 0 ? (float)zoneDirty[z] / zoneTables[z] : 0f;
+                    zc = Mathf.Clamp(100f - GameBalance.CiDirtyTableWeight * zr - GameBalance.CiFloorDirtWeight * FloorDirt
+                                     - GameBalance.OldTableCiPenalty * zoneOld[z], 0f, 100f);
+                }
+                zoneCi[z] = zc;
+            }
 
             if (enabled && dt > 0f && game != null && game.Day != null)
             {
@@ -140,7 +170,7 @@ namespace Cafe
                     // -1 RP mỗi giờ in-game khi CI < 40
                     if (CI < GameBalance.CiRpPenaltyBelow)
                     {
-                        lowCiInGameSeconds += dt * GameBalance.InGameSecondsPerRealSecond;
+                        lowCiInGameSeconds += dt * game.Day.InGameRate;
                         while (lowCiInGameSeconds >= 3600f)
                         {
                             lowCiInGameSeconds -= 3600f;

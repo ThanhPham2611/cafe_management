@@ -67,7 +67,7 @@ Chưa đo được trên PC: GPU/draw call/nhiệt độ trên điện thoại t
 
 ### 0.6 Cấp 3 — khung chơi được (2026-10-13)
 
-**Làm gì.** Mua nhà hàng (3.1), sảnh nhà hàng 10 × 12 m (3.2, chưa có 3 khu), nhân viên theo trần vai trò (3.3 một phần), máy móc + 3 món cấp 3 (3.5, 3.6), 11 model nội thất Blender (3.8). Chi tiết trạng thái ở §1.1.
+**Làm gì.** Mua nhà hàng (3.1), sảnh nhà hàng 10 × 12 m (3.2; lúc đó chưa có 3 khu, nay đã có: xem §0.8), nhân viên theo trần vai trò (3.3 một phần), máy móc + 3 món cấp 3 (3.5, 3.6), 11 model nội thất Blender (3.8). Chi tiết trạng thái ở §1.1.
 
 | Việc | Nội dung |
 |---|---|
@@ -96,10 +96,52 @@ Chưa đo được trên PC: GPU/draw call/nhiệt độ trên điện thoại t
 
 ### 0.7 Việc nên làm tiếp cho cấp 3 (đề xuất)
 
-1. Quyết định núm kinh tế ở trên (lãi cấp 3 đang thấp hơn tài liệu 3–4 lần).
-2. 3.2 phần còn lại: 3 khu (sân vườn / lầu / VIP) = mở rộng lưới + môi trường + CI theo khu.
-3. 3.3: Thu ngân, Trưởng ca; 3.4 ca làm.
-4. Mua nhiều nhân viên Phục vụ hoặc cho Phục vụ mang 2 ly/chuyến (Phục vụ là nút thắt kế tiếp sau quầy giao).
+1. ~~Quyết định núm kinh tế ở trên (lãi cấp 3 đang thấp hơn tài liệu 3–4 lần)~~ **Đã quyết một phần (§0.8):** ngày cấp 3 dài 300 s; mỗi khu đã mở +20% nhu cầu, khu VIP trả ×1,5. **Còn lại, chưa chốt:** giá / biên 3 món cấp 3, hệ số Demand cấp 3 (2,6), lương nhân viên, giá mua nhà 250.000. Nên chỉnh sau khi điền các chỗ đánh dấu số đo ở §0.8 và economy §19.
+2. ~~3.2 phần còn lại: 3 khu (sân vườn / lầu / VIP) = mở rộng lưới + môi trường + CI theo khu~~ **Đã làm (bản đầu, §0.8).** Còn lại của 3.2: **tầng lầu thật** (hiện là gác gỗ cùng mặt sàn).
+3. 3.3: Thu ngân, Trưởng ca; 3.4 ca làm. **Chưa làm.**
+4. Mua nhiều nhân viên Phục vụ hoặc cho Phục vụ mang 2 ly/chuyến (Phục vụ là nút thắt kế tiếp sau quầy giao). **Chưa làm**, và đo ở §0.8 cho thấy thông lượng Pha chế / Phục vụ nay là nút thắt chính của cấp 3.
+5. Đo lại cân bằng cấp 3 với đủ 3 khu và nhân viên đã nâng cấp (điền các chỗ đánh dấu số đo ở §0.8), rồi mới chỉnh các núm còn lại ở mục 1.
+
+### 0.8 Cấp 3 — ba khu của nhà hàng (2026-10-13)
+
+**Làm gì.** Hoàn tất phần còn lại của 3.2: bên cạnh sảnh chính, nhà hàng có ba khu mở bằng Xu (sân vườn, lầu, VIP). Mỗi khu có môi trường riêng, độ sạch (CI) riêng, F_ref riêng và cộng nhu cầu khách; khách ngồi khu VIP trả ×1,5. Cùng đợt chỉnh một núm kinh tế đã nêu ở §0.6: ngày cấp 3 dài 300 giây. Giá mở khu lấy nguyên từ economy §3.5; lý do chọn 300 s và số đo cân bằng nằm ở economy §19. Đã chạy thật trong Unity: 142 test EditMode đạt, chụp màn hình cả 3 khu mở được, bot mở khu không lỗi.
+
+| Việc | Nội dung |
+|---|---|
+| Lưới & bản đồ khu | Lưới nhà hàng **44 × 24 ô** (ô 0,5 m = 22 × 12 m). **Sảnh chính** 20 × 24 ô (10 × 12 m) ở giữa, bắt đầu từ ô x = 12; **Sân vườn** 12 × 24 ô (6 × 12 m) bên trái (x 0–11); **Lầu** 12 × 12 ô (6 × 6 m) bên phải phía trước (x 32–43, y 0–11); **VIP** 12 × 12 ô bên phải phía sau (y 12–23). Mọi ô thuộc đúng một khu (`ZoneMap`, `Scripts/Tier/Zones.cs`) |
+| Tương thích save | Tọa độ ô của sảnh dời +12 so với lưới cũ 20 × 24. Save nhà hàng cũ (`SaveData.gridVersion = 0`) được tự dời 12 ô khi nạp. Trường mới: `SaveData.zonesOpen` (mặt nạ bit: sân vườn 2, lầu 4, VIP 8) và `gridVersion` |
+| Mở khu | Nút **"MỞ RỘNG"** ở cột phải HUD (chỉ cấp 3; đổi thành "MỞ RỘNG!" khi đủ tiền mở thêm một khu) → bảng 3 thẻ (`ZonePanel`). Chạm lần 1 để chọn, lần 2 để mua (tránh bấm nhầm). Giá **40.000 / 90.000 / 180.000 Xu**, mở theo thứ tự tùy ý. Mua xong: trừ Xu → dựng sàn + tường / lan can + bỏ bãi rào → tặng 2 bộ bàn ghế (mỗi bộ = bàn + 2 ghế; dùng đồ trong kho trước) → bake lại NavMesh **ngay trong ngày** (không cần màn tối) → cập nhật nhu cầu khách → lưu. Gợi ý ngày mới có thêm "Đủ tiền mở thêm khu" (`DayAdvice.OpenZone`) |
+| Khu chưa mở | Bãi đất nung rào chắn cam / trắng kèm biển đỏ "chờ xây": không đi vào, không đặt đồ được (ô lưới ở đó bị từ chối). Lưới đặt đồ chỉ kẻ ở khu đã mở |
+| Hiệu ứng kinh tế | Mỗi khu đã mở **+20% nhu cầu khách** (`GameBalance.ZoneDemandMult`; "zone bonus" của Demand_T3, economy §3.1). Khách ngồi **khu VIP trả ×1,5** (cả giá ly và tip). Mỗi khu phụ có **F_ref riêng 150** (sảnh giữ 400): khách tính tip / hài lòng theo điểm nội thất F của khu mình ngồi. Mỗi khu có **CI riêng** cho phần bàn bẩn (FloorDirt vẫn dùng chung vì lau sàn là việc cả quán): khách tính tỉ lệ bỏ đi vì bẩn, tip, hài lòng theo CI khu mình ngồi. CI chung trên HUD và phạt RP vẫn tính trên mọi bàn |
+| Môi trường | Chỉ dùng palette + 1 vật liệu, không import gì (`ZoneEnvironment.cs`). **Sân vườn:** cỏ ô sáng / tối 1 m + lối đá, hàng rào cây thấp, đèn dây, cây hộp lớn bên ngoài. **Lầu:** sàn gác gỗ + lan can trắng + cột pergola / đèn dây. **VIP:** sàn gỗ tối + thảm đỏ viền vàng + hoa văn thoi, tường cao xanh ngọc có tranh. Ô palette dùng: art_bible §9 |
+| Lối mở bị đồ chặn / ghế sát tường | Mở khu bị TỪ CHỐI (chưa trừ Xu, có thông báo) nếu lối sang khu ở phía sảnh không còn thông một dải rộng 1 m (`ZoneMap.OpeningClear`, 2 cột ô sát tường x dải y của lỗ mở). Ghế chỉ ghép với bàn CÙNG KHU và điểm đứng bên kia tường bị loại, nên khách không "ngồi xuyên tường" khi ghế sát tường sảnh nằm cạnh bàn của khu bên cạnh |
+| Lối đi giữa các khu | Tường hông của sảnh có lỗ mở rộng 3 m sang khu đã mở (sân vườn: giữa tường trái; lầu / VIP: nửa trước / nửa sau tường phải). Sàn mỗi khu cách sàn sảnh 0,2 m (đúng chỗ tường dày 0,2 m; reviewer chỉ ra khe 0,1 m có thể bị voxel NavMesh 0,06 m lấp kín) và chỉ được nối bằng collider nối ở lỗ mở, nên khách không đi xuyên tường |
+| Lầu | **Gác gỗ cùng mặt sàn, không phải tầng thật**: NavMesh, camera và đặt đồ đều giả định y = 0. Tầng lầu thật để sau (§0.7) |
+| Camera | Cấp 3 mặc định không đổi (tâm lưới = tâm sảnh); có thể kéo / thu nhỏ để xem hai bên |
+| Ngày cấp 3 | **300 giây thực** (cấp 1–2 vẫn 210): `GameBalance.DayRealSecondsFor(tier)`. `DayCycle` tự đổi độ dài khi lên cấp giữa ngày (giữ nguyên giờ đồng hồ). Lý do: ở ngày 210 s một lượt khách ~55 s và cửa sổ sinh khách chỉ ~165 s nên quay vòng thực ~3,2 khách/ghế (công thức dùng 5); ngày 300 s đưa về ~4,5 |
+| Công cụ kiểm thử | Chỉ Editor / bản Development: cờ `-autozones`, `-shotzones`, `-bestmenu`; log `[AutoPilot] KHU Hall[ghế= F= CI=] Garden[...] ... nhu cầu x`, `MỞ KHU`, `MENU cấp`. Test mới `Tests/EditMode/ZoneRulesTests.cs`: bản đồ khu, luật đặt đồ, giá, nhu cầu, độ dài ngày, dời layout |
+
+**Số đo (bot, cấp 3, 8 nhân viên; chưa nâng cấp nhân viên trừ khi ghi khác).** Mỗi dòng là một lượt chạy riêng:
+
+| Cấu hình | Đo được |
+|---|---|
+| Ngày 300 s, sảnh 44–48 ghế | "Hết chỗ" = 0; mất khách chuyển hoàn toàn sang **"hết kiên nhẫn" ~28–35/ngày** |
+| Mở đủ 3 khu (nhu cầu ×1,6, ~78 ghế), nhân viên còn cấp 1 | Quá tải: **mất 100–130 khách/ngày, lãi ~0** |
+| Menu giá cao (giá TB 148 thay vì ~103) + nâng cấp nhân viên + sảnh 26 ghế | ~94 khách/ngày, doanh thu ~14.000, **lãi ~6.400–6.600/ngày** |
+
+- **Nút thắt đã dời.** Ở §0.6 lý do mất khách chính là hết chỗ; với ngày 300 s và đủ ghế thì "hết chỗ" về 0 và nút thắt là **thông lượng Pha chế / Phục vụ**, không còn là chỗ ngồi. Nâng cấp nhân viên (`Cost = 1.000 × 2,5^(Lv−1)`) vì thế là phần thưởng đầu tư chính của cấp 3; mở khu mà nhân viên còn cấp 1 làm quán tệ đi.
+- **Số đo cấp 3 có khu (2026-10-14).** Cờ bot: `-autoplay -autoupgrade3 -cheatt3 -autostaff -fullstaff -autobuy -bestmenu -autohidden -upgradestaff` (+ `-autozones` cho hai dòng dưới); menu 8 món giá TB 148 (dòng giữa 127 vì không mua máy cold brew); 18–22 lần nâng cấp nhân viên (Pha chế cấp 3, Dọn dẹp cấp 3–5, Phục vụ cấp 3); không có lỗi / exception. **Mỗi cấu hình chỉ một lượt** (ngày lẻ dao động ±2.000), và bot mua bàn ở sảnh trước nên **mỗi khu phụ chỉ có 4 ghế tặng**.
+
+| Cấu hình (bot, 7 ngày, TB ngày 3–7) | Ghế cuối | Nhu cầu | Phục vụ/ngày | Mất: hết chỗ / hết kiên nhẫn | Doanh thu | Lãi ròng/ngày |
+|---|---|---|---|---|---|---|
+| Chỉ sảnh chính (120.000 Xu dư) | 44 | ×1,0 | 91 | 8,0 / 12,8 | 14.102 | **7.246** |
+| Sân vườn + lầu (200.000 Xu dư; VIP không đủ tiền mở) | 48 (40 + 4 + 4) | ×1,4 | 114 | 26,6 / 16,4 | 14.210 | **7.035** |
+| Đủ 3 khu (500.000 Xu dư) | 57 (45 + 4 + 4 + 4) | ×1,6 | 104 | 34,0 / 38,8 | 16.904 | **8.760** |
+
+- Lãi 7.000–8.800/ngày vẫn thấp hơn dải 20.000–35.000 của economy §3.1 khoảng 2,5–3 lần. Nghi can chính là **thông lượng Pha chế**: trần 3 người, dù cấp tối đa + cả hai máy chỉ pha ~120–130 ly trong cửa sổ khách 234 s (ước tính từ thời gian pha công thức, chưa đo trực tiếp), trong khi tài liệu giả định 200–240 khách/ngày ở cấp 3. Vì vậy mở đủ khu (nhu cầu ×1,6 ≈ 150 khách) chỉ làm hết kiên nhẫn tăng từ ~13 lên ~39 khách/ngày.
+- **Hoàn vốn khu: không đo được tin cậy.** Đủ 3 khu chỉ hơn "chỉ sảnh" ~1.500/ngày (8.760 so với 7.246) nên 310.000 Xu cần > 200 ngày ở cấu hình này; sân vườn + lầu (130.000 Xu) không hơn chỉ sảnh (7.035 so với 7.246, trong sai số một lượt). Đây là **cận dưới**: các khu phụ chưa kê bàn (mất ~34 khách/ngày vì hết chỗ) và nhân viên chưa đủ (39 khách/ngày hết kiên nhẫn). Cần đo lại sau khi quyết định về trần nhân viên (§0.7).
+
+**Chưa làm.** Ca làm (3.4), Thu ngân / Trưởng ca (3.3), Phục vụ mang 2 ly / chuyến, tầng lầu thật, nhiệm vụ tuần (3.9), thu nhập offline (3.10).
 
 ## 1. Phạm vi Giai đoạn 3 (Alpha)
 
@@ -121,12 +163,12 @@ Chưa đo được trên PC: GPU/draw call/nhiệt độ trên điện thoại t
 | Mã | Trạng thái | Ghi chú |
 |---|---|---|
 | 3.1 Chuyển cấp 3 | **Xong** | `TierManager` tổng quát 1→2→3; mua nhà = 250.000 − cọc 18.000 hoàn = 232.000 Xu + ★3 (4.000 RP); thẻ tiến độ + nút "Mua nhà hàng!" + hộp xác nhận; hết tiền thuê, phí vận hành 700/ngày; nợ cũ vẫn trả dần |
-| 3.2 Nhà hàng + 3 khu | **Một phần** | Sảnh chính 10 × 12 m (lưới 20 × 24 ô, sàn gỗ ghép, cửa rộng 2,2 m, camera xa hơn). **Chưa có 3 khu** sân vườn / lầu / VIP và CI theo khu (cần mở rộng lưới + môi trường) |
+| 3.2 Nhà hàng + 3 khu | **Xong (bản đầu)** | Lưới 44 × 24 ô: sảnh chính 10 × 12 m (sàn gỗ ghép, cửa rộng 2,2 m, camera xa hơn) + sân vườn 6 × 12 m + lầu 6 × 6 m + VIP 6 × 6 m. Mở khu 40.000 / 90.000 / 180.000 Xu qua nút "MỞ RỘNG", môi trường riêng từng khu, mỗi khu +20% nhu cầu, VIP trả ×1,5, CI (phần bàn bẩn) và F_ref (150) riêng từng khu. **Lầu là gác gỗ cùng mặt sàn**, chưa phải tầng thật. Chi tiết §0.8 |
 | 3.3 Nhân viên cấp 3 | **Một phần** | Trần theo vai trò (`GameBalance.StaffMaxCount`): T2 = 1 Dọn dẹp + 1 Phục vụ (**Pha chế và người thứ hai chỉ từ T3**), T3 = 3 Dọn dẹp + 2 Phục vụ + 3 Pha chế (8, trong dải 4–10). **Chưa có** Thu ngân, Trưởng ca |
 | 3.4 Ca làm | Chưa | |
 | 3.5 Máy móc | **Xong (bản gọn)** | 3 máy là nội thất đặt trong quán (không có UI riêng): máy xay 25.000 (−15% thời gian pha NV), espresso 150.000 (−25%, cộng dồn), cold brew 60.000 (mở món). Hệ số cũng nới cửa sổ "pha hoàn hảo" của chủ quán |
 | 3.6 Món cấp 3 | **Xong** | Bạc xỉu kem muối 230 (không cần máy), Cold brew cam sả 200 (cần máy cold brew), Phin Robusta Cầu Đất 300 (cần máy espresso); tự mở khi lên cấp 3, vào menu nếu còn chỗ (menu T3 = 8 món) |
-| 3.7 Kinh tế cấp 3 | **Một phần** | Công thức, hệ số, giá đã vào code và đo bằng bot (xem §0.6); chưa chỉnh lại số vì cần quyết định thiết kế |
+| 3.7 Kinh tế cấp 3 | **Một phần** | Công thức, hệ số, giá đã vào code và đo bằng bot (§0.6, §0.8). **Đã chỉnh:** ngày cấp 3 dài 300 s (cấp 1–2 vẫn 210) và hệ số khu (+20% nhu cầu mỗi khu, VIP ×1,5). **Chưa chỉnh:** giá / biên 3 món cấp 3, Demand cấp 3, lương, giá nhà. Lãi cấp 3 sau khi có khu: đo được 7.000–8.800/ngày (nhân viên đã nâng cấp, menu giá cao; xem §0.8), thấp hơn mục tiêu 20.000–35.000 |
 | 3.8 Nội thất cấp 3 | **Xong (bản đầu)** | 11 model Blender: ghế bành nhung, ghế da, bàn đá cẩm thạch, máy lạnh tủ đứng, đèn chùm đồng, cây bàng lá đàn, giá vẽ, piano, 3 máy móc |
 | 3.9 Nhiệm vụ mở rộng | Chưa | |
 | 3.10 Thu nhập offline | Chưa | cần Firebase |
@@ -147,8 +189,8 @@ Chưa đo được trên PC: GPU/draw call/nhiệt độ trên điện thoại t
 
 ## 4. Tiêu chí nghiệm thu Giai đoạn 3
 
-- Bot `-autoplay -cheatxu` lên cấp 3, chơi trọn 3 ngày không lỗi runtime; log `[AutoPilot]` in số việc từng vai trò nhân viên làm, CI từng khu.
-- Mở được khu mới; thiếu ca thì sức chứa giảm đúng 30%.
+- Bot `-autoplay -cheatxu` lên cấp 3, chơi trọn 3 ngày không lỗi runtime; log `[AutoPilot]` in số việc từng vai trò nhân viên làm, CI từng khu (CI từng khu: đã có, §0.8).
+- Mở được khu mới (đạt, §0.8); thiếu ca thì sức chứa giảm đúng 30% (chưa, cần 3.4).
 - Mua máy → món cấp 3 xuất hiện trong menu.
 - Lưu / đọc đúng khi giữa các ngày, kể cả file cũ.
-- Cân bằng: T3 lãi ròng / ngày trong dải 20.000–35.000 Xu (economy §3.1) với người chơi trung bình.
+- Cân bằng: T3 lãi ròng / ngày trong dải 20.000–35.000 Xu (economy §3.1) với người chơi trung bình (chưa đạt: lượt đo gần nhất ~6.400–6.600/ngày ở cấu hình tốt, §0.8).

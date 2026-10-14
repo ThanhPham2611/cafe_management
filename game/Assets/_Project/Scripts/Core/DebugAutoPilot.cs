@@ -20,6 +20,9 @@ namespace Cafe
     ///   -autodecor3           như -autodecor nhưng ở nhà hàng (cấp 3): mua và đặt bộ nội thất cấp 3 rồi chụp màn hình
     ///   -nomachines           bot không mua máy móc cấp 3 (đối chứng)
     ///   -t3xu <n>             (chỉ bản Development) cộng thêm n Xu ngay sau khi mua nhà hàng (thử máy móc / nội thất)
+    ///   -bestmenu             từ cấp 2, bot chọn menu là các món GIÁ CAO nhất đang gọi được (như người chơi biết tối ưu); in "[AutoPilot] MENU"
+    ///   -autozones            ở nhà hàng (cấp 3) bot mở lần lượt sân vườn -> lầu -> VIP khi dư tiền (giữ quỹ dự phòng) và mua bàn ghế trong khu
+    ///   -shotzones            mở lần lượt 3 khu bằng đường mua thật và chụp từng khu + bảng Mở rộng (cần -autoshot, -t3xu để đủ Xu)
     ///   -gfxcycle             đổi mức đồ họa giữa chừng (Vừa -> Thấp -> Cao) và chụp từng mức, không lưu lựa chọn
     ///   -shotsettings         mở bảng Cài đặt đồ họa rồi chụp màn hình (cần -autoshot)
     ///   -gfx low|medium|high  ép mức đồ họa (bản Development); log "[Gfx]" cho biết mức đang dùng
@@ -33,7 +36,7 @@ namespace Cafe
         bool autoplay;
         bool autoshop;
         bool autorecipes;
-        bool cheatXu, cheatRp, autoUpgrade, autoUpgrade3, cheatT3, fullStaff, noMachines, gfxCycle, shotSettings, autoDecor3, autoStaff, noBrewer, autoBuy, autoHidden, upgradeStaff, perf, autoDecor;
+        bool cheatXu, cheatRp, autoUpgrade, autoUpgrade3, cheatT3, fullStaff, noMachines, autoZones, shotZones, bestMenu, gfxCycle, shotSettings, autoDecor3, autoStaff, noBrewer, autoBuy, autoHidden, upgradeStaff, perf, autoDecor;
         int cleanerLimit = 99;
         int t3ExtraXu;
         int targetDays = 1;
@@ -84,6 +87,9 @@ namespace Cafe
             p.fullStaff = Has(args, "-fullstaff");
             p.noMachines = Has(args, "-nomachines");
             p.shotSettings = Has(args, "-shotsettings");
+            p.autoZones = Has(args, "-autozones");
+            p.bestMenu = Has(args, "-bestmenu");
+            p.shotZones = Has(args, "-shotzones");
             p.gfxCycle = Has(args, "-gfxcycle");
             p.autoDecor3 = Has(args, "-autodecor3");
             string tx = Arg(args, "-t3xu");
@@ -135,6 +141,8 @@ namespace Cafe
             if (perf) DebugPerfProbe.Attach();
             if (autoDecor) StartCoroutine(DecorTest());
             if (shotSettings) StartCoroutine(SettingsShot());
+            if (shotZones) StartCoroutine(ZoneShots());
+            if (bestMenu) StartCoroutine(BestMenuLoop());
             if (gfxCycle) StartCoroutine(GfxCycle());
             StartCoroutine(StatsLoop());
         }
@@ -172,8 +180,29 @@ namespace Cafe
                           $"cọc {tg.Tier.Deposit}, kho {tg.Tier.InventoryTotal}, ghế {tg.Grid.Seats.Count}");
             if (CleaningRules.Enabled)
                 Debug.Log($"[AutoPilot] CI cuối ngày {s.day}: TB={s.cleanliness:0.0} hiện tại={CleaningRules.CurrentCI:0.0}");
+            if (tierNow >= 3 && tg.Grid != null && tg.Grid.Zones != null) Debug.Log("[AutoPilot] KHU " + ZoneSummary(tg));
             if (autorecipes) LogRecipes();
             StartCoroutine(FinishAfterSummary());
+        }
+
+        /// Mỗi khu đang mở: số ghế, điểm nội thất F, CI. Dùng để kiểm tra kinh tế / dọn dẹp theo khu.
+        static string ZoneSummary(GameBootstrap g)
+        {
+            var sb = new System.Text.StringBuilder();
+            CleaningSystem cs = CleaningSystem.Instance;
+            for (int z = 0; z < ZoneInfo.Count; z++)
+            {
+                var id = (ZoneId)z;
+                if (!g.Grid.Zones.IsOpen(id)) continue;
+                int seats = 0;
+                for (int i = 0; i < g.Grid.Seats.Count; i++)
+                    if (g.Grid.ZoneOf(g.Grid.Seats[i].Furniture) == id) seats++;
+                sb.Append(id).Append("[ghế=").Append(seats).Append(" F=").Append(g.Grid.FurnitureScoreIn(id).ToString("0.00"));
+                if (cs != null && cs.Model != null) sb.Append(" CI=").Append(cs.Model.CiOf(id).ToString("0"));
+                sb.Append("] ");
+            }
+            sb.Append("nhu cầu x").Append(g.Tier.ZoneDemandMult.ToString("0.00"));
+            return sb.ToString();
         }
 
         void LogRecipes()
@@ -451,8 +480,8 @@ namespace Cafe
                 new Vector2Int(1, 8), new Vector2Int(9, 8), new Vector2Int(1, 11), new Vector2Int(9, 11), new Vector2Int(5, 11),
                 new Vector2Int(1, 1), new Vector2Int(9, 1), new Vector2Int(1, 14), new Vector2Int(9, 14)
             };
-            int next = 0, decorNext = 0, nextT3 = 0, tierSeen = 0, machineNext = 0;
-            Vector2Int[] t3Spots = TableSpotsTier3();
+            int next = 0, decorNext = 0, tierSeen = 0, machineNext = 0;
+            var triedT3 = new System.Collections.Generic.HashSet<Vector2Int>();
             while (true)
             {
                 yield return new WaitForSeconds(10f);
@@ -460,7 +489,7 @@ namespace Cafe
                 if (g == null || g.Builder == null || g.Tier == null || g.Tier.Transitioning) continue;
                 if (g.Day.CurrentPhase != DayCycle.Phase.Open) continue;
                 if (g.Tier.Current < 2) { TryBuyStool(g); continue; } // vỉa hè: mua ghế đẩu khi nhu cầu vượt sức chứa
-                if (g.Tier.Current != tierSeen) { tierSeen = g.Tier.Current; decorNext = 0; } // phòng mới: mua trang trí lại từ đầu
+                if (g.Tier.Current != tierSeen) { tierSeen = g.Tier.Current; decorNext = 0; triedT3.Clear(); } // phòng mới: mua trang trí lại từ đầu
                 if (autoStaff) HireStaff(g);                          // thuê dần khi có tiền
 
                 // Nâng cấp nhân viên khi dư tiền: dọn dẹp trước (cổ chai đo được ở cấp 2), rồi pha chế, rồi phục vụ
@@ -487,7 +516,8 @@ namespace Cafe
                 {
                     // Đủ 24 chỗ rồi mới tính máy móc (không chặn việc mua bàn / trang trí khi chưa đủ tiền cho máy)
                     if (!noMachines && g.Grid.Seats.Count >= 24 && TryBuyMachine(g, ref machineNext)) continue;
-                    if (!TryBuyTableSetTier3(g, t3Spots, ref nextT3)) TryBuyDecor(g, ref decorNext);
+                    if (autoZones && TryUnlockZone(g)) { triedT3.Clear(); continue; } // khu mới: có ô thử mới
+                    if (!TryBuyTableSetTier3(g, triedT3)) TryBuyDecor(g, ref decorNext);
                     continue;
                 }
                 if (next >= tableSpots.Length)
@@ -512,36 +542,104 @@ namespace Cafe
             }
         }
 
-        /// Ô thử cho bộ bàn ghế ở nhà hàng 20 x 24: các hàng y = 2, 6, 10, 14, 18, mỗi hàng quét x từ trái sang phải
-        /// (bộ bàn rộng 4 ô). Ô nào bị luật đặt đồ từ chối thì bỏ qua; hàng đã đầy tự trôi qua.
-        static Vector2Int[] TableSpotsTier3()
+        /// Ô thử cho bộ bàn ghế ở nhà hàng: các hàng của từng khu ĐÃ MỞ (sảnh chính trước, rồi sân vườn, lầu, VIP), mỗi hàng quét x từ
+        /// trái sang phải (bộ bàn rộng 4 ô: ghế trái ở x-1, ghế phải ở x+2). Ô bị luật đặt đồ từ chối thì bỏ qua; hàng đã đầy tự trôi qua.
+        static System.Collections.Generic.List<Vector2Int> TableSpotsTier3(GameBootstrap g)
         {
             var list = new System.Collections.Generic.List<Vector2Int>();
-            int[] rows = { 6, 10, 14, 18, 2 };
-            for (int r = 0; r < rows.Length; r++)
-                for (int x = 1; x <= 15; x++) list.Add(new Vector2Int(x + 1, rows[r]));
-            return list.ToArray();
+            ZoneMap zones = g.Grid.Zones;
+            int[] hallRows = { 6, 10, 14, 18, 2 };
+            int[] zoneRows = { 1, 5, 9, 13, 17, 21 };
+            for (int z = 0; z < ZoneInfo.Count; z++)
+            {
+                if (zones != null && !zones.IsOpen((ZoneId)z)) continue;
+                RectInt rc = zones != null ? zones.Rects[z] : new RectInt(0, 0, g.Grid.Size.x, g.Grid.Size.y);
+                int[] rows = z == (int)ZoneId.Hall ? hallRows : zoneRows;
+                for (int r = 0; r < rows.Length; r++)
+                {
+                    if (rows[r] + 2 > rc.height) continue;
+                    for (int x = rc.xMin + 2; x <= rc.xMax - 3; x++) list.Add(new Vector2Int(x, rc.yMin + rows[r]));
+                }
+            }
+            return list;
+        }
+
+        /// Kiểm tra NavMesh KHÔNG nối sảnh với khu qua tường (chỉ được nối qua lỗ mở): đo đường đi giữa hai điểm cách nhau ~1 m, một bên
+        /// tường là sảnh, bên kia là khu, ở chỗ KHÔNG có lỗ mở. Đi qua lỗ mở hợp lệ dài ít nhất 2 x (khoảng cách tới mép lỗ mở) + khoảng cách thẳng;
+        /// đường ngắn hơn 80% mức đó nghĩa là NavMesh rò xuyên tường.
+        static void LogWallTest(GameBootstrap g, ZoneId z)
+        {
+            float x = z == ZoneId.Garden ? -1f : 1f;                              // hướng từ sảnh sang khu
+            float zz = z == ZoneId.Terrace ? -5.5f : (z == ZoneId.Vip ? 5.5f : 4.5f);
+            float edge = z == ZoneId.Garden ? 1.5f : (z == ZoneId.Terrace ? -4.5f : 4.5f); // mép gần nhất của lỗ mở theo trục z
+            float toOpening = Mathf.Abs(zz - edge);
+            Vector3 inHall = new Vector3(x * 4.55f, 0f, zz), inZone = new Vector3(x * 5.65f, 0f, zz);
+            UnityEngine.AI.NavMeshHit a, b;
+            bool okA = UnityEngine.AI.NavMesh.SamplePosition(inHall, out a, 0.3f, UnityEngine.AI.NavMesh.AllAreas);
+            bool okB = UnityEngine.AI.NavMesh.SamplePosition(inZone, out b, 0.3f, UnityEngine.AI.NavMesh.AllAreas);
+            if (!okA || !okB)
+            {
+                Debug.Log($"[AutoPilot] WALLTEST {z}: bỏ qua (điểm sảnh trên mesh={okA}, điểm khu trên mesh={okB}; có thể bị đồ chiếm)");
+                return;
+            }
+            var path = new UnityEngine.AI.NavMeshPath();
+            bool found = UnityEngine.AI.NavMesh.CalculatePath(a.position, b.position, UnityEngine.AI.NavMesh.AllAreas, path)
+                         && path.status == UnityEngine.AI.NavMeshPathStatus.PathComplete;
+            float len = 0f;
+            if (found) for (int i = 1; i < path.corners.Length; i++) len += Vector3.Distance(path.corners[i - 1], path.corners[i]);
+            float direct = Vector3.Distance(a.position, b.position);
+            float viaOpening = 2f * toOpening + direct;
+            bool leak = found && len < 0.8f * viaOpening;
+            Debug.Log($"[AutoPilot] WALLTEST {z}: đường đi sảnh -> khu ở chỗ KHÔNG có lỗ mở = {(found ? len.ToString("0.0") + " m" : "không có đường")} " +
+                      $"(thẳng {direct:0.0} m, qua lỗ mở tối thiểu {viaOpening:0.0} m) -> {(leak ? "RÒ XUYÊN TƯỜNG!" : "ổn")}");
+        }
+
+        /// Mở khu kế tiếp (sân vườn -> lầu -> VIP) khi dư tiền sau quỹ dự phòng 25.000. true nếu vừa mở một khu.
+        static bool TryUnlockZone(GameBootstrap g)
+        {
+            for (int i = 0; i < ZoneInfo.Buyable.Length; i++)
+            {
+                ZoneId z = ZoneInfo.Buyable[i];
+                if (g.Tier.IsZoneOpen(z)) continue;
+                if (!g.Tier.CanUnlockZone(z) || g.Wallet.Xu < ZoneInfo.Cost(z) + 25000) return false; // để dành cho khu này
+                int xu0 = g.Wallet.Xu, seats0 = g.Grid.Seats.Count;
+                bool ok = g.Tier.UnlockZone(z);
+                Debug.Log($"[AutoPilot] MỞ KHU {z}: {(ok ? "OK" : "thất bại")}, Xu {xu0} -> {g.Wallet.Xu}, ghế {seats0} -> {g.Grid.Seats.Count}");
+                if (ok) LogWallTest(g, z);
+                return ok;
+            }
+            return false;
         }
 
         /// Cấp 3: mua thêm một bộ bàn + 2 ghế ở ô thử kế tiếp còn đặt được. false nếu hết ô hoặc chưa đủ tiền (để mua trang trí).
-        static bool TryBuyTableSetTier3(GameBootstrap g, Vector2Int[] spots, ref int index)
+        static bool TryBuyTableSetTier3(GameBootstrap g, System.Collections.Generic.HashSet<Vector2Int> tried)
         {
             FurnitureDef table = g.GetDef(TierConfig.IdTable) ?? g.GetDef(TierConfig.IdTableFallback);
             FurnitureDef chair = g.GetDef(TierConfig.IdChair) ?? g.GetDef(TierConfig.IdChairFallback);
             if (table == null || chair == null) return false;
             int cost = ShopRules.Price(g.Grid, table) + 2 * ShopRules.Price(g.Grid, chair);
             if (g.Wallet.Xu < cost + 3000) return true; // đang để dành tiền cho bộ bàn kế tiếp
-            for (int tries = 0; tries < 12 && index < spots.Length; tries++)
+            var spots = TableSpotsTier3(g);
+            int attempts = 0;
+            for (int i = 0; i < spots.Count && attempts < 12; i++)
             {
-                Vector2Int c = spots[index++];
+                Vector2Int c = spots[i];
+                if (!tried.Add(c)) continue;
+                attempts++;
                 int seats0 = g.Grid.Seats.Count, xu0 = g.Wallet.Xu;
                 if (!g.Builder.DebugPlace(table, c)) continue;
                 bool okL = g.Builder.DebugPlace(chair, new Vector2Int(c.x - 1, c.y));
                 bool okR = g.Builder.DebugPlace(chair, new Vector2Int(c.x + 2, c.y + 1));
-                Debug.Log($"[AutoPilot] MUA bàn T3 @ {c}: ghế trái={okL} phải={okR}, Xu {xu0} -> {g.Wallet.Xu}, ghế {seats0} -> {g.Grid.Seats.Count}");
+                Debug.Log($"[AutoPilot] MUA bàn T3 @ {c} ({g.Grid.ZoneAt(c)}): ghế trái={okL} phải={okR}, Xu {xu0} -> {g.Wallet.Xu}, ghế {seats0} -> {g.Grid.Seats.Count}");
                 return true;
             }
-            return index < spots.Length; // false khi đã thử hết: chuyển sang mua trang trí
+            return attempts >= 12; // còn ô chưa thử thì thử tiếp lần sau; hết ô: chuyển sang mua trang trí
+        }
+
+        /// Vùng ô bot quét khi cần "bất cứ chỗ trống nào" (máy móc, trang trí): sảnh chính, để kết quả so sánh được giữa các lần chạy.
+        static RectInt ScanRect(GameBootstrap g)
+        {
+            return g.Grid.Zones != null ? g.Grid.Zones.Hall : new RectInt(0, 0, g.Grid.Size.x, g.Grid.Size.y);
         }
 
         static readonly string[] MachineBuyOrder = { "Machine_Grinder", "Machine_ColdBrew", "Machine_Espresso" };
@@ -557,8 +655,9 @@ namespace Cafe
             if (g.Wallet.Xu < price + 5000) return false; // chưa đủ tiền: để bàn / trang trí mua tiếp
             int xu0 = g.Wallet.Xu;
             bool ok = false;
-            for (int y = 0; y < g.Grid.Size.y && !ok; y++)
-                for (int x = 0; x + 2 <= g.Grid.Size.x && !ok; x++)
+            RectInt scan = ScanRect(g);
+            for (int y = scan.yMin; y < scan.yMax && !ok; y++)
+                for (int x = scan.xMin; x + 2 <= scan.xMax && !ok; x++)
                     ok = g.Builder.DebugPlace(def, new Vector2Int(x, y));
             Debug.Log($"[AutoPilot] MUA máy {def.id}: {(ok ? "đã đặt" : "không có chỗ")}, Xu {xu0} -> {g.Wallet.Xu}, hệ số pha={g.BrewTimeFactor:0.00}");
             index++;
@@ -598,8 +697,9 @@ namespace Cafe
             index++;
             int xu0 = g.Wallet.Xu;
             bool ok = false;
-            for (int y = 0; y < g.Grid.Size.y && !ok; y++)
-                for (int x = 0; x < g.Grid.Size.x && !ok; x++)
+            RectInt scan = ScanRect(g);
+            for (int y = scan.yMin; y < scan.yMax && !ok; y++)
+                for (int x = scan.xMin; x < scan.xMax && !ok; x++)
                     ok = g.Builder.DebugPlace(def, new Vector2Int(x, y));
             Debug.Log($"[AutoPilot] MUA trang trí {def.id}: {(ok ? "đã đặt" : "không có chỗ")}, Xu {xu0} -> {g.Wallet.Xu}, " +
                       $"F={g.Grid.FurnitureScore:0.00} ({g.Grid.ComfortStyleTotal}/{g.Grid.FRef})");
@@ -635,9 +735,11 @@ namespace Cafe
                 ("Jar_Tea_Big", new Vector2Int(11, 8)), ("Fan_Stand", new Vector2Int(0, 10)), ("Stool_Plastic_Yellow", new Vector2Int(2, 14)),
             };
             var plan = autoDecor3 ? plan3 : plan2;
+            Vector2Int hallOrigin = g.Grid.Zones != null ? g.Grid.Zones.Hall.min : Vector2Int.zero; // toạ độ ô ở trên viết cho sảnh 20 x 24
             int placed = 0;
-            foreach (var (id, cell) in plan)
+            foreach (var (id, cell0) in plan)
             {
+                Vector2Int cell = cell0 + hallOrigin;
                 FurnitureDef def = g.GetDef(id);
                 if (def == null) { Debug.Log($"[AutoPilot] DECOR {id}: KHÔNG có FurnitureDef"); continue; }
                 int xu0 = g.Wallet.Xu;
@@ -660,6 +762,93 @@ namespace Cafe
                 Shot("staffpanel");
                 g.Hud.DebugToggleStaffPanel();
             }
+        }
+
+        /// -bestmenu: mỗi 8 giây (từ cấp 2) đặt menu = các món đã biết giá cao nhất mà gọi được (món cần máy chỉ khi máy đã đặt),
+        /// tối đa theo giới hạn menu của cấp. Đo kinh tế "người chơi biết chọn món": menu đại trà có món 30-100 Xu kéo giá trung bình xuống.
+        IEnumerator BestMenuLoop()
+        {
+            string last = "";
+            while (true)
+            {
+                yield return new WaitForSeconds(8f);
+                var g = GameBootstrap.Instance;
+                if (g == null || g.Recipes == null || g.Tier == null || g.Tier.Current < 2 || g.Tier.Transitioning) continue;
+                var cands = new System.Collections.Generic.List<RecipeDef>();
+                foreach (RecipeDef r in g.Recipes.Ordered)
+                {
+                    if (r == null || !g.Recipes.IsKnown(r) || r.unlockTier > g.Tier.Current) continue;
+                    if (!string.IsNullOrEmpty(r.requiredMachine) && !g.Grid.HasMachine(r.requiredMachine)) continue;
+                    cands.Add(r);
+                }
+                cands.Sort((a, b) => b.price.CompareTo(a.price));
+                int limit = Mathf.Min(g.Recipes.MenuLimit, cands.Count);
+                var want = new System.Collections.Generic.HashSet<string>();
+                for (int i = 0; i < limit; i++) want.Add(cands[i].id);
+                foreach (RecipeDef r in g.Recipes.Ordered)
+                    if (r != null && g.Recipes.InMenu(r) && !want.Contains(r.id)) g.Recipes.SetOnMenu(r.id, false);
+                foreach (string id in want) g.Recipes.SetOnMenu(id, true);
+                int sum = 0, n = 0;
+                var sb = new System.Text.StringBuilder();
+                foreach (RecipeDef r in g.Recipes.Ordered)
+                    if (r != null && g.Recipes.InMenu(r)) { sum += r.price; n++; sb.Append(r.id).Append('=').Append(r.price).Append(' '); }
+                string now = sb.ToString();
+                if (now != last)
+                {
+                    last = now;
+                    Debug.Log($"[AutoPilot] MENU cấp {g.Tier.Current}: {n} món, giá TB {(n > 0 ? sum / n : 0)}: {now}");
+                }
+            }
+        }
+
+        /// -shotzones: ở nhà hàng, chụp bảng Mở rộng, rồi mở lần lượt 3 khu bằng đường mua thật (TierManager.UnlockZone) và chụp từng khu.
+        IEnumerator ZoneShots()
+        {
+            GameBootstrap g = null;
+            while (g == null || g.Tier == null || g.Tier.Current < 3 || g.Tier.Transitioning || g.Hud == null || g.Day.CurrentPhase != DayCycle.Phase.Open)
+            {
+                yield return new WaitForSecondsRealtime(1f);
+                g = GameBootstrap.Instance;
+            }
+            yield return new WaitForSecondsRealtime(3f);
+            if (shotDir != null) { Shot("zones_locked"); yield return null; } // chụp ở cuối khung: chờ 1 khung trước khi đổi camera
+            g.CameraRig.FocusOn(new Vector3(8f, 0f, 0f), 15f, Vector3.back, 55f);
+            yield return new WaitForSecondsRealtime(1.5f);
+            if (shotDir != null) { Shot("zones_locked_right"); yield return null; }
+            g.CameraRig.FocusOn(new Vector3(-8f, 0f, 0f), 15f, Vector3.back, 55f);
+            yield return new WaitForSecondsRealtime(1.5f);
+            if (shotDir != null) { Shot("zones_locked_left"); yield return null; }
+            g.CameraRig.ClearFocus();
+
+            g.Hud.DebugOpenZones(true);
+            yield return new WaitForSecondsRealtime(1.2f);
+            if (shotDir != null) { Shot("zones_panel"); yield return null; }
+            g.Hud.DebugOpenZones(false);
+
+            foreach (ZoneId z in ZoneInfo.Buyable)
+            {
+                if (g.Wallet.Xu < ZoneInfo.Cost(z)) g.Wallet.Earn(ZoneInfo.Cost(z) - g.Wallet.Xu + 1000); // đủ tiền để chụp (bản Development)
+                int seats0 = g.Grid.Seats.Count, xu0 = g.Wallet.Xu;
+                bool ok = g.Tier.UnlockZone(z);
+                Debug.Log($"[AutoPilot] ZONESHOT mở {z}: {(ok ? "OK" : "thất bại")}, Xu {xu0} -> {g.Wallet.Xu}, ghế {seats0} -> {g.Grid.Seats.Count}");
+                if (ok) LogWallTest(g, z);
+                yield return new WaitForSecondsRealtime(2.5f);
+                Rect w = RoomLayout.For(3).ZoneWorldRect(z);
+                g.CameraRig.FocusOn(new Vector3(w.center.x, 0f, w.center.y), z == ZoneId.Garden ? 13f : 11f, Vector3.back, 52f);
+                yield return new WaitForSecondsRealtime(1.5f);
+                if (shotDir != null) { Shot("zone_" + z); yield return null; }
+                g.CameraRig.ClearFocus();
+                yield return new WaitForSecondsRealtime(1f);
+            }
+            g.Hud.DebugOpenZones(true);
+            yield return new WaitForSecondsRealtime(1f);
+            if (shotDir != null) { Shot("zones_panel_all"); yield return null; }
+            g.Hud.DebugOpenZones(false);
+            g.CameraRig.FocusOn(new Vector3(0f, 0f, 0f), 24f, Vector3.back, 58f);
+            yield return new WaitForSecondsRealtime(1.5f);
+            if (shotDir != null) { Shot("zones_all"); yield return null; }
+            g.CameraRig.ClearFocus();
+            Debug.Log("[AutoPilot] ZONESHOT xong: " + ZoneSummary(g));
         }
 
         /// -gfxcycle: sau khi vào ngày, đổi mức đồ họa Vừa -> Thấp -> Cao ngay trong lúc chơi (mỗi mức 12 giây thực) và chụp từng mức.

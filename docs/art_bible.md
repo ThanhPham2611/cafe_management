@@ -344,6 +344,19 @@ D:\cafe_store\
 - **Palette:** gỗ tối (19–20), tre/mây (21), xanh lá tối (34), caramel (5), nhấn đỏ cờ.
 - **Props:** sofa/ghế bành, bàn dài 4×2, bar island, máy pha espresso lớn, tủ trưng bánh, hồ cá/koi, đèn lồng, giàn lan, piano nhỏ, quầy thu ngân, ô-văng sân vườn.
 
+**Môi trường ba khu (sân vườn / lầu / VIP, 2026-10-13).** Dựng bằng khối trong code (`ZoneEnvironment`), chỉ dùng `M_Toon_Palette` và các ô có sẵn, không import model và không thêm ô mới (§3.1). Sân vườn là cỏ ô sáng / tối 1 m + lối đá, hàng rào cây thấp, đèn dây; lầu là gác gỗ cùng mặt sàn (không phải tầng thật) có lan can trắng, cột pergola; VIP là sàn gỗ tối, thảm đỏ viền vàng, tường cao có tranh. Khu chưa mở là bãi đất nung rào chắn cam / trắng kèm biển đỏ "chờ xây".
+
+| Nhóm | Ô palette (idx) |
+|---|---|
+| Cỏ sân vườn (ô sáng / tối) | 32 lá sáng · 33 lá trung |
+| Cây, hàng rào cây | 34 lá tối |
+| Lối đá | 45 gạch xám sàn |
+| Bãi đất khu chưa mở | 46 gạch nung |
+| Rào chắn, biển "chờ xây" | 59 cam · 31 nhựa trắng · 56 đỏ cờ |
+| Gỗ (sàn gác lầu, sàn VIP, khung) | tông sáng 16 · 17 · 21 · 22; tông tối 19 · 20 (VIP dùng gỗ tối) |
+| Thảm VIP + viền | 25 nhựa đỏ tối + 57 vàng sao |
+| Tường cao khu VIP | 38 xanh dù |
+
 ### Tier 4 — Chuỗi cửa hàng (Chain: Hà Nội / Huế / Đà Lạt / Sài Gòn)
 Chung: logo thương hiệu nhất quán (cờ vàng-đỏ nhấn), mỗi chi nhánh đổi *tông + kiến trúc*, dùng cùng palette.
 

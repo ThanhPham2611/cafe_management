@@ -62,7 +62,8 @@ namespace Cafe.Tests
         public void RoomSpec_Tier3IsBiggerAndGridMatchesRoom()
         {
             RoomSpec t2 = RoomLayout.For(2), t3 = RoomLayout.For(3);
-            Assert.That(t3.GridSize, Is.EqualTo(new Vector2Int(20, 24)));
+            Assert.That(t3.GridSize, Is.EqualTo(new Vector2Int(44, 24)), "sảnh 20 x 24 ô + hai dải khu phụ 12 ô mỗi bên");
+            Assert.That(t3.Width, Is.EqualTo(10f));
             Assert.That(t3.GridSize.x * t3.GridSize.y, Is.GreaterThan(t2.GridSize.x * t2.GridSize.y * 2));
             Assert.That(t3.DoorHalfWidth, Is.GreaterThan(t2.DoorHalfWidth));
             // Khách đi vào / ra nằm trên vỉa hè, ngoài tường hông, trong vùng đi được

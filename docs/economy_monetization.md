@@ -15,7 +15,7 @@
 | 4 | **Cozy trước, tycoon sau** | Thua lỗ không bao giờ làm người chơi "phá sản": Xu không xuống âm; nếu thiếu tiền thuê thì nợ được trừ dần (§4.3). |
 | 5 | **Tiến trình theo đúng 4 tier của owner** | Vỉa hè → Thuê mặt bằng → Mua nhà hàng → Chuỗi. Mỗi tier mở cơ chế mới, không chỉ "số to hơn". |
 
-**Quy ước thời gian:** 1 ngày in-game ≈ **3,5 phút thực** (Remote Config `day_length_sec = 210`). Giờ mở cửa 06:00–22:00 (16 giờ in-game) → **1 giờ in-game ≈ 13 giây thực**. Cuối ngày có màn "Tổng kết ngày" (~10 s).
+**Quy ước thời gian:** 1 ngày in-game ≈ **3,5 phút thực** (Remote Config `day_length_sec = 210`). Giờ mở cửa 06:00–22:00 (16 giờ in-game) → **1 giờ in-game ≈ 13 giây thực**. Cuối ngày có màn "Tổng kết ngày" (~10 s). *(Từ cấp 3 một ngày dài 300 s ≈ 5 phút, 1 giờ in-game ≈ 18,75 s thực — xem §19.2.)*
 
 **Hương vị VND:** 1 Xu ≈ "100đ" về cảm giác — cà phê sữa 100 Xu ≈ "10 nghìn". Đủ quen thuộc với người Việt mà vẫn là số game.
 
@@ -160,7 +160,7 @@ Chất lượng ly quyết định bởi: đúng nguyên liệu, đúng dụng c
 ```
 Demand_T1(day) = 18 + 9·(★−1) + 0,5·day                (khách/ngày)
 Demand_T2 = 1,5 × Demand_T1-formula                    (mặt bằng có biển hiệu, vị trí tốt hơn)
-Demand_T3 = 2,6 × Demand_T1-formula  (+ zone bonus)
+Demand_T3 = 2,6 × Demand_T1-formula  (+ zone bonus: × (1 + 0,2 · số khu phụ đã mở), xem §19)
 Khách thực = min(Demand × eventMult × adBoost, Capacity)
 Capacity_T1 = ghế × 4 lượt/ngày
 Capacity_T2 = chỗ × 4,5 × (1 + 0,25·số NV)
@@ -227,7 +227,7 @@ W = clamp01( 1 − (t_wait − 20) / 40 )            # t_wait: giây thực từ
                                                  # ≤20 s → 1,0 ; ≥60 s → 0 ; >60 s → khách bỏ đi
 C = CI_zone / 100                                # chỉ số sạch zone khách ngồi (§5)
 F = clamp01( (ΣComfort_zone + ΣStyle_zone) / F_ref_tier )
-    F_ref: T1 = 20, T2 = 200, T3 = 400 (mỗi zone; đo lại 2026-10-12: Σ cộng trên mọi món kể cả ghế/bàn — bố cục mặc định cấp 2 ~61 điểm, +8 ghế/3 bàn ~116, +bộ trang trí ~160 — nên 60 làm F = 1 ngay), T4 = n/a
+    F_ref: T1 = 20, T2 = 200, T3 = 400 cho sảnh chính và 150 cho mỗi khu phụ, §19 (mỗi zone; đo lại 2026-10-12: Σ cộng trên mọi món kể cả ghế/bàn — bố cục mặc định cấp 2 ~61 điểm, +8 ghế/3 bàn ~116, +bộ trang trí ~160 — nên 60 làm F = 1 ngay), T4 = n/a
 ```
 
 - **T1 (vỉa hè, chưa có dọn bàn):** trọng số đổi thành `0,40·Q + 0,35·W + 0,10·C_ly + 0,15·F`, với `C_ly = 1` nếu ly được thu trong 30 s in-game, giảm tuyến tính về 0 sau 2 giờ in-game.
@@ -790,3 +790,89 @@ Bot `-autoplay -autoupgrade3 -cheatt3` (lên cấp 2 rồi 3 bằng cheat Xu/RP,
 | Pha chế (lương 450) | T3 | ~4 ly/ngày/người khi tự đi giao; 8–13 ly/ngày/người sau khi thêm quầy giao |
 
 Kết luận: cấp 3 chạy được và có lãi hơn cấp 2 khoảng 2–3 lần (~2.500 → ~5.000–7.000/ngày), nhưng **thấp hơn mục tiêu 3–4 lần**; cộng với cấp 2 ~2.500/ngày (§17) thì mua nhà hàng mất ~90–130 ngày và T3→T4 ~290 ngày. Hai núm có tác dụng lớn nhất vì chạm đúng nút thắt đo được: (1) **số khách mỗi ngày** — độ dài ngày cấp 3 hoặc tốc độ đi bộ / giao ly, hay Demand cấp 3; (2) **biên mỗi ly** — giá 3 món cấp 3 (200/230/300) và hệ số bán món ẩn. Giá nhà hàng 250.000 nên chỉnh sau khi chốt hai núm trên.
+
+---
+
+## 19. Ba khu của nhà hàng & ngày cấp 3 (2026-10-14)
+
+Cập nhật theo bản đã chạy thật trong Unity (142 test EditMode đạt, chụp màn hình cả 3 khu mở được, bot mở khu không lỗi). Chi tiết kỹ thuật ở `phase3_spec.md` §0.8; mục này ghi các quyết định kinh tế, lý do và phát hiện đo. Mọi con số vẫn là giá trị khởi điểm. Các chỗ cần số đo mà chưa có được đánh dấu riêng để điền sau (gom lại ở §19.5).
+
+### 19.1 Giá & hiệu ứng từng khu
+
+Nhà hàng cấp 3 là lưới 44 × 24 ô (ô 0,5 m) chia thành bốn khu; mọi ô thuộc đúng một khu. Khu chưa mở là bãi đất rào, không đi vào và không đặt đồ được. Ba khu phụ mở theo thứ tự tùy ý, giá không phụ thuộc thứ tự.
+
+| Khu | Giá mở (Xu) | Diện tích | Nhu cầu | Giá ly & tip | F_ref | CI (phần bàn bẩn) |
+|---|---|---|---|---|---|---|
+| Sảnh chính | có sẵn | 10 × 12 m (20 × 24 ô) | — | ×1 | 400 | riêng |
+| Sân vườn | 40.000 | 6 × 12 m (12 × 24 ô) | +20% | ×1 | 150 | riêng |
+| Lầu (gác gỗ cùng mặt sàn) | 90.000 | 6 × 6 m (12 × 12 ô) | +20% | ×1 | 150 | riêng |
+| VIP | 180.000 | 6 × 6 m (12 × 12 ô) | +20% | ×1,5 | 150 | riêng |
+
+Tổng giá ba khu = 310.000 Xu, nhiều hơn cả giá mua nhà (250.000).
+
+- **Nhu cầu.** `Demand_T3 = 2,6 × Demand_T1-formula × (1 + 0,2·n)`, n = số khu phụ đã mở (0–3). Cộng chứ không nhân dồn: 1 khu ×1,2 · 2 khu ×1,4 · 3 khu ×1,6. Đây là "zone bonus" của §3.2 (`GameBalance.ZoneDemandMult`); nhu cầu được cập nhật ngay khi mua khu.
+- **VIP ×1,5.** Áp cho cả giá ly và tip của khách ngồi khu VIP; bằng đáy dải 1,5–2× của đơn đặc biệt (§1.1).
+- **F_ref theo khu.** §4.1 ghi F_ref T3 = 400 "mỗi zone". Nay sảnh giữ 400, mỗi khu phụ (nhỏ hơn sảnh) dùng 150; khách tính tip và hài lòng theo điểm nội thất F của chính khu mình ngồi: `F = clamp01((ΣComfort_khu + ΣStyle_khu) / F_ref_khu)`.
+- **CI theo khu.** Phần `40·(bàn_bẩn / tổng_bàn)` của §5 tính riêng từng khu; phần `0,4·FloorDirt` vẫn dùng chung vì lau sàn là việc cả quán. Khách tính tỉ lệ bỏ đi vì bẩn, tip và thành phần C của S theo CI khu mình ngồi. CI chung hiện trên HUD và phạt RP theo CI (§5) vẫn tính trên mọi bàn.
+- **Khi mua.** Trừ Xu một lần, tặng 2 bộ bàn ghế (mỗi bộ = bàn + 2 ghế, dùng đồ trong kho trước), bake lại NavMesh ngay trong ngày. UI chạm hai lần (chọn rồi mua) để tránh bấm nhầm.
+
+### 19.2 Vì sao ngày cấp 3 dài 300 giây
+
+Từ cấp 3 một ngày in-game dài **300 giây thực** thay vì 210 (`GameBalance.DayRealSecondsFor(tier)`, hằng số `Tier3DayRealSeconds`; cấp 1–2 giữ 210). Giờ mở cửa vẫn 06:00–22:00 nên 1 giờ in-game ≈ 18,75 s thực (so với ≈ 13 s ở §0). `DayCycle` tự đổi độ dài khi lên cấp giữa ngày và giữ nguyên giờ đồng hồ.
+
+**Lý do.** Công thức Capacity_T3 (§3.2) coi mỗi ghế quay 5 lượt/ngày, nhưng bot đo được thấp hơn nhiều (§18). Một lượt khách ~55 s (đi bộ ~10 s + chờ ly ~25 s + uống 8–15 s + chờ lau bàn ~10 s) tính bằng giây thực nên không đổi theo độ dài ngày, trong khi cửa sổ sinh khách chỉ ~165 s ở ngày 210 s. Ngày dài hơn thì cửa sổ sinh khách dài hơn, mỗi ghế quay được nhiều lượt hơn:
+
+| | Ngày 210 s | Ngày 300 s |
+|---|---|---|
+| Quay vòng thực (khách/ghế/ngày) | ~3,2 (đo) | ~4,5 (ước) |
+| Công thức §3.2 | 5 | 5 |
+
+**Đo lại ở ngày 300 s (2026-10-14):** chỗ ngồi không còn là nút thắt nên quay vòng thực không đo tách bạch được: phục vụ/ghế chỉ ~2–3 vì nhân viên mới là giới hạn (mất khách vì hết chỗ còn ≤ 16/ngày ở sảnh 30–44 ghế, so với hết kiên nhẫn 8–22). Ước ~4,5 chưa kiểm chứng được; chỉ chắc chắn là hết chỗ không còn chiếm đa số mất khách.
+
+**Hệ quả cần nhớ.**
+- Chi phí cố định (phí vận hành 700, lương) tính theo ngày in-game nên ngày dài hơn có nhiều khách hơn để chia chi phí đó: lãi mỗi ngày tăng, còn lãi mỗi phút chơi cần so lại.
+- Pacing (§7): cùng số ngày in-game, cấp 3 tốn nhiều phút chơi hơn (300 / 210 ≈ 1,43 lần mỗi ngày). Các mốc "phút chơi tích lũy" từ T3 trở đi ở §7.1 chưa tính lại.
+- Remote Config: `day_length_sec` ở §15 hiện là một số duy nhất, cần tách theo cấp (§19.4).
+
+### 19.3 Phát hiện đo được: nút thắt chuyển từ "hết chỗ" sang "hết kiên nhẫn"
+
+Bot cấp 3, 8 nhân viên, chưa nâng cấp nhân viên trừ khi ghi khác. Mỗi dòng là một lượt chạy riêng nên là xu hướng, chưa phải số chốt.
+
+| Cấu hình | Đo được |
+|---|---|
+| Ngày 300 s, sảnh 44–48 ghế | "Hết chỗ" = 0; mất khách chuyển hoàn toàn sang **"hết kiên nhẫn" ~28–35/ngày** |
+| Mở đủ 3 khu (nhu cầu ×1,6, ~78 ghế), nhân viên còn cấp 1 | Quá tải: **mất 100–130 khách/ngày, lãi ~0** |
+| Menu giá cao (giá TB 148 thay vì ~103) + nâng cấp nhân viên + sảnh 26 ghế | ~94 khách/ngày, doanh thu ~14.000, **lãi ~6.400–6.600/ngày** |
+
+- **Nút thắt dời chỗ.** `phase3_spec.md` §0.6 ghi lý do mất khách chính là hết chỗ (khớp quay vòng ~3,2 ở §18). Với ngày 300 s và đủ ghế, "hết chỗ" về 0 và khách mất vì hết kiên nhẫn: nút thắt nay là **thông lượng Pha chế / Phục vụ**, không còn là chỗ ngồi. §3.2 mô tả hai nút thắt thay phiên (Capacity rồi Demand / ★); ở cấp 3 có thêm nút thắt thứ ba là nhân viên.
+- **Mở khu mà nhân viên còn cấp 1 thì quá tải.** Nhu cầu ×1,6 cộng với ~78 ghế làm đơn dồn lại, mất 100–130 khách/ngày và lãi gần 0. Thứ tự đầu tư nên là nhân viên trước hoặc cùng lúc với khu mới (đề xuất; nên gợi ý trong UI / `DayAdvisor`).
+- **Nâng cấp nhân viên là phần thưởng đầu tư chính của cấp 3.** `Cost(Lv) = 1.000 × 2,5^(Lv−1)`: Lv1→2 = 1.000, →3 = 2.500, →4 = 6.250, →5 = 15.625, tức 25.375 Xu để đưa một người lên Lv5 và 203.000 Xu cho cả 8 người (so với 310.000 cho ba khu). Lưu ý: §6 ghi thêm `× TierScale` (×12 ở T3) nhưng bản cài đặt hiện chưa nhân hệ số này; cần chốt một trong hai vì nó đổi hẳn bài toán đầu tư ở đây.
+- **Lãi vẫn thấp hơn mục tiêu.** Dòng cuối (giá TB 148, sát ~150 ở §3.1) cho lãi 6.400–6.600/ngày, nằm trong dải 4.600–7.400 đo ở §18 (cấu hình khác) và thấp hơn dải 20.000–35.000 của §3.1 khoảng 3 lần. Vì mỗi lượt khác cấu hình, chưa tách được ảnh hưởng riêng của ngày 300 s, của khu và của nâng cấp nhân viên lên lãi.
+
+### 19.4 Tunables mới (đưa vào §15 khi làm Remote Config)
+
+| Key (đề xuất) | Mặc định | Hằng số trong code | Ghi chú |
+|---|---|---|---|
+| `day_length_sec` | [210, 210, 300] theo cấp | `DayRealSeconds`, `Tier3DayRealSeconds` | thay số đơn 210 ở §15 |
+| `zone_costs` | [40000, 90000, 180000] | `ZoneGardenCost`, `ZoneTerraceCost`, `ZoneVipCost` | đã có ở §15; thứ tự sân vườn, lầu, VIP |
+| `zone_demand_bonus` | 0.20 | `ZoneDemandBonus` | cộng cho mỗi khu phụ đã mở |
+| `zone_vip_price_mult` | 1.5 | `VipPriceMult` | giá ly và tip của khách ngồi VIP |
+| `f_ref_zone` | 150 | `FRefZone` | khu phụ; sảnh vẫn theo `f_ref_per_tier` (400) |
+| `zone_starter_sets` | 2 | `ZoneStarterSets` | bộ bàn ghế tặng khi mở mỗi khu |
+
+### 19.5 Số đo còn thiếu
+
+Các chỗ này cần chạy bot rồi điền; chưa có thì không suy ra từ các lượt đo riêng lẻ ở §19.3.
+
+1. **Đã đo (bot, 7 ngày, TB ngày 3–7, một lượt mỗi cấu hình).** Cờ bot: `-autoplay -autoupgrade3 -cheatt3 -autostaff -fullstaff -autobuy -bestmenu -autohidden -upgradestaff` (+ `-autozones` cho hai dòng dưới); menu 8 món giá TB 148 (dòng giữa 127 vì không mua máy cold brew); 18–22 lần nâng cấp nhân viên (Pha chế cấp 3, Dọn dẹp cấp 3–5, Phục vụ cấp 3); không có lỗi / exception. **Mỗi cấu hình chỉ một lượt** (ngày lẻ dao động ±2.000), và bot mua bàn ở sảnh trước nên **mỗi khu phụ chỉ có 4 ghế tặng**.
+
+| Cấu hình (bot, 7 ngày, TB ngày 3–7) | Ghế cuối | Nhu cầu | Phục vụ/ngày | Mất: hết chỗ / hết kiên nhẫn | Doanh thu | Lãi ròng/ngày |
+|---|---|---|---|---|---|---|
+| Chỉ sảnh chính (120.000 Xu dư) | 44 | ×1,0 | 91 | 8,0 / 12,8 | 14.102 | **7.246** |
+| Sân vườn + lầu (200.000 Xu dư; VIP không đủ tiền mở) | 48 (40 + 4 + 4) | ×1,4 | 114 | 26,6 / 16,4 | 14.210 | **7.035** |
+| Đủ 3 khu (500.000 Xu dư) | 57 (45 + 4 + 4 + 4) | ×1,6 | 104 | 34,0 / 38,8 | 16.904 | **8.760** |
+
+   Lãi 7.000–8.800/ngày so với dải 20.000–35.000 (§3.1): thấp hơn 2,5–3 lần. Nghi can chính là thông lượng 3 Pha chế (ước tính ~120–130 ly/ngày tối đa; xem phase3_spec §0.8). Quyết định các núm còn lại (giá / biên 3 món cấp 3, Demand cấp 3, lương, giá nhà 250.000, trần nhân viên) nên làm SAU khi chốt trần nhân viên, vì thông lượng đang là giới hạn.
+2. **Hoàn vốn khu — chưa đo được tin cậy.** Đủ 3 khu hơn "chỉ sảnh" ~1.500/ngày (8.760 so với 7.246) ⇒ > 200 ngày để hoàn 310.000 Xu; sân vườn + lầu không hơn chỉ sảnh. Là cận dưới vì khu phụ chưa kê bàn (4 ghế mỗi khu) và nhân viên chưa đủ. Cần đo lại khi khu có đủ bàn và nhân viên đủ năng lực; gồm cả hệ số ×1,5 của VIP (VIP chỉ có 4 ghế ở lượt đủ 3 khu nên đóng góp nhỏ).
+3. **Cấp nhân viên tối thiểu — chưa tìm được.** Với Pha chế cấp 3 (cả 3 người) mở đủ 3 khu vẫn mất ~39 khách/ngày vì hết kiên nhẫn (so với ~13 khi chỉ sảnh). Cần đo với nhân viên cấp 5 và/hoặc nới trần Pha chế; chưa nên chặn mở khu khi nhân viên yếu cho tới khi có số này.
+4. Quay vòng thực ở ngày 300 s: đã đánh dấu ở §19.2.
