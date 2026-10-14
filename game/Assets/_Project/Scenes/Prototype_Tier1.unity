@@ -1083,8 +1083,8 @@ MonoBehaviour:
   - {fileID: 5998823770157598939, guid: d2bbd180ea07eba4b976bd67baab628b, type: 3}
   - {fileID: 4314555738413197072, guid: 8334a5f9922d9b542831d661449de6b9, type: 3}
   - {fileID: 5295550209089404376, guid: 7809761a2403cb54080da2c4937965e8, type: 3}
-  regularsJson: {fileID: 0}
-  barksJson: {fileID: 0}
+  regularsJson: {fileID: 4900000, guid: 0ef4f02ac7d812b4c807d51afc181fb9, type: 3}
+  barksJson: {fileID: 4900000, guid: dfae2af247ba287408cbb7174258d898, type: 3}
   spawnPoint: {fileID: 880407518}
   exitPoint: {fileID: 708485794}
   CreatorDone: 0

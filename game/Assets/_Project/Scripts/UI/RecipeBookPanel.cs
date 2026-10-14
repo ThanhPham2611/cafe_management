@@ -19,6 +19,7 @@ namespace Cafe
         private const float CardGap = 12f;
         private const float BtnW = 300f;
         private const float BtnH = 96f;
+        private const float ButtonX = -420f; // lệch trái tâm màn hình: nằm trên mép bàn pha, né cột "Đơn chờ"
         private const int MaxSteps = 6;
         private const int MaxTools = 3;
 
@@ -72,7 +73,7 @@ namespace Cafe
             Text lbl;
             openButton = HudBuilder.AddLabelButton(parent, "RecipeBookButton", ClayStyle.Cream, RecipeStrings.Book, 36, Open, out lbl);
             openRt = (RectTransform)openButton.transform;
-            HudBuilder.SetFixed(openRt, new Vector2(0.5f, 0f), new Vector2(0f, 0f), new Vector2(-540f, 160f), new Vector2(320f, BtnH));
+            HudBuilder.SetFixed(openRt, new Vector2(0.5f, 0f), new Vector2(0f, 0f), new Vector2(ButtonX, 160f), new Vector2(340f, 112f));
 
             // --- Lớp phủ: nền mờ (chạm để đóng) + bảng
             RectTransform dim = HudBuilder.Panel(parent, "RecipeBookOverlay", new Color(0.1f, 0.06f, 0.04f, 0.55f), true);
@@ -84,6 +85,7 @@ namespace Cafe
 
             Image panel = HudBuilder.Panel(dim, "Panel", true);
             RectTransform pr = panel.rectTransform;
+            pr.gameObject.AddComponent<FitInCanvas>();
             // Chạm vào nền bảng không được "xuyên" lên lớp mờ (sẽ đóng sổ): Button rỗng nuốt sự kiện click
             var absorb = panel.gameObject.AddComponent<Button>();
             absorb.transition = Selectable.Transition.None;
@@ -198,7 +200,7 @@ namespace Cafe
             if (float.IsNaN(lastButtonY) || Mathf.Abs(y - lastButtonY) > 0.5f)
             {
                 lastButtonY = y;
-                openRt.anchoredPosition = new Vector2(-540f, y);
+                openRt.anchoredPosition = new Vector2(ButtonX, y);
             }
         }
 

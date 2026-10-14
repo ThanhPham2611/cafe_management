@@ -65,7 +65,7 @@ namespace Cafe
             // --- Nút Cửa hàng (dưới trái, tránh cột order phía trên và bàn pha giữa-dưới)
             Text lbl;
             shopButton = HudBuilder.AddLabelButton(parent, "ShopButton", ClayStyle.Gold, Strings.Shop, 46, OnShopButton, out lbl);
-            HudBuilder.SetFixed((RectTransform)shopButton.transform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(24f, 16f), new Vector2(300f, 100f));
+            HudBuilder.SetFixed((RectTransform)shopButton.transform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(24f, 16f), new Vector2(320f, 112f));
 
             // --- Bảng
             Image panel = HudBuilder.Panel(parent, "ShopPanel", true);

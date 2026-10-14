@@ -246,7 +246,7 @@ namespace Cafe
             }
             orderedRecipe = recipe;
             order = game.Orders.Add(this, recipe);
-            if (bubble != null) bubble.Show((regular != null ? "♥ " : "") + Strings.ShortName(recipe));
+            if (bubble != null) bubble.Show(regular != null);
             State = CustomerState.WaitOrder;
             stateTime = 0f;
             waited = 0f;

@@ -10,7 +10,7 @@ namespace Cafe
     /// Mỗi nút làm theo kiểu của bước (StepActions): chạm / giữ / vuốt / xoay. Thành công -> OnStep -> BrewStation.TapStep.
     public class BrewPanel
     {
-        private const float PanelW = 1080f;
+        private const float PanelW = 960f;
         private const float PanelH = 372f;
         private const float StripVisible = 128f;
         private const float RestY = 24f;
@@ -20,9 +20,9 @@ namespace Cafe
         private const float TrayPad = 30f;
         private const float TrayTop = 204f;
         private const float TrayH = 156f;
-        private const float BtnW = 192f;
+        private const float BtnW = 160f; // 5 nút Tier 1 + khe 22 = 888 < khay 900: vừa, không phải cuộn
         private const float BtnH = 136f;
-        private const float BtnGap = 14f;
+        private const float BtnGap = 22f; // ~10 pt: giữ nút liền kề không bị chạm nhầm
         private const float BtnTop = 10f;
         private const int Tier1TrayCount = 5;
 
@@ -550,9 +550,9 @@ namespace Cafe
                 if (Mathf.Abs(slideY - targetY) <= 0.4f) slideY = targetY;
                 root.anchoredPosition = new Vector2(0f, slideY);
             }
-            // Báo camera phần màn hình bị bàn pha che (canvas ref cao 1080, match height)
+            // Báo camera phần màn hình bị bàn pha che (canvas HUD ref cao HudRefHeight, match height)
             if (game.CameraRig != null)
-                game.CameraRig.SetBottomInset(Mathf.Max(0f, slideY + PanelH) / 1080f * 0.85f);
+                game.CameraRig.SetBottomInset(Mathf.Max(0f, slideY + PanelH) / HudBuilder.HudRefHeight * 0.85f);
 
             TickTray(dt);
 
