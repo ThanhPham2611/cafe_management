@@ -36,6 +36,37 @@ namespace Cafe.EditorTools
             if (Application.isBatchMode) EditorApplication.Exit(s.result == BuildResult.Succeeded ? 0 : 1);
         }
 
+        /// Xcode project cho iOS Simulator (chạy thử trên máy ảo, không cần ký):
+        ///   Unity -batchmode -quit -projectPath game -executeMethod Cafe.EditorTools.BuildTools.BuildIosSimulator
+        [MenuItem("Cafe/Build/iOS Simulator (Xcode project)")]
+        public static void BuildIosSimulator()
+        {
+            ProjectSetup.Apply();
+            var oldSdk = PlayerSettings.iOS.sdkVersion;
+            // API công khai không có simulatorArchitecture -> ghi thẳng vào ProjectSettings (1 = ARM64)
+            var ps = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset")[0]);
+            var archProp = ps.FindProperty("iOSSimulatorArchitecture");
+            var oldArch = archProp.intValue;
+            archProp.intValue = 1;
+            ps.ApplyModifiedProperties();
+            PlayerSettings.iOS.sdkVersion = iOSSdkVersion.SimulatorSDK;
+            var options = new BuildPlayerOptions
+            {
+                scenes = new[] { "Assets/_Project/Scenes/Prototype_Tier1.unity" },
+                locationPathName = "Builds/iOSSim",
+                target = BuildTarget.iOS,
+                options = BuildOptions.Development,
+            };
+            BuildReport report = BuildPipeline.BuildPlayer(options);
+            PlayerSettings.iOS.sdkVersion = oldSdk;
+            archProp.intValue = oldArch;
+            ps.ApplyModifiedProperties();
+            AssetDatabase.SaveAssets();
+            var s = report.summary;
+            Debug.Log($"[Cafe] iOS sim build {s.result}: {s.outputPath} ({s.totalErrors} lỗi, {s.totalWarnings} cảnh báo)");
+            if (Application.isBatchMode) EditorApplication.Exit(s.result == BuildResult.Succeeded ? 0 : 1);
+        }
+
         [MenuItem("Cafe/Build/Windows Test")]
         public static void BuildWindowsTest()
         {
