@@ -371,6 +371,32 @@ namespace Cafe
             return r != null && r.unlockTier <= 1 && day >= r.unlockDay;
         }
 
+        /// Số ly để lại đã chạm được (khách uống xong) nhưng chưa thu.
+        public int WaitingCupCount()
+        {
+            int n = 0;
+            for (int i = 0; i < LeftoverCups.Count; i++)
+                if (LeftoverCups[i] != null && LeftoverCups[i].IsCollectable) n++;
+            return n;
+        }
+
+        /// Giao chủ quán thu mọi ly đang chờ (ly chờ lâu nhất trước); dừng khi hàng việc đầy. Trả số ly đã giao.
+        public int QueueCollectAll()
+        {
+            if (Owner == null) return 0;
+            var waiting = new List<LeftoverCup>();
+            for (int i = 0; i < LeftoverCups.Count; i++)
+                if (LeftoverCups[i] != null && LeftoverCups[i].IsCollectable) waiting.Add(LeftoverCups[i]);
+            waiting.Sort((a, b) => a.CollectableSince.CompareTo(b.CollectableSince));
+            int queued = 0;
+            for (int i = 0; i < waiting.Count; i++)
+            {
+                if (!Owner.QueueCollect(waiting[i])) break;
+                queued++;
+            }
+            return queued;
+        }
+
         /// C_ly (T1): 1 nếu ly để lại được thu kịp; giảm tuyến tính về 0 sau 2 giờ in-game.
         public float LeftoverCleanliness()
         {

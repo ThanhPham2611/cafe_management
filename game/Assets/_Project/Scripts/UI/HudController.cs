@@ -39,6 +39,32 @@ namespace Cafe
         private Text dayText;
         private Text timeText;
         private Text cupText;
+        private RectTransform orderColumn;
+        private int orderCardCount;
+
+        /// Điểm màn hình nằm dưới các thẻ "Đơn chờ" đang hiện (bong bóng order ở đó bị thẻ che, nên ẩn hẳn cho gọn).
+        public bool IsUnderOrderCards(Vector2 screenPos)
+        {
+            if (orderColumn == null || orderCardCount <= 0) return false;
+            Vector3[] c = cornerBuf;
+            orderColumn.GetWorldCorners(c); // canvas overlay: toạ độ thế giới = pixel màn hình
+            float bottomCanvas = 58f + orderCardCount * (CardHeight + CardSpacing);
+            float scale = orderColumn.lossyScale.y;
+            float bottom = c[1].y - bottomCanvas * scale;
+            return screenPos.x >= c[0].x && screenPos.x <= c[2].x + 20f * scale && screenPos.y <= c[1].y && screenPos.y >= bottom;
+        }
+        private readonly Vector3[] cornerBuf = new Vector3[4];
+
+        /// Chữ nổi rơi vào vùng thẻ "Đơn chờ": dời sang phải cột để không đè chữ trên thẻ. Trả x màn hình mới.
+        public float PushRightOfOrderCards(Vector2 screenPos)
+        {
+            if (!IsUnderOrderCards(screenPos)) return screenPos.x;
+            orderColumn.GetWorldCorners(cornerBuf);
+            return cornerBuf[2].x + 170f * orderColumn.lossyScale.x; // ~nửa bề rộng chữ "+115 Xu (tip 19)"
+        }
+        private Image cupChipImg;
+        private Text cupWaitText;
+        private int cupWaitShown = -1;
         private Text emptyText;
         private Text moreText;
         private readonly CardView[] cards = new CardView[MaxCards];
@@ -243,6 +269,15 @@ namespace Cafe
             HudBuilder.SetFixed(cupChip.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-Margin, Margin), new Vector2(210f, ChipH));
             cupText = HudBuilder.AddText(cupChip.transform, "Cups", "", 48, TextAnchor.MiddleRight, HudBuilder.Ink, true, false);
             HudBuilder.SetRect(cupText.rectTransform, Vector2.zero, Vector2.one, new Vector2(70f, 22f), new Vector2(-30f, -4f));
+
+            // Chạm chip ly = giao chủ quán thu hết ly đang chờ; dòng nhỏ phía trên cho biết còn bao nhiêu ly chờ thu
+            cupChipImg = cupChip;
+            cupChip.raycastTarget = true;
+            cupChip.gameObject.AddComponent<Button>().onClick.AddListener(OnCupChipClicked);
+            cupWaitText = HudBuilder.AddText(safe, "CupsWaiting", "", 34, TextAnchor.MiddleRight, HudBuilder.Cream, true, true);
+            HudBuilder.SetFixed(cupWaitText.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-Margin - 6f, Margin + ChipH + 6f), new Vector2(300f, 44f));
+            HudBuilder.Fit(cupWaitText, 20);
+            cupWaitText.gameObject.SetActive(false);
         }
 
         /// Nút phụ (Khách quen, Nhân viên, Mở rộng khu, Nhiệm vụ, Đồ họa) gom vào popup MENU: HUD gọn, nút đủ to để chạm.
@@ -306,6 +341,7 @@ namespace Cafe
         private void BuildOrderColumn(RectTransform parent)
         {
             RectTransform col = HudBuilder.NewRect("OrderColumn", parent);
+            orderColumn = col;
             HudBuilder.SetFixed(col, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(Margin, -(Margin + ChipH + 18f)), new Vector2(390f, 860f));
 
             Text t = HudBuilder.AddText(col, "Title", Strings.OrdersTitle, 40, TextAnchor.MiddleLeft, HudBuilder.Cream, true, true);
@@ -383,6 +419,27 @@ namespace Cafe
             rpBar.Set(game.Reputation.ProgressToNext, HudBuilder.Accent);
         }
 
+        private void OnCupChipClicked()
+        {
+            if (game.WaitingCupCount() > 0) game.QueueCollectAll();
+        }
+
+        /// Dòng "N ly chờ thu" trên chip ly; chip nhấp nháy khi hết ly sạch mà vẫn còn ly chờ thu. Chỉ gán chữ khi số đổi.
+        private void RefreshCupWaiting()
+        {
+            if (cupWaitText == null) return;
+            int waiting = game.WaitingCupCount();
+            if (waiting != cupWaitShown)
+            {
+                cupWaitShown = waiting;
+                cupWaitText.gameObject.SetActive(waiting > 0);
+                if (waiting > 0) cupWaitText.text = string.Format(Strings.CupsWaitingFmt, waiting);
+            }
+            bool urgent = waiting > 0 && game.Stock.Count <= 1;
+            float k = urgent ? 1f + 0.06f * Mathf.Sin(Time.unscaledTime * 8f) : 1f;
+            if (cupChipImg != null) cupChipImg.rectTransform.localScale = new Vector3(k, k, 1f);
+        }
+
         private void OnCups()
         {
             if (cupText != null) cupText.text = string.Format(Strings.CupsFmt, game.Stock.Count);
@@ -438,6 +495,7 @@ namespace Cafe
         /// Thông báo chung (không gắn với khách): chữ nổi dưới thanh chip.
         public void ShowToast(string msg)
         {
+            if (game != null && game.Tutorial != null && game.Tutorial.IsShowingCard) return; // thẻ hướng dẫn che đúng chỗ này
             UiFx.FloatTextTop(msg, HudBuilder.Cream);
         }
 
@@ -473,6 +531,7 @@ namespace Cafe
                 }
             }
 
+            orderCardCount = Mathf.Min(items.Count, MaxCards);
             emptyText.enabled = items.Count == 0;
             int extra = items.Count - MaxCards;
             moreText.enabled = extra > 0;
@@ -485,6 +544,7 @@ namespace Cafe
             if (storyDialog != null) storyDialog.Tick();
             if (menuDot != null) menuDot.SetActive(!menuRoot.gameObject.activeSelf && missionDot != null && missionDot.activeSelf);
             float dt = Time.unscaledDeltaTime;
+            RefreshCupWaiting();
 
             // Vòng kiên nhẫn trên thẻ order
             for (int i = 0; i < MaxCards; i++)

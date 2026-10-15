@@ -81,6 +81,8 @@ namespace Cafe
         public bool IsCoreDone { get { return TutorialRules.IsDone(step); } }
         public string ActiveTipId { get { return activeTip; } }
         public bool WaitingForNext { get { return overlay != null && overlay.NextVisible; } }
+        /// Thẻ hướng dẫn đang hiện (thông báo chung giữa-trên sẽ bị thẻ che nên HUD tạm bỏ qua).
+        public bool IsShowingCard { get { return overlay != null && overlay.IsShowing; } }
 
         // ------------------------------------------------------------------ vòng đời
 
