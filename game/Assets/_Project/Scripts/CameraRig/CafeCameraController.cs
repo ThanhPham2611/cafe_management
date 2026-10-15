@@ -17,9 +17,15 @@ namespace Cafe
         const float DefaultPitch = 48f;
         const float DefaultDistance = 11f;
         const float DefaultYaw = 0f;
-        const float YawDegPerPixel = 0.28f;   // độ xoay mỗi pixel kéo (ở màn 1080p)
-        const float PitchDegPerPixel = 0.12f;
-        const float InertiaDamping = 4.5f;    // càng lớn quán tính tắt càng nhanh
+        // Chống chóng mặt (đánh giá 2026-10-15): xoay chậm hơn, quán tính ngắn, lọc tốc độ ngón theo thời gian thực
+        const float YawDegPerPixel = 0.14f;   // độ xoay mỗi pixel kéo (ở màn 1080p); trước là 0,28
+        const float PitchDegPerPixel = 0.08f;
+        const float InertiaDamping = 6f;      // càng lớn quán tính tắt càng nhanh
+        const float MaxFling = 360f;          // độ/giây tối đa khi thả tay: văng thêm tối đa ~60 độ, dừng sau ~0,5 giây
+        const float InertiaStop = 15f;        // dưới mức này dừng hẳn, không "trôi"
+        const float TwistDeadzone = 10f;      // chụm 2 ngón chỉ xoay khi đã xoay hơn ngần này độ
+        const float MaxDegPerFrame = 8f;      // trần xoay mỗi khung: 30 FPS không quá 240 độ/giây, khựng khung không làm nhảy góc
+        const float SnapDeg = 45f;            // "Giảm chuyển động": thả tay thì dính góc
         const float PivotHeight = 0.35f;      // nhìn vào ngang mặt bàn, không phải mặt đất
 
         private Camera cam;
@@ -31,6 +37,9 @@ namespace Cafe
         private float distance = DefaultDistance, distanceTarget = DefaultDistance;
         private float maxDistance = MaxDistance;
         private float inertiaYaw;             // độ/giây sau khi thả tay
+        private float insetVelocity;          // SmoothDamp của lens shift
+        private float twistSum;               // góc 2 ngón đã xoay từ lúc chạm (để qua vùng chết)
+        private bool twisting;
 
         // Trạng thái 1 con trỏ (1 ngón hoặc chuột trái)
         private bool orbitTracking, orbiting;
@@ -163,12 +172,14 @@ namespace Cafe
                 else if (Time.unscaledTime - lastTouchTime > 0.3f) HandleMouse();
             }
 
-            // Quán tính khi đã thả tay
-            if (!orbiting && Mathf.Abs(inertiaYaw) > 0.5f)
+            // Quán tính khi đã thả tay (dt bị chặn để một cú khựng khung không làm camera nhảy góc)
+            if (!orbiting && !GraphicsQuality.ReduceMotion && Mathf.Abs(inertiaYaw) > InertiaStop)
             {
-                yawTarget += inertiaYaw * dt;
-                inertiaYaw *= Mathf.Exp(-InertiaDamping * dt);
+                float idt = Mathf.Min(dt, 1f / 30f);
+                yawTarget += inertiaYaw * idt;
+                inertiaYaw *= Mathf.Exp(-InertiaDamping * idt);
             }
+            else if (!orbiting) inertiaYaw = 0f;
             ClampPivot();
         }
 
@@ -176,11 +187,15 @@ namespace Cafe
         {
             if (cam == null) return;
             float dt = Time.unscaledDeltaTime;
-            yaw = Mathf.SmoothDampAngle(yaw, yawTarget, ref yawVelocity, 0.08f, Mathf.Infinity, dt);
+            // Đang kéo / văng thì bám sát ngón (0,03 s); nhảy rời rạc (nút xoay, FocusOn) thì êm hơn (0,12 s)
+            float smooth = (orbiting || inertiaYaw != 0f) ? 0.03f : 0.12f;
+            float maxYawSpeed = Mathf.Min(GraphicsQuality.ReduceMotion ? 150f : 480f, MaxDegPerFrame / Mathf.Max(dt, 1f / 240f));
+            yaw = Mathf.SmoothDampAngle(yaw, yawTarget, ref yawVelocity, smooth, maxYawSpeed, dt);
             float k = 1f - Mathf.Exp(-12f * dt);
             pitch = Mathf.Lerp(pitch, pitchTarget, k);
             distance = Mathf.Lerp(distance, distanceTarget, k);
-            bottomInset = Mathf.Lerp(bottomInset, bottomInsetTarget, k);
+            // Lens shift: panel đáy hiện / ẩn không được làm cả khung hình trượt gấp (UI đã tự ease, đây chỉ bắt kịp)
+            bottomInset = Mathf.SmoothDamp(bottomInset, bottomInsetTarget, ref insetVelocity, 0.15f, Mathf.Infinity, dt);
             Apply();
             ApplyInset();
         }
@@ -240,21 +255,34 @@ namespace Cafe
             {
                 if ((pos - startPos).sqrMagnitude <= thr * thr) return;
                 orbiting = true;
-                lastPos = pos;
+                lastPos = startPos;   // không vứt phần đã kéo trong vùng chết (SmoothDamp 0,03 s hấp thụ cú nhảy đầu)
             }
+            bool calm = GraphicsQuality.ReduceMotion;
             Vector2 d = (pos - lastPos) * PixelScale();
             lastPos = pos;
+            if (calm) d *= 0.5f;
             float dYaw = d.x * YawDegPerPixel;
             yawTarget += dYaw;
-            pitchTarget = Mathf.Clamp(pitchTarget - d.y * PitchDegPerPixel, MinPitch, MaxPitch);
+            // Vuốt ngang không được làm nghiêng camera; "Giảm chuyển động" khóa hẳn độ nghiêng
+            if (!calm && Mathf.Abs(d.x) <= Mathf.Abs(d.y) * 1.5f)
+                pitchTarget = Mathf.Clamp(pitchTarget - d.y * PitchDegPerPixel, MinPitch, MaxPitch);
 
-            float dt = Mathf.Max(Time.unscaledDeltaTime, 1e-4f);
-            lastYawSpeed = Mathf.Lerp(lastYawSpeed, dYaw / dt, 0.5f);
+            // Tốc độ ngón lọc với hằng số 60 ms thật, không phụ thuộc FPS (cảm ứng lấy mẫu 60 Hz, màn hình có thể 120 Hz)
+            float dt = Mathf.Clamp(Time.unscaledDeltaTime, 1f / 240f, 1f / 20f);
+            lastYawSpeed = Mathf.Lerp(lastYawSpeed, dYaw / dt, 1f - Mathf.Exp(-dt / 0.06f));
         }
 
         private void EndOrbit()
         {
-            if (orbiting) inertiaYaw = Mathf.Clamp(lastYawSpeed, -720f, 720f);
+            if (orbiting)
+            {
+                if (GraphicsQuality.ReduceMotion)
+                {
+                    inertiaYaw = 0f;
+                    yawTarget = Mathf.Round(yawTarget / SnapDeg) * SnapDeg;   // dính góc thay vì trôi
+                }
+                else inertiaYaw = Mathf.Clamp(lastYawSpeed, -MaxFling, MaxFling);
+            }
             orbitTracking = false;
             orbiting = false;
         }
@@ -265,6 +293,7 @@ namespace Cafe
         {
             Touch a = Input.GetTouch(0);
             Touch b = Input.GetTouch(1);
+            if (a.fingerId > b.fingerId) { Touch t = a; a = b; b = t; }   // thứ tự chỉ số có thể đổi giữa các khung: góc sẽ nhảy 180 độ
             Vector2 mid = (a.position + b.position) * 0.5f;
             Vector2 span = b.position - a.position;
             float len = span.magnitude;
@@ -274,6 +303,8 @@ namespace Cafe
             if (!twoFinger)
             {
                 twoFinger = true;
+                twisting = false;
+                twistSum = 0f;
                 orbitTracking = orbiting = false;
                 inertiaYaw = 0f;
                 bool overUI = TapInput.IsOverUI(a.position, a.fingerId) || TapInput.IsOverUI(b.position, b.fingerId);
@@ -286,7 +317,14 @@ namespace Cafe
             Pan(mid - lastMid);
             if (len > 1f && lastSpan > 1f)
                 distanceTarget = Mathf.Clamp(distanceTarget * lastSpan / len, MinDistance, maxDistance);
-            yawTarget -= Mathf.DeltaAngle(lastAngle, angle);
+            // Chụm để zoom / kéo để pan không được tự xoay: chỉ xoay khi 2 ngón đã xoay quá vùng chết; "Giảm chuyển động" bỏ hẳn
+            float dAngle = Mathf.DeltaAngle(lastAngle, angle);
+            twistSum += dAngle;
+            if (!GraphicsQuality.ReduceMotion && (twisting || Mathf.Abs(twistSum) > TwistDeadzone))
+            {
+                twisting = true;
+                yawTarget -= dAngle;
+            }
 
             lastMid = mid; lastSpan = len; lastAngle = angle;
         }

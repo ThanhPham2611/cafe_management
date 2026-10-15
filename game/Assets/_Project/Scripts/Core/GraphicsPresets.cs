@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Cafe
@@ -40,10 +41,31 @@ namespace Cafe
             }
         }
 
-        /// Giới hạn khung hình trên điện thoại (máy yếu chạy 30 để mát và pin lâu).
-        public static int TargetFps(GraphicsLevel level)
+        /// Giới hạn khung hình trên điện thoại. Mức Thấp luôn 30 (máy yếu: mát và pin lâu). Mức khác lấy mức cao nhất
+        /// trong `choices` (FpsChoices của màn hình này) mà không vượt quá lựa chọn của người chơi (`preferred`); tối thiểu 60.
+        public static int TargetFps(GraphicsLevel level, int preferred, int[] choices)
         {
-            return level == GraphicsLevel.Low ? 30 : 60;
+            if (level == GraphicsLevel.Low) return 30;
+            int best = 60;
+            for (int i = 0; i < choices.Length; i++)
+                if (choices[i] <= preferred && choices[i] > best) best = choices[i];
+            return best;
+        }
+
+        /// Các mức FPS cho người chơi chọn: 60 luôn có, cộng tối đa hai mức nhanh hơn mà màn hình có thật (`rates` = tần số
+        /// quét Hz ở độ phân giải hiện tại). iPhone / iPad ProMotion chạy theo ước của 120 nên chỉ nhận 120, không có 90.
+        public static int[] FpsChoices(int[] rates, bool ios)
+        {
+            var fast = new List<int>();
+            for (int i = 0; i < rates.Length; i++)
+            {
+                int c = ios ? (rates[i] >= 115 ? 120 : 0) : (rates[i] >= 85 ? rates[i] : 0);
+                if (c > 0 && !fast.Contains(c)) fast.Add(c);
+            }
+            fast.Sort();
+            if (fast.Count > 2) fast.RemoveRange(0, fast.Count - 2);
+            fast.Insert(0, 60);
+            return fast.ToArray();
         }
 
         /// Viền chữ UI (Outline) nhân bốn số đỉnh của mọi chữ: tắt ở mức Thấp.

@@ -25,12 +25,41 @@ namespace Cafe.Tests
         [Test]
         public void LowIsTheLightest_HighIsTheRichest()
         {
-            Assert.That(GraphicsPresets.TargetFps(GraphicsLevel.Low), Is.EqualTo(30));
-            Assert.That(GraphicsPresets.TargetFps(GraphicsLevel.Medium), Is.EqualTo(60));
-            Assert.That(GraphicsPresets.TargetFps(GraphicsLevel.High), Is.EqualTo(60));
+            var only60 = new[] { 60 };
+            Assert.That(GraphicsPresets.TargetFps(GraphicsLevel.Low, 60, only60), Is.EqualTo(30));
+            Assert.That(GraphicsPresets.TargetFps(GraphicsLevel.Medium, 60, only60), Is.EqualTo(60));
+            Assert.That(GraphicsPresets.TargetFps(GraphicsLevel.High, 60, only60), Is.EqualTo(60));
             Assert.That(GraphicsPresets.UiOutlines(GraphicsLevel.Low), Is.False);
             Assert.That(GraphicsPresets.UiOutlines(GraphicsLevel.Medium), Is.True);
             Assert.That(GraphicsPresets.UiOutlines(GraphicsLevel.High), Is.True);
+        }
+
+        [TestCase(60, new[] { 60, 90, 120 }, 60)]    // màn 120 Hz nhưng người chơi giữ 60 (mặc định)
+        [TestCase(90, new[] { 60, 90, 120 }, 90)]
+        [TestCase(120, new[] { 60, 90, 120 }, 120)]
+        [TestCase(120, new[] { 60, 90 }, 90)]        // lựa chọn đã lưu cao hơn màn hình mới: hạ về mức có thật
+        [TestCase(90, new[] { 60, 120 }, 60)]        // 90 đã lưu nhưng máy này không có 90: không chọn bừa 120
+        [TestCase(120, new[] { 60 }, 60)]
+        [TestCase(30, new[] { 60, 120 }, 60)]        // giá trị lưu lạ không bao giờ xuống dưới 60
+        public void TargetFps_UsesHighestChoiceNotAbovePreference(int preferred, int[] choices, int expected)
+        {
+            Assert.That(GraphicsPresets.TargetFps(GraphicsLevel.High, preferred, choices), Is.EqualTo(expected));
+            Assert.That(GraphicsPresets.TargetFps(GraphicsLevel.Low, preferred, choices), Is.EqualTo(30));
+        }
+
+        [TestCase(new[] { 60 }, false, new[] { 60 })]
+        [TestCase(new[] { 0 }, false, new[] { 60 })]                      // đọc tần số quét thất bại
+        [TestCase(new[] { 60, 90 }, false, new[] { 60, 90 })]             // Android 90 Hz
+        [TestCase(new[] { 120, 60, 90, 120 }, false, new[] { 60, 90, 120 })]
+        [TestCase(new[] { 60, 120 }, false, new[] { 60, 120 })]           // Android chỉ có chế độ 60 / 120: không tự thêm 90
+        [TestCase(new[] { 60, 90, 120, 144 }, false, new[] { 60, 120, 144 })] // 3 nút là đủ: giữ hai mức cao nhất
+        [TestCase(new[] { 120 }, true, new[] { 60, 120 })]                // iPhone ProMotion
+        [TestCase(new[] { 60, 90, 120 }, true, new[] { 60, 120 })]        // iOS không có 90
+        [TestCase(new[] { 90 }, true, new[] { 60 })]
+        [TestCase(new[] { 60 }, true, new[] { 60 })]
+        public void FpsChoices_OnlyOffersRatesTheDisplayReallyHas(int[] rates, bool ios, int[] expected)
+        {
+            Assert.That(GraphicsPresets.FpsChoices(rates, ios), Is.EqualTo(expected));
         }
 
         [Test]
