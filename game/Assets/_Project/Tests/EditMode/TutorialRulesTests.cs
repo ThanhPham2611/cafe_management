@@ -271,6 +271,9 @@ namespace Cafe.Tests
             Assert.That(TutorialRules.IsVeteranMigration(false, 0, TutorialStep.NotStarted), Is.False, "game mới");
             Assert.That(TutorialRules.IsVeteranMigration(true, TutorialStep.Done, TutorialStep.Done), Is.False, "đã qua hướng dẫn mới");
             Assert.That(TutorialRules.IsVeteranMigration(true, 0, TutorialRules.InitialStep(true, 0, 1, 1)), Is.False, "mới ở ngày 1");
+            int afterSummary = TutorialRules.InitialStep(true, TutorialStep.Summary, 2, 1);
+            Assert.That(afterSummary, Is.EqualTo(TutorialStep.Done));
+            Assert.That(TutorialRules.IsVeteranMigration(true, TutorialStep.Summary, afterSummary), Is.False, "người mới thoát ở tổng kết ngày 1 vẫn cần gợi ý");
         }
 
         [Test]
