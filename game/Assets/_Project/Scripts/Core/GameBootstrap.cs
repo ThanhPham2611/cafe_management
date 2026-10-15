@@ -473,7 +473,8 @@ namespace Cafe
         private void OnDayEndedForMissions(DaySummary s)
         {
             if (Missions == null || s == null) return;
-            Missions.RecordDay(s.served, s.lost, s.cleanliness, s.tier);
+            // "Không ai bỏ về" chỉ tính khách bực (chờ lâu / bẩn); hết chỗ là quán đông, không phải lỗi người chơi
+            Missions.RecordDay(s.served, s.lost - s.lostNoSeat, s.cleanliness, s.tier);
             SaveSnapshot();
         }
 

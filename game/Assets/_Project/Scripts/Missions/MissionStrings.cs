@@ -34,7 +34,7 @@ namespace Cafe
                 case MissionKind.SellRecipe: return "Bán " + m.target + " ly " + t.label;
                 case MissionKind.ThreeStar: return "Pha " + m.target + " ly đạt 3★";
                 case MissionKind.SellHidden: return "Bán " + m.target + " ly món ẩn";
-                case MissionKind.NoWalkaway: return "Một ngày đông khách, không ai bỏ về";
+                case MissionKind.NoWalkaway: return "Một ngày đông khách, không ai bỏ về vì chờ lâu hay quán bẩn";
                 case MissionKind.CleanDay: return "Giữ độ sạch từ 80 trở lên cả ngày";
                 case MissionKind.EarnTips: return "Nhận " + m.target + " Xu tiền tip";
                 case MissionKind.BuyItems: return "Sắm " + m.target + " món đồ cho quán";

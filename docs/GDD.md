@@ -72,7 +72,7 @@ Các con số cụ thể (giá, tiền thuê, thời gian để lên cấp) nằ
 `Đến → Tìm chỗ → (không có chỗ thì Chờ, chờ quá lâu thì Bỏ đi) → Ngồi → Gọi món → Chờ món (thanh kiên nhẫn) → Uống → Trả tiền → Rời đi`
 
 - Thanh kiên nhẫn giảm dần theo thời gian chờ. Chỉ số Thoải mái của ghế làm thanh giảm chậm hơn.
-- Bỏ đi vì chờ lâu thì mất danh tiếng nhẹ, nhưng không bị phạt tiền.
+- Bỏ đi vì chờ lâu (hoặc quán bẩn) thì mất danh tiếng nhẹ, nhưng không bị phạt tiền. Không có chỗ thì khách quay đi, không mất danh tiếng (economy §20).
 
 ### 3.3 Trạng thái của bàn
 `Trống-Sạch → Có khách → Bẩn → (đang dọn) → Trống-Sạch`

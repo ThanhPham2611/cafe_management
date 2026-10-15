@@ -31,6 +31,14 @@ namespace Cafe.Tests
         }
 
         [Test]
+        public void Tier3_ManyLostForNoSeat_SuggestsStaffNotSeats()
+        {
+            var s = new DaySummary { served = 94, lost = 190, lostNoSeat = 180, cleanliness = 90f };
+            Assert.That(Advise(s, tier: 3), Is.EqualTo(DayAdvice.MoreStaff));
+            Assert.That(Advise(s, tier: 3, last: DayAdvice.MoreStaff), Is.Not.EqualTo(DayAdvice.BuySeats), "không lặp gợi ý, cũng không đổi sang mua ghế");
+        }
+
+        [Test]
         public void ManyLostForPatience_SuggestsStaff()
         {
             Assert.That(Advise(new DaySummary { served = 25, lost = 10, lostPatience = 7, cleanliness = 90f }), Is.EqualTo(DayAdvice.MoreStaff));

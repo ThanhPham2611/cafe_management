@@ -32,7 +32,8 @@ namespace Cafe
         public const float NoSeatSeconds = 10f;
         public const float DrinkMinSeconds = 8f;
         public const float DrinkMaxSeconds = 15f;
-        public const float WalkAwayRp = -1f;                  // nhẹ hơn 1 khách hài lòng (~+1,5 RP); GDD §3.2 "mất danh tiếng nhẹ"
+        public const float WalkAwayRp = -1f;                  // bỏ về vì chờ món quá lâu / quán bẩn: nhẹ hơn 1 khách hài lòng (~+1,5 RP); GDD §3.2 "mất danh tiếng nhẹ"
+        public const float WalkAwayRpNoSeat = 0f;             // hết chỗ = quán đắt khách, không phải khách bực: không trừ RP (economy §20). Cấp 3 bot mất ~180 khách/ngày vì hết chỗ nên -1 triệt tiêu hết RP kiếm được
         public const float SpawnStartFraction = 0.02f;
         public const float SpawnEndFraction = 0.80f;
         public const float SeatTurnsPerDay = 4f;
@@ -94,7 +95,7 @@ namespace Cafe
         public const float Tier2DemandMult = 1.5f;
         public const float Tier3DemandMult = 2.6f;
         public const float SeatTurnsTier2 = 4.5f;
-        public const float SeatTurnsTier3 = 5f;
+        public const float SeatTurnsTier3 = 5f;               // sức chứa gấp ~5 lần thực phục vụ, nhưng cố ý để vậy: hạ xuống làm bot phục vụ ít hơn ~12%, lãi ít hơn ~25% (economy §20)
         public const float StaffCapacityBonusTier2 = 0.25f;   // +25% sức chứa mỗi nhân viên
         public const float StaffCapacityBonusTier3 = 0.15f;
 
@@ -167,7 +168,7 @@ namespace Cafe
         }
 
         // Hạng sao theo RP: ★1..★5
-        public static readonly int[] StarThresholds = { 0, Tier2StarRP, Tier3StarRP, 40000, 120000 };
+        public static readonly int[] StarThresholds = { 0, Tier2StarRP, Tier3StarRP, 12000, 40000 };   // ★4 / ★5 hạ từ 40.000 / 120.000 (economy §20)
 
         /// Demand_T1 = 18 + 9(★-1) + 0.5·day
         public static int DemandT1(int stars, int day)

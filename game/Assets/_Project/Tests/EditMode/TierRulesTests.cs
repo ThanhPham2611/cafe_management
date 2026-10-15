@@ -100,6 +100,14 @@ namespace Cafe.Tests
         }
 
         [Test]
+        public void NoSeatWalkAway_CostsNoReputation_ButImpatienceDoes()
+        {
+            Assert.That(GameBalance.WalkAwayRpNoSeat, Is.Zero);
+            Assert.That(GameBalance.WalkAwayRp, Is.LessThan(0f));
+            Assert.That(GameBalance.StarThresholds[3], Is.EqualTo(12000), "★4 phải đạt được trong vài chục ngày cấp 3 (economy §20)");
+        }
+
+        [Test]
         public void Capacity_Tier3UsesRestaurantTurnsAndSmallerStaffBonus()
         {
             Assert.That(GameBalance.CapacityFor(3, 30, 0), Is.EqualTo(150));
