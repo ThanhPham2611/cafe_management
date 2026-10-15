@@ -11,7 +11,7 @@ namespace Cafe
         private const float Margin = 24f;
         private const float ChipH = 96f;
         /// Chip thứ ba của hàng trên cùng: sau chip Xu (310) và chip Sao (440), cộng khoảng cách + nửa icon.
-        private const float ChipX = Margin + 46f + 310f + 16f + 46f + 440f + 16f + 46f;
+        private const float MopH = 104f;
         private const float ChipW = 250f;
 
         private GameBootstrap game;
@@ -38,9 +38,9 @@ namespace Cafe
             game = g;
             model = cs.Model;
 
-            // ---- chip độ sạch
+            // ---- chip độ sạch: góc phải dưới, trên nút lau sàn (hàng trên ở canvas rộng 1600 không đủ chỗ, chip đè lên nút MENU)
             chip = HudBuilder.Chip(root, "CleanChip", false);
-            HudBuilder.SetFixed(chip.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(ChipX, -Margin), new Vector2(ChipW, ChipH));
+            HudBuilder.SetFixed(chip.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-Margin, Margin + ChipH + 16f + MopH + 16f), new Vector2(ChipW, ChipH));
             Image icon = HudBuilder.Icon(chip.transform, "Icon", CleaningRules.BroomIcon(HudBuilder.T), 112f);
             HudBuilder.SetFixed(icon.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(8f, 9f), new Vector2(112f, 112f));
             pctText = HudBuilder.AddText(chip.transform, "Pct", "", 44, TextAnchor.MiddleRight, HudBuilder.Ink, true, false);
@@ -51,7 +51,7 @@ namespace Cafe
             Text label;
             mopButton = HudBuilder.AddLabelButton(root, "MopBtn", ClayStyle.Cream, Strings.MopBtn, 32, OnMopClicked, out label);
             HudBuilder.SetFixed((RectTransform)mopButton.transform, new Vector2(1f, 0f), new Vector2(1f, 0f),
-                new Vector2(-Margin, Margin + ChipH + 16f), new Vector2(250f, 104f));
+                new Vector2(-Margin, Margin + ChipH + 16f), new Vector2(250f, MopH));
             label.rectTransform.offsetMin = new Vector2(84f, 0f);
             Image mopIcon = HudBuilder.Icon(mopButton.Content, "Icon", CleaningRules.BroomIcon(HudBuilder.T), 70f);
             HudBuilder.SetFixed(mopIcon.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(52f, 0f), new Vector2(70f, 70f));

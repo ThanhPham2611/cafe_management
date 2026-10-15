@@ -14,6 +14,7 @@ namespace Cafe
         private const float PanelH = 372f;
         private const float StripVisible = 128f;
         private const float RestY = 24f;
+        private const float TextW = 320f; // 120 + 320 = 440 < 448 = mép trái cột đồng hồ / thanh tốc độ / sao
         private const int MaxSlots = 6;
 
         // Khay nguyên liệu
@@ -95,11 +96,11 @@ namespace Cafe
             HudBuilder.SetFixed(recipeIcon.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -20f), new Vector2(76f, 76f));
 
             title = HudBuilder.AddText(root, "Title", "", 42, TextAnchor.MiddleLeft, HudBuilder.Ink, true, false);
-            HudBuilder.SetFixed(title.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(120f, -14f), new Vector2(510f, 54f));
+            HudBuilder.SetFixed(title.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(120f, -14f), new Vector2(TextW, 54f)); // dừng trước cột đồng hồ / thanh tốc độ / sao (mép trái 448)
             HudBuilder.Fit(title, 24);
 
             hint = HudBuilder.AddText(root, "Hint", "", 26, TextAnchor.MiddleLeft, HudBuilder.InkSoft, false, false);
-            HudBuilder.SetFixed(hint.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(120f, -66f), new Vector2(510f, 36f));
+            HudBuilder.SetFixed(hint.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(120f, -66f), new Vector2(TextW, 58f)); // 2 dòng nếu dài, vẫn trên dãy chấm bước (-128)
             HudBuilder.Fit(hint, 20);
 
             // Thanh "pha nhanh": đầy lúc bắt đầu, cạn dần tới hạn 3 sao (hết = mất 3★)
@@ -550,9 +551,13 @@ namespace Cafe
                 if (Mathf.Abs(slideY - targetY) <= 0.4f) slideY = targetY;
                 root.anchoredPosition = new Vector2(0f, slideY);
             }
-            // Báo camera phần màn hình bị bàn pha che (canvas HUD ref cao HudRefHeight, match height)
+            // Báo camera phần màn hình bị bàn pha che (theo chiều cao canvas thật: màn hẹp hơn 16:9 match width nên canvas cao hơn HudRefHeight)
             if (game.CameraRig != null)
-                game.CameraRig.SetBottomInset(Mathf.Max(0f, slideY + PanelH) / HudBuilder.HudRefHeight * 0.85f);
+            {
+                RectTransform canvasRt = root.parent as RectTransform;
+                float canvasH = canvasRt != null && canvasRt.rect.height > 10f ? canvasRt.rect.height : HudBuilder.HudRefHeight;
+                game.CameraRig.SetBottomInset(Mathf.Max(0f, slideY + PanelH) / canvasH * 0.85f);
+            }
 
             TickTray(dt);
 

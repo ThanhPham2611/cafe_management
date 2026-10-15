@@ -145,9 +145,9 @@ namespace Cafe
         public const string ZoneGarden = "Sân vườn";
         public const string ZoneTerrace = "Lầu";
         public const string ZoneVip = "VIP";
-        public const string ZoneGardenDesc = "Ngoài trời, 6 x 12 m\n+20% khách\nTặng 2 bộ bàn ghế";
-        public const string ZoneTerraceDesc = "Gác gỗ ngắm phố, 6 x 6 m\n+20% khách\nTặng 2 bộ bàn ghế";
-        public const string ZoneVipDesc = "Phòng riêng, 6 x 6 m\n+20% khách, ly x1,5 giá\nTặng 2 bộ bàn ghế";
+        public const string ZoneGardenDesc = "Ngoài trời, 6 x 12 m\n+20% khách\nTặng 2 bộ bàn ghế";
+        public const string ZoneTerraceDesc = "Gác gỗ ngắm phố, 6 x 6 m\n+20% khách\nTặng 2 bộ bàn ghế";
+        public const string ZoneVipDesc = "Phòng riêng, 6 x 6 m\n+20% khách, ly x1,5 giá\nTặng 2 bộ bàn ghế";
         public const string ZoneButton = "MỞ RỘNG";
         public const string ZoneTitle = "Mở rộng nhà hàng";
         public const string ZoneOpenBtn = "Mở khu";
