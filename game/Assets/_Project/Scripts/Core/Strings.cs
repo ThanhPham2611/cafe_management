@@ -53,6 +53,10 @@ namespace Cafe
         public const string SumRp = "Uy tín";
         public const string SumStars = "Hạng sao";
         public const string NewDay = "Ngày mới";
+        public const string PrepShop = "Chuẩn bị quán";
+        public const string OpenShop = "MỞ CỬA";
+        public const string StoryRpFmt = "Truyện khách quen: +{0} RP";
+        public const string OpeningGiftFmt = "Quà khai trương: +{0} Xu";
 
         // Cửa hàng / Build mode
         public const string Shop = "Cửa hàng";

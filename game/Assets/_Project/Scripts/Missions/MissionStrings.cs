@@ -34,11 +34,24 @@ namespace Cafe
                 case MissionKind.SellRecipe: return "Bán " + m.target + " ly " + t.label;
                 case MissionKind.ThreeStar: return "Pha " + m.target + " ly đạt 3★";
                 case MissionKind.SellHidden: return "Bán " + m.target + " ly món ẩn";
-                case MissionKind.NoWalkaway: return "Một ngày không khách nào bỏ về";
+                case MissionKind.NoWalkaway: return "Một ngày đông khách, không ai bỏ về";
                 case MissionKind.CleanDay: return "Giữ độ sạch từ 80 trở lên cả ngày";
                 case MissionKind.EarnTips: return "Nhận " + m.target + " Xu tiền tip";
+                case MissionKind.BuyItems: return "Sắm " + m.target + " món đồ cho quán";
+                case MissionKind.RegularFavorite: return "Phục vụ món ruột cho khách quen" + (m.target > 1 ? " " + m.target + " lần" : "");
+                case MissionKind.Experiment: return "Thử nghiệm công thức " + m.target + " lần";
                 default: return m.id;
             }
+        }
+
+        /// "+200 Xu  +20 RP  +3 Hạt": thưởng Xu nằm trong trạng thái nhiệm vụ, RP / Hạt lấy từ mẫu.
+        public static string Reward(MissionState m)
+        {
+            string s = string.Format(RewardXuFmt, m.rewardXu);
+            MissionTemplate t = MissionCatalog.Find(m.id);
+            if (t != null && t.rewardRp > 0) s += "  +" + t.rewardRp + " RP";
+            if (t != null && t.rewardGems > 0) s += "  +" + t.rewardGems + " Hạt";
+            return s;
         }
 
         /// "2 giờ 15 phút" / "45 phút".

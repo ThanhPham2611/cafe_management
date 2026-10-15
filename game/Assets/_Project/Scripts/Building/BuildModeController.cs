@@ -316,7 +316,11 @@ namespace Cafe
             PlacedFurniture pf = TryCommit(gdef, gcell, grot, isMove || !GridSystem.IsOverhead(gdef));
             if (pf == null) return;
 
-            if (price > 0) game.Wallet.Spend(price);
+            if (price > 0)
+            {
+                game.Wallet.Spend(price);
+                if (game.Missions != null) game.Missions.RecordPurchase();
+            }
             if (fromInventory && !isMove && game.Tier != null) game.Tier.TakeFromInventory(gdef.id);
             Vector3 fx = pf.WorldBounds.center + Vector3.up * 0.8f;
             DestroyGhost();

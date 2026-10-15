@@ -285,14 +285,25 @@ namespace Cafe
 
         // ---- Ngày ----
 
+        /// Mở cửa ngày kế tiếp: từ nút "Ngày mới" ở màn tổng kết hoặc nút "Mở cửa" ở pha chuẩn bị.
         public void StartNextDay()
         {
             StartDay(Day.Day + 1);
         }
 
-        private void StartDay(int day)
+        /// Màn tổng kết -> pha chuẩn bị: đồng hồ đứng, chưa có khách; mua đồ / bày quán / nâng cấp quán rồi mới mở cửa.
+        public void EnterPrep()
         {
-            // Qua đêm: thu hết ly để lại
+            if (Day.CurrentPhase != DayCycle.Phase.Summary) return;
+            ResetForNight();
+            Day.EnterPrep();
+            SaveSnapshot();
+            GameEvents.RaisePrepStarted();
+        }
+
+        /// Qua đêm: thu hết ly để lại, dọn đơn / quầy, chủ quán và nhân viên về chỗ.
+        private void ResetForNight()
+        {
             while (LeftoverCups.Count > 0)
             {
                 LeftoverCup c = LeftoverCups[LeftoverCups.Count - 1];
@@ -305,6 +316,11 @@ namespace Cafe
             Station.ResetAll();
             if (Owner != null) Owner.ResetForNewDay();
             if (Staff != null) Staff.ResetForNewDay();
+        }
+
+        private void StartDay(int day)
+        {
+            ResetForNight();
 
             Day.Begin(day);
             Tier.OnDayBegin(Day.Summary); // cấp 2: tới kỳ thì trừ tiền thuê nhà (trước khi chốt mốc Xu đầu ngày)
@@ -371,7 +387,7 @@ namespace Cafe
             if (Staff != null) Staff.WriteToSave(data);
             if (Regulars != null) Regulars.WriteToSave(data);
             if (Missions != null) Missions.WriteToSave(data);
-            if (Day.CurrentPhase == DayCycle.Phase.Summary)
+            if (Day.CurrentPhase == DayCycle.Phase.Summary || Day.CurrentPhase == DayCycle.Phase.Prep)
             {
                 data.day = Day.Day + 1;
                 data.xu = Wallet.Xu;
@@ -445,7 +461,8 @@ namespace Cafe
         {
             RecipeDef r = c != null ? c.ServedRecipe : null;
             if (r == null || Missions == null) return;
-            Missions.RecordServed(r.id, c.ServedQuality, r.hidden, c.LastTip);
+            bool favorite = Regulars != null && Regulars.IsFavorite(c.RegularId, r.id);
+            Missions.RecordServed(r.id, c.ServedQuality, r.hidden, c.LastTip, favorite);
         }
 
         private void OnDayStartedForMissions(int day)
@@ -456,7 +473,7 @@ namespace Cafe
         private void OnDayEndedForMissions(DaySummary s)
         {
             if (Missions == null || s == null) return;
-            Missions.RecordDay(s.served, s.lost, s.cleanliness);
+            Missions.RecordDay(s.served, s.lost, s.cleanliness, s.tier);
             SaveSnapshot();
         }
 

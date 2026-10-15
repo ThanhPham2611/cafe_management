@@ -64,6 +64,8 @@ Các con số cụ thể (giá, tiền thuê, thời gian để lên cấp) nằ
 [Đóng cửa] Tổng kết: doanh thu, chi phí (nguyên liệu, lương, tiền thuê), ★, review
    ↓
 [Buổi tối] nâng cấp, nghiên cứu công thức, mua nội thất → Ngày mới
+            (đã làm từ 2026-10-15: nút "Chuẩn bị quán" ở màn tổng kết → pha Prep, đồng hồ đứng, chưa có khách → "MỞ CỬA";
+             nút đỏ "Ngày mới" vẫn mở cửa ngay)
 ```
 
 ### 3.2 Trạng thái của khách (state machine)

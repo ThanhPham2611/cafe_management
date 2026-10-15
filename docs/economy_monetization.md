@@ -48,9 +48,9 @@
 |---|---|---|
 | Nguyên liệu | 5–100 Xu/ly (~30–35% giá) | trừ tự động khi pha |
 | Ghế/bàn/nội thất thường | xem §3.6 | sink chính T1–T2 |
-| Tiền cọc + thuê mặt bằng | cọc 18.000; 7.000/tuần | T2 |
+| Tiền cọc + thuê mặt bằng | cọc 18.000; 5.000/tuần | T2 |
 | Lương nhân viên | 300–2.500/ngày/người | T2+ |
-| Mua nhà hàng | 250.000 | T3 |
+| Mua nhà hàng | 140.000 | T3 |
 | Nâng cấp máy móc / dụng cụ | 1.500–150.000 | T2–T3 |
 | Mở khu (zone) mới | 40.000 / 90.000 / 180.000 | T3 |
 | Chi nhánh | 2.000.000 (CN1), ×1,6 mỗi CN tiếp | T4 |
@@ -145,7 +145,7 @@ Chất lượng ly quyết định bởi: đúng nguyên liệu, đúng dụng c
 
 | | **T1 Vỉa hè** | **T2 Thuê mặt bằng** | **T3 Mua nhà hàng** | **T4 Chuỗi** |
 |---|---|---|---|---|
-| Điều kiện mở | — | ★2 + **18.000 Xu** cọc | ★3 + **250.000 Xu** | ★4 + **2.000.000 Xu** (CN1) |
+| Điều kiện mở | — | ★2 + **18.000 Xu** cọc | ★3 + **140.000 Xu** | ★4 + **2.000.000 Xu** (CN1) |
 | Chỗ ngồi | 4 → 12 ghế nhựa | 8 → 24 (bàn 2 ghế) | 30 → 80 (3 zone) | mỗi CN 40 (tự vận hành) |
 | Khách/ngày | 16 → 40 | 35 → 110 | 100 → 260 | CN: 80–200 (idle) |
 | Giá TB/ly | ~75–80 | ~120 | ~150 | ~150 |
@@ -185,7 +185,7 @@ Capacity_T3 = chỗ × 5   × (1 + 0,15·số NV)
 | Hạng mục | Số |
 |---|---|
 | Tiền cọc | **18.000 Xu** (hoàn lại 100% khi chuyển sang T3 — cảm giác "được thưởng") |
-| Tiền thuê | **7.000 Xu/tuần** (trả tự động sáng thứ Hai in-game, ~17% doanh thu T2) |
+| Tiền thuê | **5.000 Xu/tuần** (trả tự động sáng thứ Hai in-game, ~12% doanh thu T2; trước 2026-10-15 là 7.000, xem §19) |
 | Thiếu tiền thuê | ghi nợ, trừ 30% doanh thu mỗi ngày cho đến hết; không phạt ★, không mất quán |
 | Bàn + 2 ghế thứ k | `700 + 120·(k)` Xu (k = số bàn đã mua thêm) |
 | Phí tuyển NV | 1.500 Xu |
@@ -196,7 +196,7 @@ Capacity_T3 = chỗ × 5   × (1 + 0,15·số NV)
 
 | Hạng mục | Số |
 |---|---|
-| Giá mua nhà | **250.000 Xu** (cọc T2 18.000 được hoàn → thực trả 232.000) |
+| Giá mua nhà | **140.000 Xu** (cọc T2 18.000 được hoàn → thực trả 122.000; trước 2026-10-15 là 250.000, xem §19) |
 | Zone 2 (sân vườn) / Zone 3 (lầu, view) / Zone VIP | 40.000 / 90.000 / 180.000 Xu |
 | Máy xay 2 họng / Máy cold brew / Máy pha espresso | 25.000 / 60.000 / 150.000 Xu |
 | Ca làm (sáng/chiều/tối) | NV mỗi ca; thiếu ca → Capacity −30% trong ca đó |
@@ -231,7 +231,7 @@ F = clamp01( (ΣComfort_zone + ΣStyle_zone) / F_ref_tier )
 ```
 
 - **T1 (vỉa hè, chưa có dọn bàn):** trọng số đổi thành `0,40·Q + 0,35·W + 0,10·C_ly + 0,15·F`, với `C_ly = 1` nếu ly được thu trong 30 s in-game, giảm tuyến tính về 0 sau 2 giờ in-game.
-- **Bỏ đi (walk-away):** không có chỗ > 10 s, hoặc t_wait > 60 s, hoặc CI < 60 (xác suất §5). Walk-away = −2 RP, không doanh thu.
+- **Bỏ đi (walk-away):** không có chỗ > 10 s, hoặc t_wait > 60 s, hoặc CI < 60 (xác suất §5). Walk-away = −1 RP, không doanh thu (trước 2026-10-15 là −2, xem §19).
 - `F_ref` tăng theo tier → lên tier mới, quán "trống trơn" → động lực build mode.
 
 ### 4.2 Điểm uy tín (RP) và ★
@@ -245,7 +245,7 @@ RP += Σ RP_khach + RP_bonus (nhiệm vụ, sự kiện, khen trên "mạng xã 
 |---|---|---|---|---|
 | ★1 | 0 | — | — | — |
 | ★2 | **300** | ≥ 0,55 | đủ điều kiện T2 | 50 Hạt |
-| ★3 | **4.000** | ≥ 0,65 | đủ điều kiện T3 | 100 Hạt |
+| ★3 | **3.000** | ≥ 0,65 | đủ điều kiện T3 | 100 Hạt |
 | ★4 | **40.000** | ≥ 0,72 | đủ điều kiện T4 | 200 Hạt |
 | ★5 | **120.000** | ≥ 0,80 | danh hiệu, khách du lịch nước ngoài | 400 Hạt |
 
@@ -585,16 +585,16 @@ Funnel cần dashboard: Install → T1 ngày 3 → ★2 → T2 → công thức 
 | `turnover_per_seat` | [4, 4.5, 5] | |
 | `staff_capacity_bonus` | [0, 0.25, 0.15] | |
 | `t1_stool_cost_base` / `_step` | 200 / 75 | |
-| `t2_deposit` / `t2_rent_week` / `t2_star_req` | 18000 / 7000 / 2 | |
+| `t2_deposit` / `t2_rent_week` / `t2_star_req` | 18000 / 5000 / 2 | |
 | `t2_table_cost_base` / `_step` | 700 / 120 | |
-| `t3_price` / `t3_star_req` / `zone_costs` | 250000 / 3 / [40k, 90k, 180k] | |
+| `t3_price` / `t3_star_req` / `zone_costs` | 140000 / 3 / [40k, 90k, 180k] | |
 | `branch_cost_base` / `branch_cost_growth` / `t4_star_req` | 2000000 / 1.6 / 4 | |
 | `staff_wages` (JSON) | §6 | |
 | `upkeep_per_day` | [60, 150, 700] | |
 | `sat_weights` / `sat_weights_t1` | [0.35,0.30,0.20,0.15] / [0.40,0.35,0.10,0.15] | |
 | `wait_ok_s` / `wait_max_s` | 20 / 60 | |
 | `f_ref_per_tier` | [20, 200, 400] | |
-| `rp_star_thresholds` | [0, 300, 4000, 40000, 120000] | |
+| `rp_star_thresholds` | [0, 300, 3000, 40000, 120000] | |
 | `rp_per_customer_scale` | 1.5 | |
 | `star_hold_avg_s` | [0.55, 0.65, 0.72, 0.80] | |
 | `ci_weights` (dirty_table, floor, bin) | 40 / 0.4 / 10 | |
@@ -790,3 +790,20 @@ Bot `-autoplay -autoupgrade3 -cheatt3` (lên cấp 2 rồi 3 bằng cheat Xu/RP,
 | Pha chế (lương 450) | T3 | ~4 ly/ngày/người khi tự đi giao; 8–13 ly/ngày/người sau khi thêm quầy giao |
 
 Kết luận: cấp 3 chạy được và có lãi hơn cấp 2 khoảng 2–3 lần (~2.500 → ~5.000–7.000/ngày), nhưng **thấp hơn mục tiêu 3–4 lần**; cộng với cấp 2 ~2.500/ngày (§17) thì mua nhà hàng mất ~90–130 ngày và T3→T4 ~290 ngày. Hai núm có tác dụng lớn nhất vì chạm đúng nút thắt đo được: (1) **số khách mỗi ngày** — độ dài ngày cấp 3 hoặc tốc độ đi bộ / giao ly, hay Demand cấp 3; (2) **biên mỗi ly** — giá 3 món cấp 3 (200/230/300) và hệ số bán món ẩn. Giá nhà hàng 250.000 nên chỉnh sau khi chốt hai núm trên.
+
+---
+
+## 19. Chỉnh pacing 2026-10-15 (sau review game-designer)
+
+Từ số đo §17–18 (cấp 2 ~38 khách/ngày, lãi ~2.100/ngày sau thuê, ~57 RP/ngày): mua nhà 250.000 Xu mất ~110 ngày (~6,4 giờ), ★3 (4.000 RP) mất ~62 ngày (~3,6 giờ). **Xu là nút thắt, RP không phải.** Chạm cấp 3 mất ~7–8 giờ chơi, thiết kế là ~4,2 giờ.
+
+| Núm (`GameBalance`) | Cũ | Mới |
+|---|---|---|
+| `Tier3Price` | 250.000 | 140.000 (trả thực 122.000 sau hoàn cọc) |
+| `Tier2RentPerWeek` | 7.000 | 5.000 |
+| `Tier3StarRP` / `StarThresholds[2]` | 4.000 | 3.000 |
+| `WalkAwayRp` | −2 | −1 |
+
+Ước tính (chưa chạy thật): tiết kiệm ~2.000 Xu/ngày → 122.000 mất ~60 ngày; ★3 ở khoảng ngày 50 → cấp 3 ở khoảng ngày 70–75 (~4,3 giờ). Cần chạy lại bot autoplay 60 ngày cấp 2 để xác nhận. Các mục §7 (pacing mục tiêu), §16 (mô phỏng), §17–18 (số đo) vẫn ghi theo giá trị cũ vì là số liệu lịch sử.
+
+Cùng đợt này game thêm **pha Chuẩn bị** (`DayCycle.Phase.Prep`): từ màn tổng kết bấm "Chuẩn bị quán" để mua đồ / bày quán / nâng cấp quán khi đồng hồ đứng và chưa có khách, rồi "MỞ CỬA". Nút đỏ "Ngày mới" vẫn mở cửa ngay.

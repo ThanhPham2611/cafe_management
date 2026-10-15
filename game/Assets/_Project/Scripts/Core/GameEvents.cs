@@ -15,6 +15,8 @@ namespace Cafe
         public static event Action<int> DayStarted;
         public static event Action DayClosing;
         public static event Action<DaySummary> DayEnded;
+        /// Người chơi vào pha chuẩn bị (từ màn tổng kết), chưa mở cửa ngày mới.
+        public static event Action PrepStarted;
         public static event Action<Customer> CustomerServed;
         public static event Action<Customer> CustomerLeft;
         public static event Action<string> Toast;
@@ -27,6 +29,7 @@ namespace Cafe
         public static void RaiseDayStarted(int day) { if (DayStarted != null) DayStarted(day); }
         public static void RaiseDayClosing() { if (DayClosing != null) DayClosing(); }
         public static void RaiseDayEnded(DaySummary s) { if (DayEnded != null) DayEnded(s); }
+        public static void RaisePrepStarted() { if (PrepStarted != null) PrepStarted(); }
         public static void RaiseCustomerServed(Customer c) { if (CustomerServed != null) CustomerServed(c); }
         public static void RaiseCustomerLeft(Customer c) { if (CustomerLeft != null) CustomerLeft(c); }
         public static void RaiseToast(string msg) { if (Toast != null) Toast(msg); }
@@ -43,6 +46,7 @@ namespace Cafe
             DayStarted = null;
             DayClosing = null;
             DayEnded = null;
+            PrepStarted = null;
             CustomerServed = null;
             CustomerLeft = null;
             Toast = null;

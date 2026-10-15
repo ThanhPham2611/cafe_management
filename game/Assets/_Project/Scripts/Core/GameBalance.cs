@@ -32,7 +32,7 @@ namespace Cafe
         public const float NoSeatSeconds = 10f;
         public const float DrinkMinSeconds = 8f;
         public const float DrinkMaxSeconds = 15f;
-        public const float WalkAwayRp = -2f;
+        public const float WalkAwayRp = -1f;                  // nhẹ hơn 1 khách hài lòng (~+1,5 RP); GDD §3.2 "mất danh tiếng nhẹ"
         public const float SpawnStartFraction = 0.02f;
         public const float SpawnEndFraction = 0.80f;
         public const float SeatTurnsPerDay = 4f;
@@ -74,14 +74,22 @@ namespace Cafe
         // ---- Cấp 2: Thuê mặt bằng (economy §3.2, §3.4) ----
         public const int Tier2StarRP = 300;                   // ★2
         public const int Tier2Deposit = 18000;                // tiền cọc (hoàn khi lên cấp 3)
-        public const int Tier2RentPerWeek = 7000;
+        public const int Tier2RentPerWeek = 5000;             // ~10-16% doanh thu cấp 2 đo được (4.400-6.900/ngày)
         public const int RentIntervalDays = 7;                // trừ thuê khi bộ đếm ngày chạm 7
         public const int Tier2DailyFixedCost = 150;           // điện nước + vận hành mỗi ngày (thay phí vỉa hè 60)
         public const float DebtRevenueShare = 0.30f;          // thiếu tiền thuê: trừ 30% doanh thu mỗi ngày vào nợ
         // ---- Cấp 3: Mua nhà hàng (economy §3.1, §3.5) ----
-        public const int Tier3StarRP = 4000;                  // ★3
-        public const int Tier3Price = 250000;                 // cọc cấp 2 được hoàn: thực trả Tier3Price - cọc
+        public const int Tier3StarRP = 3000;                  // ★3 (cấp 2 đo được ~57 RP/ngày: ~45-55 ngày thay vì ~70)
+        public const int Tier3Price = 140000;                 // cọc cấp 2 được hoàn: thực trả Tier3Price - cọc. Lãi cấp 2 đo ~2.100/ngày: ~60 ngày tiết kiệm
         public const int Tier3DailyFixedCost = 700;           // vận hành nhà hàng/ngày; hết tiền thuê
+
+        public const int Tier3OpeningGift = 10000;            // quà khai trương: vào cấp 3 gần như hết tiền mà lương 8 nhân viên ~2.950/ngày
+
+        /// RP khi hoàn thành chương truyện khách quen thứ `chapterIndex` (0-based): 60 / 80 / 100.
+        public static int StoryChapterRp(int chapterIndex)
+        {
+            return 60 + 20 * Mathf.Max(0, chapterIndex);
+        }
 
         public const float Tier2DemandMult = 1.5f;
         public const float Tier3DemandMult = 2.6f;
@@ -159,7 +167,7 @@ namespace Cafe
         }
 
         // Hạng sao theo RP: ★1..★5
-        public static readonly int[] StarThresholds = { 0, 300, 4000, 40000, 120000 };
+        public static readonly int[] StarThresholds = { 0, Tier2StarRP, Tier3StarRP, 40000, 120000 };
 
         /// Demand_T1 = 18 + 9(★-1) + 0.5·day
         public static int DemandT1(int stars, int day)

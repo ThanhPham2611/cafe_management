@@ -7,7 +7,7 @@ namespace Cafe
 {
     /// Cấp quán (phase2_spec §1, phase3_spec 3.1/3.2). Truy cập qua GameBootstrap.Tier.
     ///  - Lên cấp 2: RP >= 300 và Xu >= 18.000 (cọc). Tiền cọc bị giữ lại (Deposit, có lưu).
-    ///  - Lên cấp 3 (mua nhà hàng): RP >= 4.000 và Xu >= 250.000 - cọc; cọc được hoàn, hết tiền thuê.
+    ///  - Lên cấp 3 (mua nhà hàng): RP >= 3.000 và Xu >= 140.000 - cọc (GameBalance.Tier3StarRP / Tier3Price); cọc được hoàn, hết tiền thuê.
     ///  - Chuyển cảnh: tối dần -> dọn khách/đơn/ly -> cất đồ cũ vào kho (Inventory) và hủy xe đẩy -> dựng phòng
     ///    (EnvironmentBuilder theo RoomSpec của cấp) + lưới + bố cục mặc định -> bake NavMesh -> sáng dần -> pháo giấy + "Khai trương!".
     ///  - Từ save cấp >= 2, game vào thẳng phòng của cấp (PrepareRoomOnLoad).
@@ -348,6 +348,7 @@ namespace Cafe
             if (game.Spawner != null) game.Spawner.RefreshDemand();
             if (game.Owner != null) game.Owner.ResetForNewDay(); // đứng ở điểm phục vụ của quầy bar mới
             Step(RaiseTierChanged, "báo đổi cấp");                // Recipes/Cleaning cập nhật trước khi lưu
+            if (Current >= 3) game.Wallet.Earn(GameBalance.Tier3OpeningGift); // trước mốc đầu ngày để thoát-vào không mất quà
             game.CommitDayBaseline();
             game.SaveSnapshot();
             Debug.Log("[Tier] Đã lên cấp " + Current + ": ghế=" + grid.Seats.Count + ", đồ=" + grid.Placed.Count + ", kho=" + InventoryTotal);
@@ -362,6 +363,7 @@ namespace Cafe
         {
             if (panel != null) panel.PlayConfetti();
             GameEvents.RaiseToast(Strings.GrandOpening);
+            if (Current >= 3) GameEvents.RaiseToast(string.Format(Strings.OpeningGiftFmt, Strings.FormatInt(GameBalance.Tier3OpeningGift)));
             StartCoroutine(OwnerCheer());
         }
 

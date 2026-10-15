@@ -120,6 +120,10 @@ namespace Cafe
             return v;
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public void DebugOpen(bool value) { SetOpen(value); }
+#endif
+
         private void SetOpen(bool value)
         {
             open = value;
@@ -130,8 +134,8 @@ namespace Cafe
         private void OnClaim(int index)
         {
             if (index >= game.Missions.Items.Count) return;
-            int reward = game.Missions.Items[index].rewardXu;
-            if (game.Missions.Claim(index)) UiFx.FloatTextTop(string.Format(MissionStrings.RewardXuFmt, reward), HudBuilder.Accent);
+            string reward = MissionStrings.Reward(game.Missions.Items[index]);
+            if (game.Missions.Claim(index)) UiFx.FloatTextTop(reward, HudBuilder.Accent);
         }
 
         private void OnChest()
@@ -182,7 +186,7 @@ namespace Cafe
                 v.title.text = MissionStrings.Describe(m);
                 v.bar.Set(m.target > 0 ? (float)m.progress / m.target : 0f, m.IsDone ? HudBuilder.Good : HudBuilder.Accent);
                 v.progress.text = m.progress + "/" + m.target;
-                v.reward.text = string.Format(MissionStrings.RewardXuFmt, m.rewardXu);
+                v.reward.text = MissionStrings.Reward(m);
                 v.claimLabel.text = m.claimed ? MissionStrings.Claimed : (m.IsDone ? MissionStrings.Claim : MissionStrings.InProgress);
                 v.claim.SetInteractable(m.IsDone && !m.claimed);
             }

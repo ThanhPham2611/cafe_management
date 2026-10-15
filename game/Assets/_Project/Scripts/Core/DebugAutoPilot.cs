@@ -25,7 +25,9 @@ namespace Cafe
     ///   -gfx low|medium|high  ép mức đồ họa (bản Development); log "[Gfx]" cho biết mức đang dùng
     ///   -cleaners <n>         số nhân viên Dọn dẹp bot thuê (mặc định = tối đa của cấp)
     ///   -fullstaff            thuê đủ nhân viên của cấp ngay khi đủ tiền tuyển (không chờ đủ ghế / quỹ dự phòng)
-    ///   -days <n>             chơi n ngày rồi thoát (mặc định 1; 4 khi có -autoupgrade). Cuối ngày in "[AutoPilot] TIER=<n>"
+    ///   -autoprep             cuối ngày vào pha Chuẩn bị (mua thử 1 món, mở Cửa hàng, chụp màn hình, kiểm tra đồng hồ đứng / không khách / save) rồi mới MỞ CỬA
+    ///   -shotmissions         (cần -autoprep + -autoshot) ở pha Chuẩn bị ép bộ nhiệm vụ cấp 2 có "try_recipe" rồi chụp bảng nhiệm vụ
+    ///   -days <n>             chơi n ngày rồi thoát (mặc định 1; 4 khi có -autoupgrade; tối đa 200). Cuối ngày in "[AutoPilot] TIER=<n>"
     /// Không chạy trong bản phát hành thường vì không ai truyền các tham số này.
     public class DebugAutoPilot : MonoBehaviour
     {
@@ -33,7 +35,8 @@ namespace Cafe
         bool autoplay;
         bool autoshop;
         bool autorecipes;
-        bool cheatXu, cheatRp, autoUpgrade, autoUpgrade3, cheatT3, fullStaff, noMachines, gfxCycle, shotSettings, autoDecor3, autoStaff, noBrewer, autoBuy, autoHidden, upgradeStaff, perf, autoDecor;
+        bool cheatXu, cheatRp, autoUpgrade, autoUpgrade3, cheatT3, fullStaff, noMachines, gfxCycle, shotSettings, autoDecor3, autoStaff, noBrewer, autoBuy, autoHidden, upgradeStaff, perf, autoDecor, autoPrep, shotMissions;
+        bool prepBought, missionsShot;
         int cleanerLimit = 99;
         int t3ExtraXu;
         int targetDays = 1;
@@ -98,10 +101,12 @@ namespace Cafe
             p.autoHidden = Has(args, "-autohidden");
             p.upgradeStaff = Has(args, "-upgradestaff");
             p.perf = Has(args, "-perf");
+            p.autoPrep = Has(args, "-autoprep");
+            p.shotMissions = Has(args, "-shotmissions");
             p.autoDecor = Has(args, "-autodecor") || Has(args, "-autodecor3");
             string days = Arg(args, "-days");
             int nd;
-            if (days != null && int.TryParse(days, out nd)) p.targetDays = Mathf.Clamp(nd, 1, 60);
+            if (days != null && int.TryParse(days, out nd)) p.targetDays = Mathf.Clamp(nd, 1, 200);
             else p.targetDays = p.autoUpgrade ? 4 : 1;
             if (dir != null) Directory.CreateDirectory(dir);
             Application.logMessageReceived += (msg, stack, type) =>
@@ -223,10 +228,75 @@ namespace Cafe
             if (daysPlayed < targetDays && g != null)
             {
                 Debug.Log($"[AutoPilot] sang ngày kế ({daysPlayed}/{targetDays} đã chơi)");
-                g.StartNextDay();   // như bấm "Ngày mới" (HUD tự ẩn bảng tổng kết khi ngày bắt đầu)
+                if (autoPrep) yield return PrepStep(g);   // như bấm "Chuẩn bị quán" rồi "MỞ CỬA"
+                g.StartNextDay();   // như bấm "Ngày mới" / "MỞ CỬA" (HUD tự ẩn bảng tổng kết khi ngày bắt đầu)
+                Debug.Log($"[AutoPilot] MỞ CỬA: phase={g.Day.CurrentPhase} ngày={g.Day.Day} elapsed={g.Day.Elapsed:0.0}");
                 yield break;
             }
             Application.Quit();
+        }
+
+        /// -autoprep: một lượt pha Chuẩn bị như người chơi thật. Kiểm tra: đồng hồ đứng, không có khách, save là "ngày kế" với Xu hiện tại.
+        IEnumerator PrepStep(GameBootstrap g)
+        {
+            g.EnterPrep();
+            yield return new WaitForSecondsRealtime(1f);
+            int day = g.Day.Day;
+            float elapsed = g.Day.Elapsed;
+            if (shotDir != null) Shot("prep_day" + day);
+
+            // Lần đầu: mua thử một món đồ rẻ ngay trong pha Chuẩn bị (qua đúng luồng build mode)
+            if (!prepBought)
+            {
+                FurnitureDef def = g.GetDef(g.Tier.Current >= 2 ? "Plant_Monstera" : "Plant_Pot_Small");
+                if (def != null && g.Wallet.Xu >= ShopRules.Price(g.Grid, def) + 250)
+                {
+                    int xu0 = g.Wallet.Xu;
+                    bool ok = false;
+                    for (int y = 0; y < g.Grid.Size.y && !ok; y++)
+                        for (int x = 0; x < g.Grid.Size.x && !ok; x++)
+                            ok = g.Builder.DebugPlace(def, new Vector2Int(x, y));
+                    prepBought = ok;
+                    Debug.Log($"[AutoPilot] PREP mua {def.id}: {(ok ? "đã đặt" : "không có chỗ")}, Xu {xu0} -> {g.Wallet.Xu}");
+                }
+            }
+
+            g.Builder.Open();   // như bấm nút Cửa hàng
+            yield return new WaitForSecondsRealtime(1f);
+            if (shotDir != null) Shot("prep_shop_day" + day);
+            g.Builder.Close();
+
+            if (shotMissions && shotDir != null && !missionsShot && g.Hud != null && g.Missions != null)
+            {
+                missionsShot = true;
+                // Thưởng dài nhất ("+Xu +RP +Hạt") chỉ có ở try_recipe (cấp 2+): ép bộ nhiệm vụ có nó rồi chụp bảng
+                int tier = Mathf.Max(2, g.Tier.Current);
+                var ctx = new MissionContext { RecipeKnown = id => g.Recipes != null && g.Recipes.IsKnown(id), HasHiddenKnown = true };
+                for (int key = g.Missions.DayKey + 1; key < g.Missions.DayKey + 400; key++)
+                {
+                    var scratch = new MissionBook(x => { }, gm => { }, r => { });
+                    scratch.EnsureToday(key, tier, ctx);
+                    bool has = false;
+                    for (int i = 0; i < scratch.Items.Count; i++) has |= scratch.Items[i].id == "try_recipe";
+                    if (has) { g.Missions.EnsureToday(key, tier, ctx); break; }
+                }
+                g.Hud.DebugOpenMissions(true);
+                yield return new WaitForSecondsRealtime(1f);
+                Shot("prep_missions_day" + day);
+                yield return new WaitForSecondsRealtime(0.5f);
+                g.Hud.DebugOpenMissions(false);
+            }
+
+            yield return new WaitForSecondsRealtime(3f);   // đứng yên ~3 giây thực (nhiều phút in-game nếu -timescale cao)
+            SaveData sd;
+            bool saved = SaveSystem.TryLoad(out sd);
+            bool clockStill = Mathf.Approximately(g.Day.Elapsed, elapsed);
+            bool noGuests = g.Spawner.ActiveCount == 0;
+            bool inPrep = g.Day.CurrentPhase == DayCycle.Phase.Prep;
+            bool saveOk = saved && sd.day == day + 1 && sd.xu == g.Wallet.Xu;
+            Debug.Log($"[AutoPilot] PREP ngày {day}: {(clockStill && noGuests && inPrep && saveOk ? "OK" : "LỖI")} " +
+                      $"phase={g.Day.CurrentPhase} elapsed {elapsed:0.0}->{g.Day.Elapsed:0.0} khách={g.Spawner.ActiveCount} " +
+                      $"save(ngày={(saved ? sd.day : -1)}, xu={(saved ? sd.xu : -1)}) ví={g.Wallet.Xu}");
         }
 
         /// -cheatxu / -cheatrp: cộng Xu / nâng RP ngay khi game dựng xong.
