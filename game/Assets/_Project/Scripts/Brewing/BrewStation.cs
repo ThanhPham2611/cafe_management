@@ -28,6 +28,12 @@ namespace Cafe
 
         /// Đang ở chế độ thử pha tự do (State vẫn là Idle khi chưa có nguyên liệu nào, Brewing khi đã thêm).
         public bool Experiment { get; private set; }
+
+        private string NoCupMessage()
+        {
+            int waiting = game.WaitingCupCount();
+            return waiting > 0 ? string.Format(Strings.NoCupWaitingFmt, waiting) : Strings.NoCup;
+        }
         public IReadOnlyList<BrewStep> ExperimentSteps { get { return expSteps; } }
 
         public event System.Action Changed;
@@ -116,7 +122,7 @@ namespace Cafe
                 }
                 if (!game.Stock.TryTake())
                 {
-                    GameEvents.RaiseToast(Strings.NoCup);
+                    GameEvents.RaiseToast(NoCupMessage());
                     return TapResult.NoCup;
                 }
                 // Bắt đầu pha: trừ nguyên liệu ngay
@@ -288,7 +294,7 @@ namespace Cafe
             {
                 if (!game.Stock.TryTake())
                 {
-                    GameEvents.RaiseToast(Strings.NoCup);
+                    GameEvents.RaiseToast(NoCupMessage());
                     return TapResult.NoCup;
                 }
                 State = Phase.Brewing;

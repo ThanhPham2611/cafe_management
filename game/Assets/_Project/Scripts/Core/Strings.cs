@@ -31,6 +31,9 @@ namespace Cafe
         public const string Ruined = "Hỏng ly! Mất nguyên liệu";
         public const string BrewDone = "Xong rồi! Chạm khách để phục vụ";
         public const string NoCup = "Hết ly sạch! Thu ly khách để lại";
+        public const string NoCupWaitingFmt = "Hết ly sạch! Có {0} ly cần thu, chạm ly trên bàn";
+        public const string CupReady = "Thu ly!";
+        public const string CupsWaitingFmt = "{0} ly chờ thu";
         public const string NoOrderSelected = "Hãy chọn một đơn trước";
         public const string HoldingDrink = "Đang cầm ly - hãy phục vụ khách trước";
         public const string BrewingInProgress = "Đang pha dở - hoàn tất hoặc bấm Hủy";

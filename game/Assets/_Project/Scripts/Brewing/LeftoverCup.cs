@@ -12,6 +12,7 @@ namespace Cafe
         private bool collectable;
         private float collectableSince;
         private float pulsePhase;
+        private CupCollectBubble bubble;
 
         public bool IsCollectable { get { return collectable; } }
         public float CollectableSince { get { return collectableSince; } }
@@ -59,12 +60,25 @@ namespace Cafe
         {
             collectable = true;
             collectableSince = inGameNow;
+            // Báo cho người chơi: khách uống xong, ly chạm được để thu (bong bóng + chữ nổi một lần)
+            if (game != null && game.Hud != null && game.Hud.BubbleLayer != null && bubble == null)
+                bubble = CupCollectBubble.Create(game.Hud.BubbleLayer, transform);
+            UiFx.FloatText(transform.position + new Vector3(0f, 0.4f, 0f), Strings.CupReady, HudBuilder.Mint);
+        }
+
+        private float Urgency()
+        {
+            float rate = game.Day != null ? game.Day.InGameRate : GameBalance.InGameSecondsPerRealSecond;
+            return CupCollectRules.Urgency(game.Day.InGameSeconds, collectableSince, GameBalance.LeftoverBlockRealSeconds * rate);
         }
 
         private void Update()
         {
-            if (!collectable || visual == null) return;
-            pulsePhase += Time.deltaTime * 5f;
+            if (!collectable) return;
+            float u = Urgency();
+            if (bubble != null) bubble.SetUrgency(u);
+            if (visual == null) return;
+            pulsePhase += Time.deltaTime * CupCollectRules.PulseSpeed(u);
             float s = 1f + 0.08f * Mathf.Sin(pulsePhase);
             visual.localScale = new Vector3(s, s, s);
         }
@@ -102,6 +116,7 @@ namespace Cafe
 
         private void OnDestroy()
         {
+            if (bubble != null) Destroy(bubble.gameObject);
             if (game != null) game.LeftoverCups.Remove(this);
             if (seat != null && seat.Cup == this) seat.Cup = null;
         }
