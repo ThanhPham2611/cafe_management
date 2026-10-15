@@ -191,7 +191,7 @@ namespace Cafe
             // T2+: quán bẩn (CI < 60) thì có khách quay đầu bỏ đi ngay khi tới ghế (+15% mỗi 10 CI dưới 60)
             if (CleaningRules.Enabled)
             {
-                float p = CleaningRules.WalkAwayChance;
+                float p = CleaningRules.WalkAwayChanceAt(seat); // CI của khu mình ngồi (cấp 3 có nhiều khu)
                 if (p > 0f && Random.value < p)
                 {
                     UiFx.FloatText(transform.position + new Vector3(0f, 1.9f, 0f), Strings.DirtyWalkAway, HudBuilder.Red);
@@ -208,7 +208,7 @@ namespace Cafe
             // Ngồi quay mặt vào bàn gần nhất, nếu không thì theo hướng ghế
             Vector3 look = seat.transform.forward;
             PlacedFurniture table;
-            if (game.Grid.FindNearestTable(seat.transform.position, 1.5f, out table, out _))
+            if (game.Grid.FindNearestTable(seat.transform.position, 1.5f, out table, out _, (int)game.Grid.ZoneOf(seat.Furniture)))
                 look = table.WorldBounds.center - seat.transform.position;
             look.y = 0f;
             if (look.sqrMagnitude < 0.0001f) look = Vector3.forward;
@@ -237,6 +237,7 @@ namespace Cafe
                 RecipeDef favorite = game.Recipes.Get(regular.favoriteRecipe);
                 if (favorite != null && game.Recipes.InMenu(favorite)) recipe = favorite;
             }
+            if (recipe == null && regular == null) recipe = TutorialGate.TakeForcedRecipe(game); // hướng dẫn: 2 đơn đầu ép món
             if (recipe == null) recipe = game.PickRecipe(game.Day.Day);
             if (recipe == null)
             {
@@ -254,6 +255,11 @@ namespace Cafe
 
         private void UpdateWait(float dt)
         {
+            if (TutorialGate.PatiencePaused) // hướng dẫn: đang ở bước có kịch bản, khách chờ không mất kiên nhẫn
+            {
+                if (bubble != null) bubble.SetPatience(PatienceNormalized);
+                return;
+            }
             waited += dt;
             // Ghế êm (comfort cao) làm thanh kiên nhẫn giảm chậm hơn
             patienceUsed += dt / (1f + 0.05f * seat.Def.comfort);
@@ -302,15 +308,17 @@ namespace Cafe
         {
             RecipeDef r = orderedRecipe;
             float qMult = GameBalance.QualityMult(quality);
-            float f = game.Grid.FurnitureScore;
+            // Cấp 3: điểm nội thất F, CI và hệ số giá đều theo KHU mình ngồi (VIP trả 1,5x)
+            float f = game.Grid.FurnitureScoreAt(seat);
+            float zoneMult = seat != null ? ZoneInfo.PriceMult(game.Grid.ZoneOf(seat.Furniture)) : 1f;
 
-            int pay = Mathf.RoundToInt(r.price * qMult);
+            int pay = Mathf.RoundToInt(r.price * qMult * zoneMult);
             int tip = 0;
             float chance = GameBalance.TipChance(quality) + 0.2f * f;
             if (Random.value < chance)
-                tip = Mathf.RoundToInt(r.price * qMult * GameBalance.TipSize(quality) * (1f + 0.5f * f));
+                tip = Mathf.RoundToInt(r.price * qMult * zoneMult * GameBalance.TipSize(quality) * (1f + 0.5f * f));
             if (tip > 0 && CleaningRules.Enabled)
-                tip = Mathf.RoundToInt(tip * CleaningRules.TipMultiplier); // quán bẩn (CI < 60): tip ×0,5
+                tip = Mathf.RoundToInt(tip * CleaningRules.TipMultiplierAt(seat)); // khu bẩn (CI < 60): tip ×0,5
 
             // T1: S = 0.40·Q + 0.35·W + 0.10·C_ly + 0.15·F
             // T2+ (economy §4.1): S = 0.35·Q + 0.30·W + 0.20·C + 0.15·F với C = CI/100
@@ -319,7 +327,7 @@ namespace Cafe
             float s;
             if (CleaningRules.Enabled)
             {
-                float c = CleaningRules.CurrentCI / 100f;
+                float c = CleaningRules.CiAt(seat) / 100f;
                 s = 0.35f * q + 0.30f * w + 0.20f * c + 0.15f * f;
             }
             else
@@ -346,7 +354,7 @@ namespace Cafe
             WasServed = true;
             if (regular != null && game.Regulars != null)
                 game.Regulars.RecordService(regular.id, r.id, quality, waited,
-                    CleaningRules.Enabled ? CleaningRules.CurrentCI : game.LeftoverCleanliness() * 100f);
+                    CleaningRules.Enabled ? CleaningRules.CiAt(seat) : game.LeftoverCleanliness() * 100f);
             GameEvents.RaiseCustomerServed(this);
         }
 

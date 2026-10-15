@@ -55,6 +55,14 @@ namespace Cafe
         [Tooltip("Cây chổi (độ sạch / lau sàn). Chưa có sprite thì dùng iconCup - xem CleaningRules.BroomIcon")]
         public Sprite iconBroom;
 
+        [Header("Logo")]
+        [Tooltip("Logo ngang (Art/UI/Logo/logo_wide.png) cho màn tải / màn tiêu đề. Null thì dùng chữ lớn.")]
+        public Sprite logoWide;
+
+        [Header("Hướng dẫn")]
+        [Tooltip("Bàn tay chỉ (Art/UI/Logo/ui_hand_pointer.png, đầu ngón ở pivot 0.109, 0.93). Null thì dùng chấm tròn tự vẽ.")]
+        public Sprite tutorialHand;
+
         [Header("Màu (ui_style.md §1)")]
         public Color cream = new Color32(0xFF, 0xF4, 0xDC, 0xFF);
         public Color creamDark = new Color32(0xEF, 0xE3, 0xC8, 0xFF);

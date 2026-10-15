@@ -34,7 +34,10 @@ namespace Cafe.EditorTools
 
             Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
             EditorSceneManager.SaveScene(scene, ScenePath);
-            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
+            // Giữ Boot.unity ở index 0 nếu đã dựng (BootSceneBuilder)
+            var buildScenes = new System.Collections.Generic.List<EditorBuildSettingsScene>();
+            foreach (var path in BootSceneBuilder.BuildScenes()) buildScenes.Add(new EditorBuildSettingsScene(path, true));
+            EditorBuildSettings.scenes = buildScenes.ToArray();
             Debug.Log($"[Cafe] Đã dựng {ScenePath}");
         }
 

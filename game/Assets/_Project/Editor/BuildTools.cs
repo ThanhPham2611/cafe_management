@@ -24,7 +24,7 @@ namespace Cafe.EditorTools
 
             var options = new BuildPlayerOptions
             {
-                scenes = new[] { "Assets/_Project/Scenes/Prototype_Tier1.unity" },
+                scenes = BootSceneBuilder.BuildScenes(),
                 locationPathName = ApkPath,
                 target = BuildTarget.Android,
                 options = BuildOptions.Development,
@@ -78,7 +78,7 @@ namespace Cafe.EditorTools
 
             var options = new BuildPlayerOptions
             {
-                scenes = new[] { "Assets/_Project/Scenes/Prototype_Tier1.unity" },
+                scenes = BootSceneBuilder.BuildScenes(),
                 locationPathName = WinPath,
                 target = BuildTarget.StandaloneWindows64,
                 options = BuildOptions.Development,

@@ -192,6 +192,7 @@ namespace Cafe.EditorTools
             t.iconCheck = Sp("icon_check");
             t.iconCross = Sp("icon_cross");
             t.iconHeart = Sp("icon_heart");
+            t.tutorialHand = Sp("Logo/ui_hand_pointer"); // bàn tay hướng dẫn; fingertip pivot (0.109, 0.93)
             t.iconBroom = Sp("icon_broom"); // chưa có file thì null -> CleaningRules.BroomIcon dùng icon ly
 
             EditorUtility.SetDirty(t);

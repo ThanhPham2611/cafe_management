@@ -39,6 +39,36 @@ namespace Cafe.Tests
         }
 
         [Test]
+        public void Hire_CapGrowsWhenAZoneOpens()
+        {
+            wallet.Init(100000); // đủ tiền: lần thuê bị từ chối phải do TRẦN, không phải do hết tiền
+            int zones = 0;
+            var tier3 = new StaffRoster(wallet, ledger, () => 3, () => zones);
+            tier3.Load(null);
+            for (int i = 0; i < 3; i++) Assert.That(tier3.Hire(StaffRole.Brewer, 1, null), Is.True);
+            Assert.That(tier3.CanHire(StaffRole.Brewer), Is.False, "sảnh: tối đa 3 Pha chế");
+            Assert.That(tier3.MaxFor(StaffRole.Brewer), Is.EqualTo(3));
+
+            zones = 1; // mở một khu: thêm 1 chỗ mỗi vai trò
+            Assert.That(tier3.MaxFor(StaffRole.Brewer), Is.EqualTo(4));
+            Assert.That(tier3.CanHire(StaffRole.Brewer), Is.True);
+            Assert.That(tier3.Hire(StaffRole.Brewer, 2, null), Is.True);
+            Assert.That(tier3.Hire(StaffRole.Brewer, 2, null), Is.False);
+            Assert.That(tier3.CanHire(StaffRole.Server), Is.True, "Phục vụ cũng có chỗ thứ ba");
+        }
+
+        [Test]
+        public void Load_KeepsEveryoneForTheLargestPossibleRoster()
+        {
+            var save = new SaveData { staff = new StaffSave[6] };
+            for (int i = 0; i < 6; i++) save.staff[i] = new StaffSave { role = "brew", preset = 0, level = 2, name = "B" + i };
+            var tier3 = new StaffRoster(wallet, ledger, () => 3, () => 0); // chưa mở khu nào lúc nạp
+            tier3.Load(save);
+            Assert.That(tier3.CountOf(StaffRole.Brewer), Is.EqualTo(6), "save đủ 3 khu không bị cắt bớt khi nạp");
+            Assert.That(tier3.CanHire(StaffRole.Brewer), Is.False);
+        }
+
+        [Test]
         public void Hire_BrewerOnlyFromTier3()
         {
             var tier2 = new StaffRoster(wallet, ledger, () => 2);
@@ -145,6 +175,22 @@ namespace Cafe.Tests
             Assert.That(copy.Members[0].role, Is.EqualTo("serve"));
             Assert.That(copy.Members[0].preset, Is.EqualTo(2));
             Assert.That(copy.Members[0].name, Is.EqualTo("Hoa"));
+        }
+
+        [Test]
+        public void DefaultNamesAndLooks_AreDistinctForEveryPossibleSlot()
+        {
+            foreach (StaffRole role in StaffRoles.All)
+            {
+                int slots = GameBalance.StaffMaxCount(role, 3, 3);
+                var names = new System.Collections.Generic.HashSet<string>();
+                for (int n = 0; n < slots; n++) names.Add(StaffRoles.DefaultName(role, n));
+                Assert.That(names.Count, Is.EqualTo(slots), role + ": mỗi chỗ một tên mặc định (đủ 3 khu)");
+
+                var looks = new System.Collections.Generic.HashSet<int>();
+                for (int n = 0; n < 4; n++) looks.Add(StaffRoles.DefaultPreset(role, n));
+                Assert.That(looks.Count, Is.EqualTo(4), role + ": 4 người đầu dùng đủ 4 dáng");
+            }
         }
     }
 }

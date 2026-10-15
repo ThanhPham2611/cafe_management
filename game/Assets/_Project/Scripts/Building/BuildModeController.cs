@@ -94,6 +94,12 @@ namespace Cafe
         public bool IsOpen { get { return open; } }
         public bool IsPlacing { get { return open && mode == Mode.Placing; } }
 
+        /// Nút "Đặt" trên thanh đặt đồ (hướng dẫn chỉ tay); null khi thanh chưa hiện.
+        public RectTransform PlaceConfirmRect
+        {
+            get { return placeBar != null && placeBar.gameObject.activeInHierarchy ? placeBar.Find("Btn1") as RectTransform : null; }
+        }
+
         public BuildModeController()
         {
             tapHandler = OnWorldTap;
@@ -837,14 +843,22 @@ namespace Cafe
             gridVisual = new GameObject("BuildGrid");
             gridVisual.transform.position = grid.Origin + new Vector3(0f, GridLineY, 0f);
 
-            float w = grid.Size.x * GridSystem.Cell;
-            float h = grid.Size.y * GridSystem.Cell;
             var verts = new List<Vector3>();
             var tris = new List<int>();
-            for (int i = 0; i <= grid.Size.x; i++)
-                AddRect(verts, tris, i * GridSystem.Cell - GridLineW * 0.5f, 0f, i * GridSystem.Cell + GridLineW * 0.5f, h);
-            for (int j = 0; j <= grid.Size.y; j++)
-                AddRect(verts, tris, 0f, j * GridSystem.Cell - GridLineW * 0.5f, w, j * GridSystem.Cell + GridLineW * 0.5f);
+            if (grid.Zones == null)
+            {
+                AddGridLines(verts, tris, 0, 0, grid.Size.x, grid.Size.y);
+            }
+            else
+            {
+                // nhà hàng cấp 3: chỉ kẻ ô ở khu đã mở (khu chưa mở không đặt được đồ)
+                for (int z = 0; z < grid.Zones.Rects.Length; z++)
+                {
+                    if (!grid.Zones.IsOpen((ZoneId)z)) continue;
+                    RectInt rc = grid.Zones.Rects[z];
+                    AddGridLines(verts, tris, rc.xMin, rc.yMin, rc.xMax, rc.yMax);
+                }
+            }
 
             var m = new Mesh();
             m.name = "BuildGridLines";
@@ -864,6 +878,17 @@ namespace Cafe
             mr.receiveShadows = false;
             Paint(mr, SwatchGrid);
             gridVisual.SetActive(false);
+        }
+
+        /// Đường kẻ ô của hình chữ nhật ô [x0, x1] x [y0, y1] (toạ độ ô).
+        private static void AddGridLines(List<Vector3> v, List<int> t, int x0, int y0, int x1, int y1)
+        {
+            const float c = GridSystem.Cell;
+            float half = GridLineW * 0.5f;
+            for (int i = x0; i <= x1; i++)
+                AddRect(v, t, i * c - half, y0 * c, i * c + half, y1 * c);
+            for (int j = y0; j <= y1; j++)
+                AddRect(v, t, x0 * c, j * c - half, x1 * c, j * c + half);
         }
 
         private static void AddRect(List<Vector3> v, List<int> t, float x0, float z0, float x1, float z1)
@@ -891,16 +916,7 @@ namespace Cafe
         /// Sau khi NavMesh đổi: khách đang đi bị mất mesh thì đặt lại lên mesh gần nhất.
         private void RepairAgents()
         {
-            IList<Customer> list = game.Spawner != null ? game.Spawner.Active : null;
-            if (list == null) return;
-            for (int i = 0; i < list.Count; i++)
-            {
-                if (list[i] == null) continue;
-                NavMeshAgent a = list[i].GetComponent<NavMeshAgent>();
-                if (a == null || !a.enabled || a.isOnNavMesh) continue;
-                NavMeshHit hit;
-                if (NavMesh.SamplePosition(a.transform.position, out hit, 1.5f, NavMesh.AllAreas)) a.Warp(hit.position);
-            }
+            NavMeshBaker.RepairCustomers(game.Spawner != null ? game.Spawner.Active : null);
         }
 
         private bool SpawnOnNav(out Vector3 p)

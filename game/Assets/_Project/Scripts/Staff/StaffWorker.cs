@@ -9,6 +9,20 @@ namespace Cafe
     {
         private StaffBehaviour behaviour;
 
+        /// Ưu tiên né nhau của NavMeshAgent nhân viên (số lớn = nhường đường); 50 = mặc định của Unity. Đo A/B bằng bot (đủ 3 khu, 17 người,
+        /// 7 ngày): 90 (nhường cả khách lẫn chủ quán) làm phục vụ giảm từ ~176 xuống ~148 khách/ngày và lãi từ ~18.4k xuống ~12.5k vì đội nhường
+        /// đường quá mức trong sảnh đông; 50 giữ được năng suất.
+        public static int AvoidancePriority = 50;
+        /// Số người mỗi hàng ở chỗ đứng chờ quanh điểm của chủ quán; đủ 17 người thì hàng thứ hai nằm sau hàng đầu.
+        public static int HomeRowSize = 9;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            AvoidancePriority = 50;
+            HomeRowSize = 9;
+        }
+
         public GameBootstrap Game { get; private set; }
         public StaffSave Data { get; private set; }
         public StaffRole Role { get; private set; }
@@ -38,8 +52,11 @@ namespace Cafe
             if (!StaffRoles.TryParse(saved.role, out role)) role = StaffRole.Cleaner;
             Role = role;
 
+            // Chỗ đứng chờ: hàng ngang kể từ điểm của chủ quán (HomeRowSize người một hàng, hàng sau lùi 0,45 m) nên đủ 17 người
+            // vẫn nằm gọn trong sảnh, không lệch sang khu khác
+            int rowSize = Mathf.Max(1, HomeRowSize);
             Vector3 start = g.Owner != null ? g.Owner.CartPoint : g.SpawnPosition;
-            start += new Vector3(0.35f * index, 0f, 0.35f);
+            start += new Vector3(0.35f * (index % rowSize), 0f, 0.35f - 0.45f * (index / rowSize));
             NavMeshHit hit;
             if (NavMesh.SamplePosition(start, out hit, 3f, NavMesh.AllAreas)) start = hit.position;
             transform.position = start;
@@ -68,6 +85,7 @@ namespace Cafe
             Agent.stoppingDistance = 0.08f;
             Agent.autoBraking = true;
             Agent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
+            Agent.avoidancePriority = AvoidancePriority;
 
             behaviour = CreateBehaviour(role);
         }
@@ -95,13 +113,20 @@ namespace Cafe
             TickVisual();
         }
 
+        /// Nâng cấp (hoặc đổi thông tin) giữa ngày: nhận dữ liệu mới mà không hủy việc đang làm.
+        public void UpdateData(StaffSave data)
+        {
+            Data = data;
+            if (Agent != null) Agent.speed = StaffWorkerRules.MoveSpeed(data.level);
+        }
+
         public void ResetForNewDay()
         {
             StopWork();
             behaviour.ResetJobs();
-            Vector3 start = Game != null && Game.Owner != null ? Game.Owner.CartPoint : transform.position;
             NavMeshHit hit;
-            if (NavMesh.SamplePosition(start, out hit, 3f, NavMesh.AllAreas) && Agent != null && Agent.enabled)
+            // Về đúng chỗ đứng của mình (Home), không dồn cả đội vào một điểm
+            if (NavMesh.SamplePosition(Home, out hit, 3f, NavMesh.AllAreas) && Agent != null && Agent.enabled)
                 Agent.Warp(hit.position);
         }
 

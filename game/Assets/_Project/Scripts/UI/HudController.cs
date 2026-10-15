@@ -55,12 +55,15 @@ namespace Cafe
         private RegularsBookPanel regularsBook;
         private MissionPanel missionPanel;
         private SettingsPanel settingsPanel;
+        private ZonePanel zonePanel;
         private StoryDialog storyDialog;
         public bool StoryOpen { get { return storyDialog != null && storyDialog.IsOpen; } }
         public void DebugAdvanceStory() { if (storyDialog != null) storyDialog.DebugAdvance(); }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public void DebugToggleStaffPanel() { if (staffPanel != null) staffPanel.DebugToggle(); }
+        public void DebugScrollStaff(float normalized) { if (staffPanel != null) staffPanel.DebugScroll(normalized); }
         public void DebugOpenSettings(bool open) { if (settingsPanel != null) settingsPanel.DebugOpen(open); }
+        public void DebugOpenZones(bool open) { if (zonePanel != null) zonePanel.DebugOpen(open); }
 #endif
 
         private RectTransform menuRoot;
@@ -76,6 +79,12 @@ namespace Cafe
         /// Lớp UI chứa bong bóng order (dưới HUD, không chặn chạm).
         public RectTransform BubbleLayer { get { return bubbleLayer; } }
 
+        /// Thẻ món trong Cửa hàng (hướng dẫn mua ghế chỉ vào đây); null nếu bảng chưa mở.
+        public RectTransform ShopCardRect(string furnitureId)
+        {
+            return shopPanel != null ? shopPanel.CardRectFor(furnitureId) : null;
+        }
+
         public void Init(GameBootstrap g)
         {
             game = g;
@@ -86,6 +95,10 @@ namespace Cafe
                 var es = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
                 es.transform.SetParent(transform, false);
             }
+            // Ngưỡng kéo ~2 mm theo mật độ điểm ảnh (mặc định 10 px quá nhỏ trên điện thoại): ngón tay rung nhẹ không biến một lần chạm
+            // nút THUÊ / NÂNG / MUA trong bảng cuộn thành thao tác kéo làm hụt nút
+            EventSystem eventSystem = EventSystem.current != null ? EventSystem.current : FindAnyObjectByType<EventSystem>();
+            if (eventSystem != null && Screen.dpi > 0f) eventSystem.pixelDragThreshold = Mathf.Max(10, Mathf.RoundToInt(Screen.dpi * 0.08f));
 
             // Lớp bong bóng (dưới)
             Canvas bubbleCanvas = HudBuilder.CreateCanvas("BubbleCanvas", 0, false, transform);
@@ -111,7 +124,8 @@ namespace Cafe
             regularsBook = new RegularsBookPanel(game, safe, canvas.transform);
             missionPanel = new MissionPanel(game, safe, canvas.transform);
             settingsPanel = new SettingsPanel(game, safe, canvas.transform); // nút "ĐỒ HỌA" + chọn Thấp / Vừa / Cao
-            BuildMenu(safe); // gom 4 nút phụ vào popup MENU
+            zonePanel = new ZonePanel(game, safe, canvas.transform);         // nút "MỞ RỘNG" (cấp 3) + bảng Sân vườn / Lầu / VIP
+            BuildMenu(safe); // gom các nút phụ vào popup MENU
             storyDialog = new StoryDialog(game, canvas.transform);
 
             // Chữ nổi (trên cùng)
@@ -172,6 +186,7 @@ namespace Cafe
             if (regularsBook != null) regularsBook.Dispose();
             if (missionPanel != null) missionPanel.Dispose();
             if (settingsPanel != null) settingsPanel.Dispose();
+            if (zonePanel != null) zonePanel.Dispose();
             if (storyDialog != null) storyDialog.Dispose();
         }
 
@@ -230,7 +245,7 @@ namespace Cafe
             HudBuilder.SetRect(cupText.rectTransform, Vector2.zero, Vector2.one, new Vector2(70f, 22f), new Vector2(-30f, -4f));
         }
 
-        /// Nút phụ (Khách quen, Nhân viên, Nhiệm vụ, Đồ họa) gom vào popup MENU: HUD gọn, nút đủ to để chạm.
+        /// Nút phụ (Khách quen, Nhân viên, Mở rộng khu, Nhiệm vụ, Đồ họa) gom vào popup MENU: HUD gọn, nút đủ to để chạm.
         /// Các panel tự dựng nút của mình trong `safe`; ở đây chuyển chúng vào cột popup (xếp dọc, nút ẩn thì bỏ qua).
         private void BuildMenu(RectTransform safe)
         {
@@ -252,7 +267,7 @@ namespace Cafe
             layout.childForceExpandHeight = false;
             column.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            foreach (string name in new[] { "RegularsButton", "StaffButton", "MissionButton", "GraphicsButton" })
+            foreach (string name in new[] { "RegularsButton", "StaffButton", "ZonesButton", "MissionButton", "GraphicsButton" })
             {
                 Transform t = safe.Find(name);
                 if (t == null) continue;

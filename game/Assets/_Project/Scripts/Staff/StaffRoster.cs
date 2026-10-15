@@ -11,6 +11,7 @@ namespace Cafe
         private readonly Wallet wallet;
         private readonly RentLedger debtLedger;
         private readonly Func<int> tierProvider;
+        private readonly Func<int> zonesProvider;
         private const int MaxTier = 3; // Load giữ tối đa theo cấp cao nhất: save cấp 2 có Pha chế cũ không bị mất
         private readonly List<StaffSave> members = new List<StaffSave>(8);
         private readonly List<StaffWorker> workers = new List<StaffWorker>(8);
@@ -18,11 +19,19 @@ namespace Cafe
 
         public event Action Changed;
 
-        public StaffRoster(Wallet wallet, RentLedger debtLedger, Func<int> tierProvider = null)
+        /// zonesProvider: số khu phụ đã mở (mỗi khu nới thêm 1 chỗ mỗi vai trò, chỉ ở cấp 3); mặc định 0.
+        public StaffRoster(Wallet wallet, RentLedger debtLedger, Func<int> tierProvider = null, Func<int> zonesProvider = null)
         {
             this.wallet = wallet ?? throw new ArgumentNullException(nameof(wallet));
             this.debtLedger = debtLedger ?? throw new ArgumentNullException(nameof(debtLedger));
             this.tierProvider = tierProvider ?? (() => int.MaxValue);
+            this.zonesProvider = zonesProvider ?? (() => 0);
+        }
+
+        /// Trần của một vai trò theo cấp và số khu đang mở.
+        public int MaxFor(StaffRole role)
+        {
+            return GameBalance.StaffMaxCount(role, tierProvider(), zonesProvider());
         }
 
         public IReadOnlyList<StaffSave> Members { get { return members; } }
@@ -48,7 +57,7 @@ namespace Cafe
                 for (int i = 0; i < saved.Length; i++)
                 {
                     StaffRole role;
-                    if (!StaffRoles.TryParse(saved[i].role, out role) || CountOf(role) >= GameBalance.StaffMaxCount(role, MaxTier)) continue;
+                    if (!StaffRoles.TryParse(saved[i].role, out role) || CountOf(role) >= GameBalance.StaffMaxCount(role, MaxTier, ZoneInfo.Buyable.Length)) continue;
                     StaffSave item = saved[i];
                     item.role = StaffRoles.ToId(role);
                     item.preset = Mathf.Clamp(item.preset, 0, 3);
@@ -89,8 +98,7 @@ namespace Cafe
 
         public bool CanHire(StaffRole role)
         {
-            int tier = tierProvider();
-            return tier >= 2 && CountOf(role) < GameBalance.StaffMaxCount(role, tier);
+            return tierProvider() >= 2 && CountOf(role) < MaxFor(role);
         }
 
         public bool Hire(StaffRole role, int preset, string name)
@@ -107,7 +115,12 @@ namespace Cafe
                 level = 1,
                 name = string.IsNullOrWhiteSpace(name) ? StaffRoles.DefaultName(role, n) : name.Trim()
             });
-            RaiseChanged();
+            // Chỉ thêm người mới: những người khác đang pha / mang ly giữa ngày không bị hủy việc
+            if (WorkersTracked && workers.Count == members.Count - 1)
+                workers.Add(StaffWorker.Create(game, members[members.Count - 1], members.Count - 1));
+            else
+                SyncWorkers();
+            RaiseChangedKeepingWorkers();
             return true;
         }
 
@@ -115,7 +128,16 @@ namespace Cafe
         {
             if (index < 0 || index >= members.Count) return false;
             members.RemoveAt(index);
-            RaiseChanged();
+            if (WorkersTracked && workers.Count == members.Count + 1)
+            {
+                if (workers[index] != null) UnityEngine.Object.Destroy(workers[index].gameObject);
+                workers.RemoveAt(index);
+            }
+            else
+            {
+                SyncWorkers();
+            }
+            RaiseChangedKeepingWorkers();
             return true;
         }
 
@@ -129,7 +151,10 @@ namespace Cafe
             wallet.Spend(cost);
             item.level++;
             members[index] = item;
-            RaiseChanged();
+            // Chỉ cập nhật người được nâng cấp (tốc độ đi, tốc độ pha / chất lượng đọc từ Data.level lúc nhận việc kế)
+            if (WorkersTracked && workers.Count == members.Count && workers[index] != null) workers[index].UpdateData(item);
+            else SyncWorkers();
+            RaiseChangedKeepingWorkers();
             return true;
         }
 
@@ -193,9 +218,21 @@ namespace Cafe
             if (game != null && game.Tier != null) game.Tier.StaffCount = 0;
         }
 
+        private bool WorkersTracked
+        {
+            get { return game != null && game.Tier != null && game.Tier.Current >= 2; }
+        }
+
         private void RaiseChanged()
         {
             SyncWorkers();
+            if (Changed != null) Changed();
+        }
+
+        /// Báo thay đổi khi các StaffWorker đã được cập nhật từng người (không dựng lại cả đội).
+        private void RaiseChangedKeepingWorkers()
+        {
+            if (game != null && game.Tier != null) game.Tier.StaffCount = WorkersTracked ? members.Count : 0;
             if (Changed != null) Changed();
         }
     }

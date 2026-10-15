@@ -32,7 +32,7 @@ namespace Cafe
                 GameBootstrap g = GameBootstrap.Instance;
                 if (g == null || g.Grid == null) return null;
                 PlacedFurniture t;
-                if (g.Grid.FindNearestTable(transform.position, GameBalance.SeatTableLinkMeters, out t, out _))
+                if (g.Grid.FindNearestTable(transform.position, GameBalance.SeatTableLinkMeters, out t, out _, (int)g.Grid.ZoneOf(Furniture)))
                     return t.Dirt;
                 return null;
             }
@@ -47,8 +47,10 @@ namespace Cafe
                 TableDirt td = Table;
                 if (td != null && td.BlocksSeats) return true;
             }
-            return Cup != null && Cup.IsCollectable
-                && inGameNow - Cup.CollectableSince > GameBalance.LeftoverBlockInGameSeconds;
+            if (Cup == null || !Cup.IsCollectable) return false;
+            GameBootstrap g = GameBootstrap.Instance;
+            float rate = g != null && g.Day != null ? g.Day.InGameRate : GameBalance.InGameSecondsPerRealSecond;
+            return inGameNow - Cup.CollectableSince > GameBalance.LeftoverBlockRealSeconds * rate;
         }
 
         public bool IsAvailable(float inGameNow)
@@ -66,6 +68,10 @@ namespace Cafe
         {
             approach.Clear();
             Vector3 c = transform.position;
+            GameBootstrap g = GameBootstrap.Instance;
+            GridSystem grid = g != null ? g.Grid : null;
+            bool zoned = grid != null && grid.Zones != null && Furniture != null;
+            ZoneId myZone = zoned ? grid.ZoneOf(Furniture) : ZoneId.Hall;
             for (int i = 0; i < 8; i++)
             {
                 float a = i * Mathf.PI * 0.25f;
@@ -75,7 +81,11 @@ namespace Cafe
                 {
                     Vector3 d = hit.position - c;
                     d.y = 0f;
-                    if (d.magnitude > 0.4f) approach.Add(hit.position);
+                    if (d.magnitude <= 0.4f) continue;
+                    Vector2Int cell;
+                    // Nhà hàng nhiều khu: điểm đứng bên kia tường (khu khác) không dùng được, nếu không khách "ngồi xuyên tường"
+                    if (zoned && grid.WorldToCell(hit.position, out cell) && grid.ZoneAt(cell) != myZone) continue;
+                    approach.Add(hit.position);
                 }
             }
             Usable = approach.Count > 0;

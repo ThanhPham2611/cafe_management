@@ -156,6 +156,11 @@ namespace Cafe
 
         private TapResult RegisterWrong()
         {
+            if (TutorialGate.NoPenalty) // hướng dẫn: sai bước chỉ nhắc, không tính lỗi
+            {
+                GameEvents.RaiseToast(TutorialStrings.WrongHint);
+                return TapResult.Wrong;
+            }
             Wrong++;
             if (Wrong >= 2)
             {

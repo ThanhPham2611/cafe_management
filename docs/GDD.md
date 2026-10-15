@@ -30,7 +30,7 @@
 |---|---|---|---|
 | 1 | **Vỉa hè** | Bắt đầu | 3–4 món cơ bản, 4 ghế nhựa, thu ly đơn giản |
 | 2 | **Thuê mặt bằng** | Tiền cọc + ★2 | Tiền thuê hằng tuần, **dọn bàn**, **pha chế theo công thức**, build mode, nhân viên đầu tiên |
-| 3 | **Mua nhà hàng** | Giá mua + ★3 | Hết tiền thuê, nhiều khu (trong nhà/sân/ban công), xếp ca nhân viên, nâng cấp máy |
+| 3 | **Mua nhà hàng** | Giá mua + ★3 | Hết tiền thuê, nhiều khu (sảnh trong nhà, sân vườn, lầu, VIP — mở dần bằng Xu), xếp ca nhân viên, nâng cấp máy |
 | 4 | **Chuỗi cửa hàng** | ★4 + vốn | Chi nhánh tự chạy (idle), quản lý chi nhánh, phong cách theo vùng |
 
 Các con số cụ thể (giá, tiền thuê, thời gian để lên cấp) nằm trong `economy_monetization.md`.
@@ -163,6 +163,8 @@ Sinh ngẫu nhiên theo **nhóm khách**: sinh viên, dân văn phòng, du khác
 | Thu ngân *(cấp 3)* | Tăng tip, giảm thời gian chờ thanh toán | Duyên dáng |
 | Quản lý *(cấp 4)* | Chạy chi nhánh khi bạn không có mặt | Hiệu suất idle |
 
+Số người mỗi vai trò có trần theo cấp quán: cấp 2 chỉ 1 Dọn dẹp + 1 Phục vụ; cấp 3 sảnh 3 Dọn dẹp + 2 Phục vụ + 3 Pha chế (8), và mỗi khu phụ đã mở nới thêm 1 chỗ cho mỗi vai trò (đủ 3 khu 17). Chi tiết: `economy_monetization.md` §6, §19.6.
+
 Nhân viên trả lương theo ngày, nâng cấp được bằng huấn luyện. *(đề xuất)* Mỗi nhân viên có một nét tính cách nhỏ (hay hát, sợ mèo...).
 
 ---
@@ -211,7 +213,9 @@ Thông báo đẩy: tối đa 1–2 lần/ngày, có thể tắt.
 
 **Đã làm thêm ngoài MVP (2026-10-13):** khung cấp 3 (mua nhà hàng, sảnh 10 × 12 m, máy móc, 3 món cấp 3, nhân viên Phục vụ / Pha chế, 11 món nội thất cấp 3) — xem `phase3_spec.md` §0.6.
 
-**Chưa có:** 3 khu nhà hàng, ca làm, Thu ngân / Trưởng ca, cấp 4, ads/IAP, Firebase, sự kiện, iOS.
+**Ba khu nhà hàng (2026-10-13):** cấp 3 có sảnh chính và ba khu mở thêm bằng Xu theo thứ tự tùy ý (sân vườn 40.000 · lầu 90.000 · VIP 180.000); mỗi khu +20% khách, khách ngồi khu VIP trả ×1,5, độ sạch và điểm nội thất tính riêng từng khu; ngày ở cấp 3 dài 300 s thay vì 210 s; trần nhân viên tăng theo khu (sảnh 8 người, mỗi khu mở thêm 1 chỗ cho mỗi vai trò, đủ 3 khu 17) — xem `phase3_spec.md` §0.8 và `economy_monetization.md` §19.
+
+**Chưa có:** tầng lầu thật (lầu hiện là gác gỗ cùng mặt sàn), ca làm, Thu ngân / Trưởng ca, cấp 4, ads/IAP, Firebase, sự kiện, iOS.
 
 ---
 

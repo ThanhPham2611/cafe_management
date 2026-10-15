@@ -45,7 +45,30 @@ namespace Cafe.Tests
                 t3 += GameBalance.StaffMaxCount(role, 3);
             }
             Assert.That(t2, Is.EqualTo(2), "cấp 2: 1 Dọn dẹp + 1 Phục vụ");
-            Assert.That(t3, Is.InRange(4, 10), "economy §3.1: cấp 3 có 4–10 nhân viên");
+            Assert.That(t3, Is.InRange(4, 10), "economy §3.1: sảnh cấp 3 có 4–10 nhân viên (mỗi khu mở thêm 3)");
+        }
+
+        [Test]
+        public void StaffMaxCount_EachOpenZoneAddsOneSlotPerRole_OnlyAtTier3()
+        {
+            int total0 = 0, total3 = 0;
+            foreach (StaffRole role in StaffRoles.All)
+            {
+                int none = GameBalance.StaffMaxCount(role, 3, 0);
+                Assert.That(GameBalance.StaffMaxCount(role, 3), Is.EqualTo(none), "mặc định = chưa mở khu nào");
+                Assert.That(GameBalance.StaffMaxCount(role, 3, 1), Is.EqualTo(none + 1));
+                Assert.That(GameBalance.StaffMaxCount(role, 3, 3), Is.EqualTo(none + 3));
+                Assert.That(GameBalance.StaffMaxCount(role, 3, -2), Is.EqualTo(none), "số khu âm không làm giảm trần");
+                Assert.That(GameBalance.StaffMaxCount(role, 2, 3), Is.EqualTo(GameBalance.StaffMaxCount(role, 2, 0)), "cấp 2 không có khu");
+                Assert.That(GameBalance.StaffMaxCount(role, 1, 3), Is.Zero);
+                total0 += none;
+                total3 += GameBalance.StaffMaxCount(role, 3, 3);
+            }
+            Assert.That(total0, Is.EqualTo(8), "sảnh: 3 Dọn dẹp + 2 Phục vụ + 3 Pha chế");
+            Assert.That(total3, Is.EqualTo(17), "đủ 3 khu: 6 + 5 + 6");
+            Assert.That(GameBalance.StaffMaxCount(StaffRole.Brewer, 3, 3), Is.EqualTo(6));
+            Assert.That(GameBalance.StaffMaxCount(StaffRole.Server, 3, 3), Is.EqualTo(5));
+            Assert.That(GameBalance.StaffMaxCount(StaffRole.Cleaner, 3, 3), Is.EqualTo(6));
         }
 
         [Test]
@@ -62,7 +85,8 @@ namespace Cafe.Tests
         public void RoomSpec_Tier3IsBiggerAndGridMatchesRoom()
         {
             RoomSpec t2 = RoomLayout.For(2), t3 = RoomLayout.For(3);
-            Assert.That(t3.GridSize, Is.EqualTo(new Vector2Int(20, 24)));
+            Assert.That(t3.GridSize, Is.EqualTo(new Vector2Int(44, 24)), "sảnh 20 x 24 ô + hai dải khu phụ 12 ô mỗi bên");
+            Assert.That(t3.Width, Is.EqualTo(10f));
             Assert.That(t3.GridSize.x * t3.GridSize.y, Is.GreaterThan(t2.GridSize.x * t2.GridSize.y * 2));
             Assert.That(t3.DoorHalfWidth, Is.GreaterThan(t2.DoorHalfWidth));
             // Khách đi vào / ra nằm trên vỉa hè, ngoài tường hông, trong vùng đi được

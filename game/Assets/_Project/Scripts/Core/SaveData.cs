@@ -54,6 +54,12 @@ namespace Cafe
         public int missionDayKey;            // ngày thật (MissionClock.DayKey) của bộ nhiệm vụ
         public bool missionChestClaimed;
 
+        // Các khu của nhà hàng (cấp 3). Chỉ thêm trường: file cũ đọc ra 0.
+        public int zonesOpen;                // mặt nạ khu phụ đã mở (ZoneInfo.Bit): sân vườn 2, lầu 4, VIP 8
+        public int tutorialStep;             // hướng dẫn phần lõi: 0 chưa bắt đầu / save cũ, 1..8 đang làm, 9 xong hoặc đã bỏ qua (TutorialStep)
+        public string[] tutorialSeen;        // mã gợi ý theo tình huống đã hiện (TutorialTips)
+        public int gridVersion;              // 0 = lưới nhà hàng cũ 20 x 24 (chưa có khu), 1 = lưới 44 x 24 (sảnh bắt đầu ở ô x = 12)
+
         /// Nâng file cũ lên định dạng hiện tại (gọi ngay sau khi load).
         public void Migrate()
         {

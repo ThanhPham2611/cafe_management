@@ -30,6 +30,20 @@ namespace Cafe
             return Bake(nb, g.Grid.Placed, ignoreRoots);
         }
 
+        /// Sau khi NavMesh được bake lại: khách đang đi bị mất mesh thì đặt lại lên điểm gần nhất trên mesh mới.
+        public static void RepairCustomers(IList<Customer> customers)
+        {
+            if (customers == null) return;
+            for (int i = 0; i < customers.Count; i++)
+            {
+                if (customers[i] == null) continue;
+                NavMeshAgent a = customers[i].GetComponent<NavMeshAgent>();
+                if (a == null || !a.enabled || a.isOnNavMesh) continue;
+                NavMeshHit hit;
+                if (NavMesh.SamplePosition(a.transform.position, out hit, 1.5f, NavMesh.AllAreas)) a.Warp(hit.position);
+            }
+        }
+
         public static bool Bake(Bounds bounds, IList<PlacedFurniture> furniture, IList<Transform> ignoreRoots)
         {
             using var perf = PerfNote.Measure("bake NavMesh");
