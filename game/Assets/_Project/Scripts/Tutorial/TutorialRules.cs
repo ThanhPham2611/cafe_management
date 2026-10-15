@@ -143,10 +143,11 @@ namespace Cafe
             return TutorialStep.NotStarted; // thoát giữa ngày 1: ngày 1 làm lại từ đầu nên hướng dẫn cũng vậy
         }
 
-        /// Save cũ chưa từng đi qua hướng dẫn (tutorialStep < Done) nhưng vào thẳng phần "xong": người chơi kỳ cựu.
+        /// Save cũ chưa từng đi qua hướng dẫn (tutorialStep == 0, trước khi có tutorial) nhưng vào thẳng phần "xong": người chơi kỳ cựu.
+        /// Save có tutorialStep 1..8 là người mới đang làm dở (vd thoát ở bảng tổng kết ngày 1): vẫn cần các gợi ý.
         public static bool IsVeteranMigration(bool hasSave, int savedStep, int initialStep)
         {
-            return hasSave && savedStep < TutorialStep.Done && IsDone(initialStep);
+            return hasSave && savedStep == TutorialStep.NotStarted && IsDone(initialStep);
         }
 
         // ------------------------------------------------------------------ chống kẹt ngày 1

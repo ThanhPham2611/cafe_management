@@ -346,6 +346,8 @@ namespace Cafe
                     {
                         Image n = MakeBlock("Dim" + used);
                         AnchorBottomLeft(n.rectTransform);
+                        // Mảnh tạo lười phải nằm DƯỚI thẻ / tay / hộp xác nhận, nếu không sẽ phủ tối và chặn nút Bỏ qua.
+                        n.rectTransform.SetSiblingIndex(dimFull.rectTransform.GetSiblingIndex() + 1);
                         dimPool.Add(n);
                     }
                     Image img = dimPool[used++];
