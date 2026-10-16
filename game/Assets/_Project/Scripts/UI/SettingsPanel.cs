@@ -74,6 +74,15 @@ namespace Cafe
             ClayButton close = HudBuilder.AddLabelButton(card.transform, "Close", ClayStyle.Red, "Đóng", 32, () => SetOpen(false), out closeText);
             HudBuilder.SetFixed((RectTransform)close.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 28f), new Vector2(300f, 88f));
 
+            // Xem lại hướng dẫn: đóng bảng rồi để TutorialDirector nhắc lại thao tác cơ bản + mở lại các gợi ý tình huống
+            Text tutText;
+            ClayButton tutorial = HudBuilder.AddLabelButton(card.transform, "Tutorial", ClayStyle.Gold, TutorialStrings.SettingsBtn, 32, () =>
+            {
+                SetOpen(false);
+                if (game.Tutorial != null) game.Tutorial.Replay();
+            }, out tutText);
+            HudBuilder.SetFixed((RectTransform)tutorial.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-40f, 28f), new Vector2(300f, 88f));
+
             GraphicsQuality.Changed += Refresh;
             SetOpen(false);
         }

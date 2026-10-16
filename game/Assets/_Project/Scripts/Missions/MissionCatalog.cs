@@ -75,7 +75,7 @@ namespace Cafe
             new MissionTemplate("no_walkaway", MissionKind.NoWalkaway, null, null, 1, 80, new[] { 1, 1, 1, 1 }, 0),
             new MissionTemplate("clean_80", MissionKind.CleanDay, null, null, 2, 80, new[] { 1, 1, 1, 1 }, 0),
             new MissionTemplate("tips_300", MissionKind.EarnTips, null, null, 1, 60, new[] { 300, 800, 2400, 6000 }, 0),
-            // Điều hướng người chơi vào trang trí / khách quen / khám phá món; thưởng chủ yếu RP và Hạt (economy §19)
+            // Điều hướng người chơi vào trang trí / khách quen / khám phá món; thưởng chủ yếu RP và Hạt (economy §20)
             new MissionTemplate("buy_items", MissionKind.BuyItems, null, null, 1, 40, new[] { 1, 2, 3, 4 }, 2, 20),
             new MissionTemplate("regular_fav", MissionKind.RegularFavorite, null, null, 1, 50, new[] { 1, 1, 2, 3 }, 2, 25),
             new MissionTemplate("try_recipe", MissionKind.Experiment, null, null, 2, 40, new[] { 3, 3, 3, 3 }, 1, 15, 3),

@@ -5,7 +5,7 @@ namespace Cafe.Tests
     public class DayAdvisorTests
     {
         private static DayAdvice Advise(DaySummary s, int tier = 2, bool cleaner = true,
-                                        int debt = 0, bool missionReady = false, DayAdvice last = DayAdvice.None)
+                                        int debt = 0, bool missionReady = false, DayAdvice last = DayAdvice.None, bool canOpenZone = false)
         {
             return DayAdvisor.Pick(new DayAdvisorInput
             {
@@ -14,6 +14,7 @@ namespace Cafe.Tests
                 hasCleaner = cleaner,
                 debt = debt,
                 missionReady = missionReady,
+                canOpenZone = canOpenZone,
                 lastAdvice = last
             });
         }
@@ -95,6 +96,17 @@ namespace Cafe.Tests
             foreach (DayAdvice a in System.Enum.GetValues(typeof(DayAdvice)))
                 if (a != DayAdvice.None) Assert.That(DayAdvisor.Text(a), Is.Not.Empty, a.ToString());
             Assert.That(DayAdvisor.Text(DayAdvice.None), Is.Empty);
+        }
+
+        [Test]
+        public void EnoughXuForAZone_SuggestsOpeningOne_ButNotTwiceInARow()
+        {
+            var quiet = new DaySummary { served = 40, lost = 1, lostNoSeat = 1, cleanliness = 90f };
+            Assert.That(Advise(quiet, tier: 3, canOpenZone: true), Is.EqualTo(DayAdvice.OpenZone));
+            Assert.That(Advise(quiet, tier: 3, canOpenZone: true, last: DayAdvice.OpenZone), Is.EqualTo(DayAdvice.None));
+            Assert.That(Advise(quiet, tier: 3, canOpenZone: false), Is.EqualTo(DayAdvice.None));
+            Assert.That(Advise(new DaySummary { served = 25, lost = 10, lostNoSeat = 8, cleanliness = 90f }, tier: 3, canOpenZone: true),
+                Is.EqualTo(DayAdvice.MoreStaff), "vấn đề vận hành được ưu tiên hơn việc mở khu (cấp 3 hết chỗ: thiếu tay nghề, không thiếu ghế)");
         }
     }
 }

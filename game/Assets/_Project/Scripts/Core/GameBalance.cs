@@ -27,20 +27,43 @@ namespace Cafe
         public const float CloseHour = 22f;
         public const float InGameSecondsPerRealSecond = (CloseHour - OpenHour) * 3600f / DayRealSeconds;
 
+        /// Ngày ở nhà hàng (cấp 3) dài 300 giây thực. Đo bằng autoplay: một lượt khách (đi bộ + chờ ly + uống + chờ lau bàn) mất ~55 giây,
+        /// nên cửa sổ sinh khách 165 giây chỉ quay vòng ~3,2 khách/ghế (công thức dùng 5); 300 giây đưa con số này về ~4,5.
+        public const float Tier3DayRealSeconds = 300f;
+
+        /// Độ dài một ngày (giây thực) theo cấp quán.
+        public static float DayRealSecondsFor(int tier)
+        {
+            return tier >= 3 ? Tier3DayRealSeconds : DayRealSeconds;
+        }
+
+        /// Giây in-game trôi qua mỗi giây thực theo cấp quán.
+        public static float InGameSecondsPerRealSecondFor(int tier)
+        {
+            return InGameSecondsPerRealSecondForLength(DayRealSecondsFor(tier));
+        }
+
+        /// Giây in-game trôi qua mỗi giây thực của một ngày dài lengthSeconds giây thực (06:00 -> 22:00).
+        public static float InGameSecondsPerRealSecondForLength(float lengthSeconds)
+        {
+            return (CloseHour - OpenHour) * 3600f / Mathf.Max(1f, lengthSeconds);
+        }
+
         // Khách
         public const float PatienceSeconds = 60f;
         public const float NoSeatSeconds = 10f;
         public const float DrinkMinSeconds = 8f;
         public const float DrinkMaxSeconds = 15f;
         public const float WalkAwayRp = -1f;                  // bỏ về vì chờ món quá lâu / quán bẩn: nhẹ hơn 1 khách hài lòng (~+1,5 RP); GDD §3.2 "mất danh tiếng nhẹ"
-        public const float WalkAwayRpNoSeat = 0f;             // hết chỗ = quán đắt khách, không phải khách bực: không trừ RP (economy §20). Cấp 3 bot mất ~180 khách/ngày vì hết chỗ nên -1 triệt tiêu hết RP kiếm được
+        public const float WalkAwayRpNoSeat = 0f;             // hết chỗ = quán đắt khách, không phải khách bực: không trừ RP (economy §21). Cấp 3 bot mất ~180 khách/ngày vì hết chỗ nên -1 triệt tiêu hết RP kiếm được
         public const float SpawnStartFraction = 0.02f;
         public const float SpawnEndFraction = 0.80f;
         public const float SeatTurnsPerDay = 4f;
 
         // Ly để lại (đơn vị: giây TRONG GAME, tức theo đồng hồ DayCycle)
         // Ghế bị chặn khi ly để quá 30 giây THỰC (economy §3.3), quy ra đồng hồ in-game
-        public const float LeftoverBlockInGameSeconds = 30f * InGameSecondsPerRealSecond;
+        public const float LeftoverBlockRealSeconds = 30f;
+        public const float LeftoverBlockInGameSeconds = LeftoverBlockRealSeconds * InGameSecondsPerRealSecond;
         public const float LeftoverFullDecayInGameSeconds = 7200f;
 
         // Dọn dẹp (T2+, Scripts/Cleaning; economy §5)
@@ -92,10 +115,25 @@ namespace Cafe
             return 60 + 20 * Mathf.Max(0, chapterIndex);
         }
 
+        // ---- Các khu của nhà hàng (economy §3.5, phase3_spec 3.2) ----
+        public const int ZoneGardenCost = 40000;              // sân vườn
+        public const int ZoneTerraceCost = 90000;             // lầu (view)
+        public const int ZoneVipCost = 180000;                // VIP
+        public const float ZoneDemandBonus = 0.20f;           // mỗi khu đã mở: +20% khách (Demand_T3 "+ zone bonus")
+        public const float VipPriceMult = 1.5f;               // khách ngồi khu VIP trả 1,5x (đơn đặc biệt 1,5–2x, economy §2)
+        public const float FRefZone = 150f;                   // F_ref riêng mỗi khu phụ (sảnh chính giữ FRefTier3)
+        public const int ZoneStarterSets = 2;                 // bộ bàn ghế tặng khi mở khu
+
+        /// Nhân nhu cầu theo số khu phụ đã mở: 1 + 0,2 mỗi khu.
+        public static float ZoneDemandMult(int openZones)
+        {
+            return 1f + ZoneDemandBonus * Mathf.Max(0, openZones);
+        }
+
         public const float Tier2DemandMult = 1.5f;
         public const float Tier3DemandMult = 2.6f;
         public const float SeatTurnsTier2 = 4.5f;
-        public const float SeatTurnsTier3 = 5f;               // sức chứa gấp ~5 lần thực phục vụ, nhưng cố ý để vậy: hạ xuống làm bot phục vụ ít hơn ~12%, lãi ít hơn ~25% (economy §20)
+        public const float SeatTurnsTier3 = 5f;               // sức chứa gấp ~5 lần thực phục vụ, nhưng cố ý để vậy: hạ xuống làm bot phục vụ ít hơn ~12%, lãi ít hơn ~25% (economy §21)
         public const float StaffCapacityBonusTier2 = 0.25f;   // +25% sức chứa mỗi nhân viên
         public const float StaffCapacityBonusTier3 = 0.15f;
 
@@ -108,18 +146,24 @@ namespace Cafe
         public const int StaffBrewerDailyWage = 450;
         public const int StaffMaxLevel = 5;
 
-        /// Số nhân viên tối đa mỗi vai trò theo cấp quán (tổng cấp 2 = 2, cấp 3 = 8; economy §3.1 "4–10 NV" ở cấp 3).
+        /// Mỗi khu phụ đã mở nới thêm 1 chỗ cho MỖI vai trò (nhà hàng cấp 3): sảnh 3 Dọn dẹp + 2 Phục vụ + 3 Pha chế = 8,
+        /// đủ 3 khu 6 + 5 + 6 = 17. Đo bằng bot: với trần cũ (8 người) mở khu làm khách mất vì hết kiên nhẫn tăng 13 -> 39/ngày
+        /// vì thông lượng Pha chế / Phục vụ là giới hạn, nên nhu cầu +20% mỗi khu phải đi cùng thêm người làm.
+        public const int StaffSlotsPerZone = 1;
+
+        /// Số nhân viên tối đa mỗi vai trò theo cấp quán (tổng cấp 2 = 2, cấp 3 sảnh = 8 và +3 mỗi khu phụ đã mở; economy §3.1).
         /// Đo bằng autoplay ở cấp 2 (14–16 ghế, 9 ngày): người Dọn dẹp thứ hai và Pha chế đều KHÔNG tăng số khách (~40/ngày dù có hay
         /// không) mà tốn thêm lương, nên cấp 2 chỉ 1 Dọn dẹp + 1 Phục vụ; người thứ hai và Pha chế mở từ cấp 3 (sảnh lớn, nhiều khách).
-        public static int StaffMaxCount(StaffRole role, int tier)
+        public static int StaffMaxCount(StaffRole role, int tier, int openZones = 0)
         {
             if (tier < 2) return 0;
             bool restaurant = tier >= 3;
+            int extra = restaurant ? StaffSlotsPerZone * Mathf.Max(0, openZones) : 0;
             switch (role)
             {
-                case StaffRole.Server: return restaurant ? 2 : 1;
-                case StaffRole.Brewer: return restaurant ? 3 : 0;
-                default: return restaurant ? 3 : 1;
+                case StaffRole.Server: return (restaurant ? 2 : 1) + extra;
+                case StaffRole.Brewer: return (restaurant ? 3 : 0) + extra;
+                default: return (restaurant ? 3 : 1) + extra;
             }
         }
 
@@ -168,7 +212,7 @@ namespace Cafe
         }
 
         // Hạng sao theo RP: ★1..★5
-        public static readonly int[] StarThresholds = { 0, Tier2StarRP, Tier3StarRP, 12000, 40000 };   // ★4 / ★5 hạ từ 40.000 / 120.000 (economy §20)
+        public static readonly int[] StarThresholds = { 0, Tier2StarRP, Tier3StarRP, 12000, 40000 };   // ★4 / ★5 hạ từ 40.000 / 120.000 (economy §21)
 
         /// Demand_T1 = 18 + 9(★-1) + 0.5·day
         public static int DemandT1(int stars, int day)
@@ -198,11 +242,11 @@ namespace Cafe
             return Mathf.RoundToInt(DemandT1(stars, day) * mult);
         }
 
-        /// DemandFor × (1 + clamp(Σattract)/100). tier = 1 cho kết quả y hệt DemandWithAttract(stars, day, attractSum).
-        public static int DemandWithAttract(int tier, int stars, int day, int attractSum)
+        /// DemandFor × (1 + clamp(Σattract)/100) × zoneMult. tier = 1, zoneMult = 1 cho kết quả y hệt DemandWithAttract(stars, day, attractSum).
+        public static int DemandWithAttract(int tier, int stars, int day, int attractSum, float zoneMult = 1f)
         {
             float mult = 1f + Mathf.Clamp(attractSum, 0, MaxAttractPercent) / 100f;
-            return Mathf.RoundToInt(DemandFor(tier, stars, day) * mult);
+            return Mathf.RoundToInt(DemandFor(tier, stars, day) * mult * Mathf.Max(0f, zoneMult));
         }
 
         /// Sức chứa/ngày: T1 = ghế x 4; T2 = chỗ x 4,5 x (1 + 0,25·NV); T3 = chỗ x 5 x (1 + 0,15·NV).

@@ -38,7 +38,8 @@ namespace Cafe
             // Cấp 1: DemandWithAttract(★, ngày) và ghế x 4 (y như cũ); cấp 2+: nhu cầu x1,5, sức chứa chỗ x 4,5 x (1 + 0,25·NV)
             int tier = game != null && game.Tier != null ? game.Tier.Current : 1;
             int staff = game != null && game.Tier != null ? game.Tier.StaffCount : 0;
-            int demand = GameBalance.DemandWithAttract(tier, curStars, curDay, attract);
+            float zoneMult = game != null && game.Tier != null ? game.Tier.ZoneDemandMult : 1f;
+            int demand = GameBalance.DemandWithAttract(tier, curStars, curDay, attract, zoneMult);
             return Mathf.Max(1, Mathf.Min(demand, GameBalance.CapacityFor(tier, seatCount, staff)));
         }
 
@@ -64,7 +65,7 @@ namespace Cafe
             int count = TargetCount(seatCount);
 
             schedule = new float[count];
-            float len = GameBalance.DayRealSeconds;
+            float len = game.Day.Length;
             Distribute(0, GameBalance.SpawnStartFraction * len, GameBalance.SpawnEndFraction * len);
             if (count > 0 && day == 1) schedule[0] = Mathf.Min(schedule[0], 2f); // FTUE: khách đầu tiên đến sớm
 
@@ -72,7 +73,21 @@ namespace Cafe
             forceTimer = 0f;
             active.Clear();
             scheduledRegular = null;
-            if (game.Regulars != null) game.Regulars.TryScheduleVisit(day, game.Tier.Current, out scheduledRegular);
+            // Hướng dẫn ngày 1: chưa xếp khách quen (món của họ không bị ép)
+            if (game.Regulars != null && !(TutorialGate.Active && day <= 1)) game.Regulars.TryScheduleVisit(day, game.Tier.Current, out scheduledRegular);
+        }
+
+        /// Co giãn thời điểm sinh của các khách chưa tới (schedule[from..]) theo tỉ lệ ratio.
+        public static void RescaleFrom(float[] schedule, int from, float ratio)
+        {
+            if (schedule == null || ratio <= 0f) return;
+            for (int i = Mathf.Max(0, from); i < schedule.Length; i++) schedule[i] *= ratio;
+        }
+
+        /// Lên cấp giữa ngày làm đổi độ dài ngày: dời các lượt khách chưa tới theo cùng tỉ lệ để ngày không bị vắng / dồn cục.
+        public void RescaleRemaining(float ratio)
+        {
+            RescaleFrom(schedule, next, ratio);
         }
 
         /// Gọi khi bố cục quán đổi giữa ngày: tính lại số khách còn lại theo ghế + đồ hút khách mới.
@@ -85,7 +100,7 @@ namespace Cafe
             int target = Mathf.Max(next, TargetCount(game.Grid.Seats.Count));
             if (target == schedule.Length) return;
 
-            float len = GameBalance.DayRealSeconds;
+            float len = game.Day.Length;
             float end = GameBalance.SpawnEndFraction * len;
             float start = Mathf.Max(game.Day.Elapsed + 1f, GameBalance.SpawnStartFraction * len);
             if (start >= end) target = Mathf.Min(target, schedule.Length); // hết giờ rải: chỉ cho phép giảm
@@ -105,7 +120,7 @@ namespace Cafe
             if (game.Day.CurrentPhase == DayCycle.Phase.Open)
             {
                 float t = game.Day.Elapsed;
-                while (next < schedule.Length && t >= schedule[next])
+                while (next < schedule.Length && TutorialGate.SpawnIsDue(next, schedule[next], t))
                 {
                     Spawn();
                     next++;
@@ -131,6 +146,13 @@ namespace Cafe
             scheduledRegular = null;
             c.Init(game, regular);
             active.Add(c);
+        }
+
+        /// Hướng dẫn: thả thêm một khách ngoài lịch (khách kịch bản đã bỏ về). Không đụng tới hạn mức của TutorialGate.
+        public void SpawnExtra()
+        {
+            Spawn();
+            next++;
         }
 
         public void ForceAllLeave()

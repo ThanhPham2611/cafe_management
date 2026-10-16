@@ -116,6 +116,12 @@ namespace Cafe
                 SetContent(false);
                 return;
             }
+            GameBootstrap g = GameBootstrap.Instance;
+            if (g != null && g.Hud != null && g.Hud.IsUnderOrderCards(new Vector2(sp.x, sp.y + 60f)))
+            {
+                SetContent(false); // bị thẻ "Đơn chờ" che: ẩn hẳn, không lòi ra giữa các thẻ
+                return;
+            }
             SetContent(true);
             rect.anchoredPosition = new Vector2(sp.x, sp.y) / canvas.scaleFactor;
         }

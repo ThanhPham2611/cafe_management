@@ -139,7 +139,7 @@ namespace Cafe
             GrantReward(view.Chapter.reward);
             if (game != null)
             {
-                // Truyện khách quen cũng là đường lên sao: RP cố định theo chương (economy §19)
+                // Truyện khách quen cũng là đường lên sao: RP cố định theo chương (economy §20)
                 float rp = game.Reputation.Add(GameBalance.StoryChapterRp(view.ChapterIndex));
                 game.NotifyRewardGranted(0, rp);
                 GameEvents.RaiseToast(string.Format(Strings.StoryRpFmt, Mathf.RoundToInt(rp)));

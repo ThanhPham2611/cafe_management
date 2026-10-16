@@ -25,6 +25,59 @@ namespace Cafe
 
         public event System.Action LayoutChanged;
 
+        /// Các khu của lưới (nhà hàng cấp 3); null = chỉ một khu (cấp 1 / 2). Khu chưa mở không đặt được đồ.
+        public ZoneMap Zones { get; private set; }
+
+        public void SetZones(ZoneMap map)
+        {
+            Zones = map;
+            if (LayoutChanged != null) LayoutChanged();
+        }
+
+        /// Khu chứa ô c (sảnh chính khi lưới không chia khu).
+        public ZoneId ZoneAt(Vector2Int c)
+        {
+            return Zones != null ? Zones.ZoneAt(c) : ZoneId.Hall;
+        }
+
+        public ZoneId ZoneOf(PlacedFurniture pf)
+        {
+            return pf != null ? ZoneAt(pf.Cell) : ZoneId.Hall;
+        }
+
+        /// Ô c nằm trong khu đã mở (lưới không chia khu: mọi ô trong lưới đều mở).
+        public bool IsCellOpen(Vector2Int c)
+        {
+            return InBounds(c) && (Zones == null || Zones.IsOpen(Zones.ZoneAt(c)));
+        }
+
+        /// Σ (comfort + style) của đồ đặt trong một khu.
+        public int ComfortStyleIn(ZoneId zone)
+        {
+            if (Zones == null) return ComfortStyleTotal;
+            int total = 0;
+            for (int i = 0; i < Placed.Count; i++)
+            {
+                PlacedFurniture p = Placed[i];
+                if (p == null || p.Def == null || Zones.ZoneAt(p.Cell) != zone) continue;
+                total += p.Def.comfort + p.Def.style;
+            }
+            return total;
+        }
+
+        /// Điểm nội thất F của một khu: Σ(comfort+style trong khu) / F_ref của khu (sảnh chính dùng FRef theo cấp).
+        public float FurnitureScoreIn(ZoneId zone)
+        {
+            if (Zones == null) return FurnitureScore;
+            return Mathf.Clamp01(ComfortStyleIn(zone) / Mathf.Max(1f, Zones.IsOpen(zone) ? ZoneInfo.FRef(zone, FRef) : FRef));
+        }
+
+        /// F của khu chứa ghế (khách tính tip / hài lòng theo khu mình ngồi).
+        public float FurnitureScoreAt(Seat seat)
+        {
+            return Zones == null || seat == null ? FurnitureScore : FurnitureScoreIn(ZoneOf(seat.Furniture));
+        }
+
         private PlacedFurniture[] cells;
         private readonly Transform root;
         private readonly List<Seat> scratch = new List<Seat>();
@@ -114,7 +167,7 @@ namespace Cafe
                     if (!overhead && cells[c.y * Size.x + c.x] != null) return false;
                 }
             }
-            return true;
+            return Zones == null || Zones.Fits(cell, fp);
         }
 
         public PlacedFurniture Place(FurnitureDef def, Vector2Int cell, int rotation)
@@ -205,6 +258,7 @@ namespace Cafe
             RemoveAll();
             Origin = origin;
             Size = size;
+            Zones = null; // TierManager.OnGridCreated gán lại theo cấp
             cells = new PlacedFurniture[Mathf.Max(1, size.x * size.y)];
             ComfortStyleTotal = 0;
             if (LayoutChanged != null) LayoutChanged();
@@ -262,13 +316,15 @@ namespace Cafe
         }
 
         /// Bàn gần nhất (theo khoảng cách ngang tới hộp bao) trong maxDist.
-        public bool FindNearestTable(Vector3 p, float maxDist, out PlacedFurniture table, out Vector3 closest)
+        /// zoneFilter >= 0 (nhà hàng nhiều khu): chỉ xét bàn cùng khu, để ghế sát tường không ghép với bàn bên kia tường.
+        public bool FindNearestTable(Vector3 p, float maxDist, out PlacedFurniture table, out Vector3 closest, int zoneFilter = -1)
         {
             table = null;
             closest = p;
             float best = maxDist;
             for (int i = 0; i < Tables.Count; i++)
             {
+                if (zoneFilter >= 0 && Zones != null && (int)ZoneOf(Tables[i]) != zoneFilter) continue;
                 Bounds b = Tables[i].WorldBounds;
                 Vector3 q = b.ClosestPoint(new Vector3(p.x, b.center.y, p.z));
                 float d = new Vector2(q.x - p.x, q.z - p.z).magnitude;
@@ -288,7 +344,7 @@ namespace Cafe
             Vector3 sp = seat.transform.position;
             PlacedFurniture table;
             Vector3 closest;
-            if (FindNearestTable(sp, 1.2f, out table, out closest))
+            if (FindNearestTable(sp, 1.2f, out table, out closest, (int)ZoneOf(seat.Furniture)))
             {
                 Bounds b = table.WorldBounds;
                 Vector3 toCenter = new Vector3(b.center.x - closest.x, 0f, b.center.z - closest.z);

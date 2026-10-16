@@ -27,6 +27,8 @@ namespace Cafe
             if (cam == null) return;
             Vector3 sp = cam.WorldToScreenPoint(worldPos);
             if (sp.z <= 0.1f) return;
+            GameBootstrap g = GameBootstrap.Instance;
+            if (g != null && g.Hud != null) sp.x = g.Hud.PushRightOfOrderCards(new Vector2(sp.x, sp.y));
             layer.Spawn(new Vector2(sp.x, sp.y), text, color);
         }
 

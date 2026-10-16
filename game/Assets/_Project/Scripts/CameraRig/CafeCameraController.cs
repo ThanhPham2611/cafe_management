@@ -63,6 +63,9 @@ namespace Cafe
         /// Build mode đặt true khi đang kéo đồ: camera bỏ qua 1 ngón/chuột trái (vẫn zoom/pan 2 ngón).
         public bool InputBlocked { get; set; }
 
+        /// Độ/giây tự xoay chậm quanh quán (màn tiêu đề). 0 = tắt. Người chơi kéo thì tạm dừng trong lúc kéo.
+        public float AutoOrbitDegPerSec { get; set; }
+
         /// Tạo rig trên camera. gridBounds: vùng lưới (m), pivot bị giới hạn trong đó (+ lề).
         public static CafeCameraController Create(Camera camera, Bounds gridBounds)
         {
@@ -172,6 +175,9 @@ namespace Cafe
                 else if (Time.unscaledTime - lastTouchTime > 0.3f) HandleMouse();
             }
 
+            // Màn hình tiêu đề tự xoay chậm; "Giảm chuyển động" tắt luôn chuyển động tự động này
+            if (AutoOrbitDegPerSec != 0f && !GraphicsQuality.ReduceMotion && !orbiting && !twoFinger) yawTarget += AutoOrbitDegPerSec * dt;
+
             // Quán tính khi đã thả tay (dt bị chặn để một cú khựng khung không làm camera nhảy góc)
             if (!orbiting && !GraphicsQuality.ReduceMotion && Mathf.Abs(inertiaYaw) > InertiaStop)
             {
@@ -226,7 +232,7 @@ namespace Cafe
             switch (t.phase)
             {
                 case TouchPhase.Began:
-                    BeginOrbit(t.position, TapInput.IsOverUI(t.position, t.fingerId));
+                    BeginOrbit(t.position, TapInput.IsOverUIForCamera(t.position, t.fingerId));
                     break;
                 case TouchPhase.Moved:
                 case TouchPhase.Stationary:
@@ -307,7 +313,7 @@ namespace Cafe
                 twistSum = 0f;
                 orbitTracking = orbiting = false;
                 inertiaYaw = 0f;
-                bool overUI = TapInput.IsOverUI(a.position, a.fingerId) || TapInput.IsOverUI(b.position, b.fingerId);
+                bool overUI = TapInput.IsOverUIForCamera(a.position, a.fingerId) || TapInput.IsOverUIForCamera(b.position, b.fingerId);
                 if (overUI) { lastSpan = -1f; return; }
                 lastMid = mid; lastSpan = len; lastAngle = angle;
                 return;
@@ -336,16 +342,16 @@ namespace Cafe
             Vector2 mp = Input.mousePosition;
 
             float scroll = Input.mouseScrollDelta.y;
-            if (Mathf.Abs(scroll) > 0.01f && !TapInput.IsOverUI(mp, -1))
+            if (Mathf.Abs(scroll) > 0.01f && !TapInput.IsOverUIForCamera(mp, -1))
                 distanceTarget = Mathf.Clamp(distanceTarget * (1f - scroll * 0.1f), MinDistance, maxDistance);
 
             if (InputBlocked) EndOrbit();
-            else if (Input.GetMouseButtonDown(0)) BeginOrbit(mp, TapInput.IsOverUI(mp, -1));
+            else if (Input.GetMouseButtonDown(0)) BeginOrbit(mp, TapInput.IsOverUIForCamera(mp, -1));
             else if (Input.GetMouseButton(0)) DragOrbit(mp);
             if (Input.GetMouseButtonUp(0)) EndOrbit();
 
             bool panDown = Input.GetMouseButtonDown(1) || Input.GetMouseButtonDown(2);
-            if (panDown && !TapInput.IsOverUI(mp, -1)) { mousePanning = true; lastPanMouse = mp; }
+            if (panDown && !TapInput.IsOverUIForCamera(mp, -1)) { mousePanning = true; lastPanMouse = mp; }
             if (mousePanning && (Input.GetMouseButton(1) || Input.GetMouseButton(2)))
             {
                 Pan(mp - lastPanMouse);

@@ -31,6 +31,9 @@ namespace Cafe
         public const string Ruined = "Hỏng ly! Mất nguyên liệu";
         public const string BrewDone = "Xong rồi! Chạm khách để phục vụ";
         public const string NoCup = "Hết ly sạch! Thu ly khách để lại";
+        public const string NoCupWaitingFmt = "Hết ly sạch! Có {0} ly cần thu, chạm ly trên bàn";
+        public const string CupReady = "Thu ly!";
+        public const string CupsWaitingFmt = "{0} ly chờ thu";
         public const string NoOrderSelected = "Hãy chọn một đơn trước";
         public const string HoldingDrink = "Đang cầm ly - hãy phục vụ khách trước";
         public const string BrewingInProgress = "Đang pha dở - hoàn tất hoặc bấm Hủy";
@@ -140,6 +143,24 @@ namespace Cafe
         public const string Tier3YesLabel = "Mua ngay";
         public const string Tier3GrandOpening = "Nhà hàng!";
         public const string TierLater = "Để sau";
+
+        // ---- Các khu của nhà hàng (cấp 3) ----
+        public const string ZoneHall = "Sảnh chính";
+        public const string ZoneGarden = "Sân vườn";
+        public const string ZoneTerrace = "Lầu";
+        public const string ZoneVip = "VIP";
+        public const string ZoneGardenDesc = "Ngoài trời, 6 x 12 m\n+20% khách\nTặng 2 bộ bàn ghế";
+        public const string ZoneTerraceDesc = "Gác gỗ ngắm phố, 6 x 6 m\n+20% khách\nTặng 2 bộ bàn ghế";
+        public const string ZoneVipDesc = "Phòng riêng, 6 x 6 m\n+20% khách, ly x1,5 giá\nTặng 2 bộ bàn ghế";
+        public const string ZoneButton = "MỞ RỘNG";
+        public const string ZoneTitle = "Mở rộng nhà hàng";
+        public const string ZoneOpenBtn = "Mở khu";
+        public const string ZoneOpened = "ĐÃ MỞ";
+        public const string ZoneCostFmt = "{0} Xu";
+        public const string ZoneHint = "Mỗi khu mở thêm +20% khách và chỗ ngồi mới. Mở theo thứ tự bạn thích.";
+        public const string ZoneNeedFmt = "Cần {0} Xu để mở khu {1}";
+        public const string ZoneOpenedToastFmt = "Đã mở khu {0}!";
+        public const string ZoneBlockedFmt = "Lối sang khu {0} đang bị đồ chặn: dọn một lối rộng 1 m ở tường sảnh rồi mở lại";
         public const string GrandOpening = "Khai trương!";
         public const string RentInfoFmt = "Thuê nhà: còn {0} ngày";
         public const string RentInfoTomorrow = "Thuê nhà: sáng mai";

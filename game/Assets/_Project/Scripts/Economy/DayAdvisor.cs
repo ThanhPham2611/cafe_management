@@ -1,6 +1,6 @@
 namespace Cafe
 {
-    public enum DayAdvice { None, BuySeats, MoreStaff, CleanUp, HireCleaner, Debt, ClaimMission }
+    public enum DayAdvice { None, BuySeats, MoreStaff, CleanUp, HireCleaner, Debt, ClaimMission, OpenZone }
 
     public struct DayAdvisorInput
     {
@@ -9,6 +9,8 @@ namespace Cafe
         public bool hasCleaner;
         public int debt;
         public bool missionReady;
+        /// Cấp 3 và đủ tiền mở thêm một khu (sân vườn / lầu / VIP).
+        public bool canOpenZone;
         public DayAdvice lastAdvice;
     }
 
@@ -39,6 +41,7 @@ namespace Cafe
                 return DayAdvice.CleanUp;
             if (i.tier >= 2 && !i.hasCleaner && s.day >= 3 && Allowed(DayAdvice.HireCleaner, i)) return DayAdvice.HireCleaner;
             if (i.debt > 0 && Allowed(DayAdvice.Debt, i)) return DayAdvice.Debt;
+            if (i.canOpenZone && Allowed(DayAdvice.OpenZone, i)) return DayAdvice.OpenZone;
             if (i.missionReady && Allowed(DayAdvice.ClaimMission, i)) return DayAdvice.ClaimMission;
             return DayAdvice.None;
         }
@@ -57,6 +60,7 @@ namespace Cafe
                 case DayAdvice.CleanUp: return "Quán hơi bẩn: nâng cấp nhân viên Dọn dẹp để bàn sạch nhanh hơn.";
                 case DayAdvice.HireCleaner: return "Thuê nhân viên Dọn dẹp để bạn rảnh tay pha chế.";
                 case DayAdvice.Debt: return "Còn nợ tiền thuê: mỗi ngày trừ 30% doanh thu cho tới khi hết nợ.";
+                case DayAdvice.OpenZone: return "Đủ tiền mở thêm khu mới: bấm MỞ RỘNG để có thêm chỗ ngồi và +20% khách.";
                 case DayAdvice.ClaimMission: return "Có nhiệm vụ đã xong: mở NHIỆM VỤ để nhận thưởng.";
                 default: return "";
             }

@@ -87,6 +87,7 @@ namespace Cafe
 
         private void SpawnCanvas(Vector2 canvasPos, string msg, Color color)
         {
+            canvasPos = AvoidStack(canvasPos);
             Item it = items[next];
             next = (next + 1) % PoolSize;
             it.age = 0f;
@@ -98,6 +99,30 @@ namespace Cafe
             it.rt.localScale = new Vector3(0.6f, 0.6f, 1f);
             it.rt.SetAsLastSibling();
             it.text.gameObject.SetActive(true);
+        }
+
+        private const float StackGap = 46f;
+
+        /// Chữ mới sinh gần chỗ một chữ đang bay thì đẩy lên trên nó, để "+1 Ly" liên tiếp không đè nhau.
+        private Vector2 AvoidStack(Vector2 pos)
+        {
+            for (int guard = 0; guard < PoolSize; guard++)
+            {
+                bool hit = false;
+                for (int i = 0; i < PoolSize; i++)
+                {
+                    Item o = items[i];
+                    if (o == null || o.age < 0f) continue;
+                    Vector2 cur = o.rt.anchoredPosition; // vị trí hiện tại (đã bay lên), không phải điểm xuất phát
+                    if (Mathf.Abs(cur.x - pos.x) < 160f && Mathf.Abs(cur.y - pos.y) < StackGap * 0.9f)
+                    {
+                        pos.y = cur.y + StackGap; // đặt trên: chữ mới bay nhanh hơn nên càng xa chữ cũ
+                        hit = true;
+                    }
+                }
+                if (!hit) break;
+            }
+            return pos;
         }
 
         private void Update()

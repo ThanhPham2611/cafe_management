@@ -42,6 +42,28 @@ namespace Cafe
             return uiHits.Count > 0;
         }
 
+        /// Như IsOverUI nhưng bỏ qua lớp tối của hướng dẫn (CameraPassThrough): camera vẫn kéo / chụm được khi hướng dẫn đang làm tối,
+        /// còn chạm xuống thế giới vẫn bị chặn bởi IsOverUI.
+        public static bool IsOverUIForCamera(Vector2 screenPos, int pointerId)
+        {
+            EventSystem es = EventSystem.current;
+            if (es == null) return false;
+            if (pointerData == null || pointerDataSystem != es)
+            {
+                pointerData = new PointerEventData(es);
+                pointerDataSystem = es;
+            }
+            pointerData.position = screenPos;
+            uiHits.Clear();
+            es.RaycastAll(pointerData, uiHits);
+            for (int i = 0; i < uiHits.Count; i++)
+            {
+                GameObject go = uiHits[i].gameObject;
+                if (go != null && go.GetComponent<CameraPassThrough>() == null) return true;
+            }
+            return false;
+        }
+
         private Camera cam;
         private readonly RaycastHit[] hits = new RaycastHit[24];
 

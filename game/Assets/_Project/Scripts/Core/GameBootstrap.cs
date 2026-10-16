@@ -54,6 +54,8 @@ namespace Cafe
         public DayCycle Day { get; private set; }
         public CustomerSpawner Spawner { get; private set; }
         public HudController Hud { get; private set; }
+        /// Hướng dẫn người chơi mới (ngày 1 + gợi ý theo tình huống). Tạo sau HUD.
+        public TutorialDirector Tutorial { get; private set; }
         public CafeCameraController CameraRig { get; private set; }
         public BuildModeController Builder { get; private set; }
         public OwnerController Owner { get; private set; }
@@ -78,8 +80,16 @@ namespace Cafe
         public OwnerLook OwnerLook = OwnerLook.Default;
         /// Ngày sẽ bắt đầu sau khi tạo nhân vật xong (>0 khi đang chờ màn tạo nhân vật lần đầu).
         private int pendingStartDay = -1;
+        /// Ngày lấy từ save lúc nạp: giữ để SaveSnapshot khi màn tiêu đề còn mở (Day.Day == 0) không ghi lùi về ngày 1.
+        private int loadedStartDay = 1;
         /// Tên quán / ngoại hình đã đổi (HUD, biển hiệu cập nhật).
         public event System.Action ProfileChanged;
+
+        /// Build() đã chạy xong (HUD + màn tiêu đề đã dựng): màn tải của scene Boot chờ cờ này rồi mới mờ đi.
+        public static bool IsBuilt { get; private set; }
+        public static event System.Action BuildFinished;
+        /// Màn tiêu đề (khác null sau Build(); IsOpen = đang hiện, ngày chưa bắt đầu).
+        public TitleScreen Title { get; private set; }
 
         public Vector3 SpawnPosition
         {
@@ -94,6 +104,7 @@ namespace Cafe
         private void Awake()
         {
             Instance = this;
+            IsBuilt = false;
             // Mức đồ họa (Thấp / Vừa / Cao): người chơi chọn trong Cài đặt, lần đầu tự chọn theo máy. Trên điện thoại đặt luôn
             // giới hạn FPS (30 cho mức Thấp, 60 cho còn lại; plan §4); trên máy tính không giới hạn để đo hiệu năng.
             GraphicsQuality.Init();
@@ -144,6 +155,7 @@ namespace Cafe
             Stock.Init(GameBalance.StartCups);
             Shelf = new ReadyShelf(() => Stock.Return()); // ly bị bỏ (khách đi mất) trả ly sạch về kho
             int startDay = hasSave ? Mathf.Max(1, save.day) : 1;
+            loadedStartDay = startDay;
             dayStartXu = Wallet.Xu;
             dayStartRp = Reputation.RP;
             if (hasSave)
@@ -164,6 +176,8 @@ namespace Cafe
             LayoutEntry[] layout = (hasSave && save.layout != null && save.layout.Length > 0) ? save.layout : (Tier.Current >= 2 ? null : defaultLayout);
             if (layout != null)
             {
+                // Save nhà hàng cũ (lưới 20 x 24): sảnh nay bắt đầu ở ô x = 12 của lưới 44 x 24
+                int shiftX = hasSave ? TierManager.LayoutShiftCells(save) : 0;
                 for (int i = 0; i < layout.Length; i++)
                 {
                     LayoutEntry e = layout[i];
@@ -173,8 +187,9 @@ namespace Cafe
                         Debug.LogWarning("[GameBootstrap] Không có FurnitureDef id=" + e.furnitureId);
                         continue;
                     }
-                    if (Grid.Place(d, e.cell, e.rotation) == null)
-                        Debug.LogWarning("[GameBootstrap] Không đặt được " + e.furnitureId + " tại " + e.cell);
+                    Vector2Int cell = new Vector2Int(e.cell.x + shiftX, e.cell.y);
+                    if (Grid.Place(d, cell, e.rotation) == null)
+                        Debug.LogWarning("[GameBootstrap] Không đặt được " + e.furnitureId + " tại " + cell);
                 }
             }
 
@@ -197,7 +212,7 @@ namespace Cafe
             // Chủ quán (người chơi) đứng ở xe đẩy; phải có trước HUD vì BrewPanel nghe sự kiện của chủ quán
             Owner = OwnerController.Create(this, OwnerLook);
             Sign = ShopSign.Create(this);
-            Staff = new StaffRoster(Wallet, Tier.Ledger, () => Tier != null ? Tier.Current : 1);
+            Staff = new StaffRoster(Wallet, Tier.Ledger, () => Tier != null ? Tier.Current : 1, () => Tier != null ? Tier.OpenZoneCount : 0);
             Staff.Load(hasSave ? save : null);
             Staff.Attach(this);
             Regulars = new RegularsManager();
@@ -234,8 +249,26 @@ namespace Cafe
             // HUD
             Hud = new GameObject("HUD").AddComponent<HudController>();
             Hud.Init(this);
+            Tutorial = TutorialDirector.Create(this, hasSave ? save : null); // phải có trước StartDay: nghe DayStarted(1)
 
             started = true;
+            // Màn tiêu đề chặn đầu ngày: Day còn Idle nên chưa có khách. Bot / batchmode bỏ qua (TitleScreen.SkipForAutomation).
+            if (TitleScreen.SkipForAutomation)
+            {
+                AfterTitle(startDay);
+            }
+            else
+            {
+                Title = TitleScreen.Create(this, () => AfterTitle(startDay));
+                Title.Show();
+            }
+            IsBuilt = true;
+            if (BuildFinished != null) BuildFinished();
+        }
+
+        /// Sau màn tiêu đề: chưa tạo chủ quán thì mở màn tạo, ngược lại bắt đầu ngày.
+        private void AfterTitle(int startDay)
+        {
             if (CreatorDone)
             {
                 StartDay(startDay);
@@ -354,6 +387,32 @@ namespace Cafe
             return r != null && r.unlockTier <= 1 && day >= r.unlockDay;
         }
 
+        /// Số ly để lại đã chạm được (khách uống xong) nhưng chưa thu.
+        public int WaitingCupCount()
+        {
+            int n = 0;
+            for (int i = 0; i < LeftoverCups.Count; i++)
+                if (LeftoverCups[i] != null && LeftoverCups[i].IsCollectable) n++;
+            return n;
+        }
+
+        /// Giao chủ quán thu mọi ly đang chờ (ly chờ lâu nhất trước); dừng khi hàng việc đầy. Trả số ly đã giao.
+        public int QueueCollectAll()
+        {
+            if (Owner == null) return 0;
+            var waiting = new List<LeftoverCup>();
+            for (int i = 0; i < LeftoverCups.Count; i++)
+                if (LeftoverCups[i] != null && LeftoverCups[i].IsCollectable) waiting.Add(LeftoverCups[i]);
+            waiting.Sort((a, b) => a.CollectableSince.CompareTo(b.CollectableSince));
+            int queued = 0;
+            for (int i = 0; i < waiting.Count; i++)
+            {
+                if (!Owner.QueueCollect(waiting[i])) break;
+                queued++;
+            }
+            return queued;
+        }
+
         /// C_ly (T1): 1 nếu ly để lại được thu kịp; giảm tuyến tính về 0 sau 2 giờ in-game.
         public float LeftoverCleanliness()
         {
@@ -387,6 +446,7 @@ namespace Cafe
             if (Staff != null) Staff.WriteToSave(data);
             if (Regulars != null) Regulars.WriteToSave(data);
             if (Missions != null) Missions.WriteToSave(data);
+            if (Tutorial != null) Tutorial.WriteToSave(data);
             if (Day.CurrentPhase == DayCycle.Phase.Summary || Day.CurrentPhase == DayCycle.Phase.Prep)
             {
                 data.day = Day.Day + 1;
@@ -395,7 +455,7 @@ namespace Cafe
             }
             else
             {
-                data.day = Day.Day > 0 ? Day.Day : Mathf.Max(1, pendingStartDay);
+                data.day = Day.Day > 0 ? Day.Day : Mathf.Max(1, Mathf.Max(pendingStartDay, loadedStartDay));
                 data.xu = Mathf.RoundToInt(dayStartXu);
                 data.rp = dayStartRp;
             }
@@ -437,10 +497,23 @@ namespace Cafe
                 hasCleaner = Staff != null && Staff.HasRole(StaffRole.Cleaner),
                 debt = Tier != null && Tier.Ledger != null ? Tier.Ledger.Debt : 0,
                 missionReady = Missions != null && Missions.HasClaimable,
+                canOpenZone = CanAffordAnyZone(),
                 lastAdvice = LastAdvice
             });
             LastAdvice = advice;
             return advice;
+        }
+
+        /// Cấp 3 và còn một khu chưa mở mà ví đủ tiền (để gợi ý ở bảng tổng kết).
+        private bool CanAffordAnyZone()
+        {
+            if (Tier == null || Tier.Current < 3 || Wallet == null) return false;
+            for (int i = 0; i < ZoneInfo.Buyable.Length; i++)
+            {
+                ZoneId z = ZoneInfo.Buyable[i];
+                if (!Tier.IsZoneOpen(z) && Wallet.Xu >= ZoneInfo.Cost(z)) return true;
+            }
+            return false;
         }
 
         // ---- Nhiệm vụ ngày ----

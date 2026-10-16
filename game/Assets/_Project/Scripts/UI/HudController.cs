@@ -39,6 +39,32 @@ namespace Cafe
         private Text dayText;
         private Text timeText;
         private Text cupText;
+        private RectTransform orderColumn;
+        private int orderCardCount;
+
+        /// Điểm màn hình nằm dưới các thẻ "Đơn chờ" đang hiện (bong bóng order ở đó bị thẻ che, nên ẩn hẳn cho gọn).
+        public bool IsUnderOrderCards(Vector2 screenPos)
+        {
+            if (orderColumn == null || orderCardCount <= 0) return false;
+            Vector3[] c = cornerBuf;
+            orderColumn.GetWorldCorners(c); // canvas overlay: toạ độ thế giới = pixel màn hình
+            float bottomCanvas = 58f + orderCardCount * (CardHeight + CardSpacing);
+            float scale = orderColumn.lossyScale.y;
+            float bottom = c[1].y - bottomCanvas * scale;
+            return screenPos.x >= c[0].x && screenPos.x <= c[2].x + 20f * scale && screenPos.y <= c[1].y && screenPos.y >= bottom;
+        }
+        private readonly Vector3[] cornerBuf = new Vector3[4];
+
+        /// Chữ nổi rơi vào vùng thẻ "Đơn chờ": dời sang phải cột để không đè chữ trên thẻ. Trả x màn hình mới.
+        public float PushRightOfOrderCards(Vector2 screenPos)
+        {
+            if (!IsUnderOrderCards(screenPos)) return screenPos.x;
+            orderColumn.GetWorldCorners(cornerBuf);
+            return cornerBuf[2].x + 170f * orderColumn.lossyScale.x; // ~nửa bề rộng chữ "+115 Xu (tip 19)"
+        }
+        private Image cupChipImg;
+        private Text cupWaitText;
+        private int cupWaitShown = -1;
         private Text emptyText;
         private Text moreText;
         private readonly CardView[] cards = new CardView[MaxCards];
@@ -55,13 +81,16 @@ namespace Cafe
         private RegularsBookPanel regularsBook;
         private MissionPanel missionPanel;
         private SettingsPanel settingsPanel;
+        private ZonePanel zonePanel;
         private StoryDialog storyDialog;
         public bool StoryOpen { get { return storyDialog != null && storyDialog.IsOpen; } }
         public void DebugAdvanceStory() { if (storyDialog != null) storyDialog.DebugAdvance(); }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public void DebugToggleStaffPanel() { if (staffPanel != null) staffPanel.DebugToggle(); }
+        public void DebugScrollStaff(float normalized) { if (staffPanel != null) staffPanel.DebugScroll(normalized); }
         public void DebugOpenSettings(bool open) { if (settingsPanel != null) settingsPanel.DebugOpen(open); }
         public void DebugOpenMissions(bool open) { if (missionPanel != null) missionPanel.DebugOpen(open); }
+        public void DebugOpenZones(bool open) { if (zonePanel != null) zonePanel.DebugOpen(open); }
 #endif
 
         private ClayButton openShopButton; // nút MỞ CỬA, chỉ hiện ở pha chuẩn bị
@@ -78,6 +107,12 @@ namespace Cafe
         /// Lớp UI chứa bong bóng order (dưới HUD, không chặn chạm).
         public RectTransform BubbleLayer { get { return bubbleLayer; } }
 
+        /// Thẻ món trong Cửa hàng (hướng dẫn mua ghế chỉ vào đây); null nếu bảng chưa mở.
+        public RectTransform ShopCardRect(string furnitureId)
+        {
+            return shopPanel != null ? shopPanel.CardRectFor(furnitureId) : null;
+        }
+
         public void Init(GameBootstrap g)
         {
             game = g;
@@ -88,6 +123,10 @@ namespace Cafe
                 var es = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
                 es.transform.SetParent(transform, false);
             }
+            // Ngưỡng kéo ~2 mm theo mật độ điểm ảnh (mặc định 10 px quá nhỏ trên điện thoại): ngón tay rung nhẹ không biến một lần chạm
+            // nút THUÊ / NÂNG / MUA trong bảng cuộn thành thao tác kéo làm hụt nút
+            EventSystem eventSystem = EventSystem.current != null ? EventSystem.current : FindAnyObjectByType<EventSystem>();
+            if (eventSystem != null && Screen.dpi > 0f) eventSystem.pixelDragThreshold = Mathf.Max(10, Mathf.RoundToInt(Screen.dpi * 0.08f));
 
             // Lớp bong bóng (dưới)
             Canvas bubbleCanvas = HudBuilder.CreateCanvas("BubbleCanvas", 0, false, transform);
@@ -113,7 +152,8 @@ namespace Cafe
             regularsBook = new RegularsBookPanel(game, safe, canvas.transform);
             missionPanel = new MissionPanel(game, safe, canvas.transform);
             settingsPanel = new SettingsPanel(game, safe, canvas.transform); // nút "ĐỒ HỌA" + chọn Thấp / Vừa / Cao
-            BuildMenu(safe); // gom 4 nút phụ vào popup MENU
+            zonePanel = new ZonePanel(game, safe, canvas.transform);         // nút "MỞ RỘNG" (cấp 3) + bảng Sân vườn / Lầu / VIP
+            BuildMenu(safe); // gom các nút phụ vào popup MENU
             BuildOpenShopButton(safe);
             storyDialog = new StoryDialog(game, canvas.transform);
 
@@ -177,6 +217,7 @@ namespace Cafe
             if (regularsBook != null) regularsBook.Dispose();
             if (missionPanel != null) missionPanel.Dispose();
             if (settingsPanel != null) settingsPanel.Dispose();
+            if (zonePanel != null) zonePanel.Dispose();
             if (storyDialog != null) storyDialog.Dispose();
         }
 
@@ -233,9 +274,18 @@ namespace Cafe
             HudBuilder.SetFixed(cupChip.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-Margin, Margin), new Vector2(210f, ChipH));
             cupText = HudBuilder.AddText(cupChip.transform, "Cups", "", 48, TextAnchor.MiddleRight, HudBuilder.Ink, true, false);
             HudBuilder.SetRect(cupText.rectTransform, Vector2.zero, Vector2.one, new Vector2(70f, 22f), new Vector2(-30f, -4f));
+
+            // Chạm chip ly = giao chủ quán thu hết ly đang chờ; dòng nhỏ phía trên cho biết còn bao nhiêu ly chờ thu
+            cupChipImg = cupChip;
+            cupChip.raycastTarget = true;
+            cupChip.gameObject.AddComponent<Button>().onClick.AddListener(OnCupChipClicked);
+            cupWaitText = HudBuilder.AddText(safe, "CupsWaiting", "", 34, TextAnchor.MiddleRight, HudBuilder.Cream, true, true);
+            HudBuilder.SetFixed(cupWaitText.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-Margin - 6f, Margin + ChipH + 6f), new Vector2(300f, 44f));
+            HudBuilder.Fit(cupWaitText, 20);
+            cupWaitText.gameObject.SetActive(false);
         }
 
-        /// Nút phụ (Khách quen, Nhân viên, Nhiệm vụ, Đồ họa) gom vào popup MENU: HUD gọn, nút đủ to để chạm.
+        /// Nút phụ (Khách quen, Nhân viên, Mở rộng khu, Nhiệm vụ, Đồ họa) gom vào popup MENU: HUD gọn, nút đủ to để chạm.
         /// Các panel tự dựng nút của mình trong `safe`; ở đây chuyển chúng vào cột popup (xếp dọc, nút ẩn thì bỏ qua).
         private void BuildMenu(RectTransform safe)
         {
@@ -257,7 +307,7 @@ namespace Cafe
             layout.childForceExpandHeight = false;
             column.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            foreach (string name in new[] { "RegularsButton", "StaffButton", "MissionButton", "GraphicsButton" })
+            foreach (string name in new[] { "RegularsButton", "StaffButton", "ZonesButton", "MissionButton", "GraphicsButton" })
             {
                 Transform t = safe.Find(name);
                 if (t == null) continue;
@@ -307,6 +357,7 @@ namespace Cafe
         private void BuildOrderColumn(RectTransform parent)
         {
             RectTransform col = HudBuilder.NewRect("OrderColumn", parent);
+            orderColumn = col;
             HudBuilder.SetFixed(col, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(Margin, -(Margin + ChipH + 18f)), new Vector2(390f, 860f));
 
             Text t = HudBuilder.AddText(col, "Title", Strings.OrdersTitle, 40, TextAnchor.MiddleLeft, HudBuilder.Cream, true, true);
@@ -384,6 +435,27 @@ namespace Cafe
             rpBar.Set(game.Reputation.ProgressToNext, HudBuilder.Accent);
         }
 
+        private void OnCupChipClicked()
+        {
+            if (game.WaitingCupCount() > 0) game.QueueCollectAll();
+        }
+
+        /// Dòng "N ly chờ thu" trên chip ly; chip nhấp nháy khi hết ly sạch mà vẫn còn ly chờ thu. Chỉ gán chữ khi số đổi.
+        private void RefreshCupWaiting()
+        {
+            if (cupWaitText == null) return;
+            int waiting = game.WaitingCupCount();
+            if (waiting != cupWaitShown)
+            {
+                cupWaitShown = waiting;
+                cupWaitText.gameObject.SetActive(waiting > 0);
+                if (waiting > 0) cupWaitText.text = string.Format(Strings.CupsWaitingFmt, waiting);
+            }
+            bool urgent = waiting > 0 && game.Stock.Count <= 1;
+            float k = urgent ? 1f + 0.06f * Mathf.Sin(Time.unscaledTime * 8f) : 1f;
+            if (cupChipImg != null) cupChipImg.rectTransform.localScale = new Vector3(k, k, 1f);
+        }
+
         private void OnCups()
         {
             if (cupText != null) cupText.text = string.Format(Strings.CupsFmt, game.Stock.Count);
@@ -451,6 +523,7 @@ namespace Cafe
         /// Thông báo chung (không gắn với khách): chữ nổi dưới thanh chip.
         public void ShowToast(string msg)
         {
+            if (game != null && game.Tutorial != null && game.Tutorial.IsShowingCard) return; // thẻ hướng dẫn che đúng chỗ này
             UiFx.FloatTextTop(msg, HudBuilder.Cream);
         }
 
@@ -486,6 +559,7 @@ namespace Cafe
                 }
             }
 
+            orderCardCount = Mathf.Min(items.Count, MaxCards);
             emptyText.enabled = items.Count == 0;
             int extra = items.Count - MaxCards;
             moreText.enabled = extra > 0;
@@ -498,6 +572,7 @@ namespace Cafe
             if (storyDialog != null) storyDialog.Tick();
             if (menuDot != null) menuDot.SetActive(!menuRoot.gameObject.activeSelf && missionDot != null && missionDot.activeSelf);
             float dt = Time.unscaledDeltaTime;
+            RefreshCupWaiting();
 
             // Vòng kiên nhẫn trên thẻ order
             for (int i = 0; i < MaxCards; i++)

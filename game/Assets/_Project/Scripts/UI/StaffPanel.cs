@@ -4,7 +4,8 @@ using UnityEngine.UI;
 namespace Cafe
 {
     /// Bảng quản lý nhân viên (cấp quán 2+): mỗi nhân viên một hàng — thuê, nâng cấp, cho nghỉ.
-    /// Số hàng theo GameBalance.StaffMaxCount (cấp 2: 1 Dọn dẹp + 1 Phục vụ; cấp 3: 3 Dọn dẹp + 2 Phục vụ + 3 Pha chế).
+    /// Số hàng theo GameBalance.StaffMaxCount (cấp 2: 1 Dọn dẹp + 1 Phục vụ; cấp 3: 3 + 2 + 3, mỗi khu phụ mở thêm 1 chỗ mỗi vai trò,
+    /// đủ 3 khu 6 + 5 + 6 = 17). Danh sách cuộn được khi dài hơn màn hình.
     public sealed class StaffPanel
     {
         private sealed class SlotView
@@ -24,11 +25,17 @@ namespace Cafe
         private const float RowGap = 8f;
         private const float HeaderH = 104f;
         private const float FooterH = 56f;
+        private const float MaxPanelH = 1048f;      // chừa lề trên / dưới màn 1080 (vừa đúng 8 hàng + chân bảng)
+        private const float EdgeMargin = 16f;       // chừa lề với mép vùng an toàn
+        private const float BottomPad = 12f;
 
         private readonly GameBootstrap game;
         private readonly ClayButton openButton;
         private readonly Image panel;
         private readonly Text footer;
+        private readonly RectTransform scrollRoot;
+        private readonly RectTransform content;
+        private readonly ScrollRect scroll;
         private readonly SlotView[] slots;
         private bool open;
 
@@ -55,10 +62,32 @@ namespace Cafe
             HudBuilder.SetFixed((RectTransform)close.transform, new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-22f, -20f), new Vector2(64f, 60f));
 
+            // Danh sách cuộn: Scroll (nhận kéo) > Viewport (cắt) > Content (các hàng)
+            scrollRoot = HudBuilder.NewRect("Scroll", panel.transform);
+            Image hit = scrollRoot.gameObject.AddComponent<Image>();
+            hit.color = new Color(0f, 0f, 0f, 0f); // trong suốt nhưng nhận chạm để kéo cuộn được cả khi chạm vào khoảng trống giữa các hàng
+            hit.raycastTarget = true;
+            RectTransform viewport = HudBuilder.NewRect("Viewport", scrollRoot);
+            HudBuilder.Stretch(viewport);
+            viewport.gameObject.AddComponent<RectMask2D>();
+            content = HudBuilder.NewRect("Content", viewport);
+            content.anchorMin = new Vector2(0f, 1f);
+            content.anchorMax = new Vector2(1f, 1f);
+            content.pivot = new Vector2(0.5f, 1f);
+            content.offsetMin = Vector2.zero;
+            content.offsetMax = Vector2.zero;
+            scroll = scrollRoot.gameObject.AddComponent<ScrollRect>();
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Elastic;
+            scroll.scrollSensitivity = 40f;
+            scroll.viewport = viewport;
+            scroll.content = content;
+
             var list = new System.Collections.Generic.List<SlotView>();
             foreach (StaffRole role in StaffRoles.All)
             {
-                int most = GameBalance.StaffMaxCount(role, 3);
+                int most = MostSlots(role);
                 for (int k = 0; k < most; k++) list.Add(BuildSlot(role, k));
             }
             slots = list.ToArray();
@@ -70,6 +99,7 @@ namespace Cafe
             game.Staff.Changed += Refresh;
             GameEvents.MoneyChanged += OnMoneyChanged;
             game.Tier.TierChanged += Refresh;
+            game.Tier.ZonesChanged += Refresh;
             SetOpen(false);
             Refresh();
         }
@@ -77,7 +107,7 @@ namespace Cafe
         private SlotView BuildSlot(StaffRole role, int index)
         {
             var view = new SlotView { role = role, index = index };
-            view.card = HudBuilder.Chip(panel.transform, role + "Card" + index, false);
+            view.card = HudBuilder.Chip(content, role + "Card" + index, false);
 
             view.title = HudBuilder.AddText(view.card.transform, "Title", "", 30,
                 TextAnchor.MiddleLeft, HudBuilder.Ink, true, false);
@@ -106,6 +136,14 @@ namespace Cafe
             return view;
         }
 
+        /// Số chỗ lớn nhất của một vai trò (cấp 3, đủ mọi khu): số hàng phải dựng sẵn.
+        private static int MostSlots(StaffRole role)
+        {
+            return GameBalance.StaffMaxCount(role, 3, ZoneInfo.Buyable.Length);
+        }
+
+        private int OpenZones { get { return game.Tier != null ? game.Tier.OpenZoneCount : 0; } }
+
         private static string RoleTitle(StaffRole role)
         {
             switch (role)
@@ -130,13 +168,19 @@ namespace Cafe
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public void DebugToggle() { Toggle(); }
+        /// 1 = đầu danh sách, 0 = cuối danh sách (chụp màn hình kiểm tra cuộn).
+        public void DebugScroll(float normalized) { if (scroll != null) scroll.verticalNormalizedPosition = Mathf.Clamp01(normalized); }
 #endif
 
         private void SetOpen(bool value)
         {
             open = value && game.Tier.Current >= 2;
             panel.gameObject.SetActive(open);
-            if (open) Refresh();
+            if (open)
+            {
+                panel.transform.SetAsLastSibling(); // vẽ trên các nút cột phải (Nhiệm vụ, Đồ họa, Mở rộng...) tạo sau bảng này
+                Refresh();
+            }
         }
 
         private void OnPrimary(SlotView view)
@@ -166,7 +210,7 @@ namespace Cafe
         /// Hàng có hiện không: còn chỗ ở cấp này, hoặc đang có người (vd. Pha chế thuê từ trước khi cấp 3 mới mở).
         private bool IsVisible(SlotView view, int tier)
         {
-            return view.index < GameBalance.StaffMaxCount(view.role, tier) || game.Staff.IndexOf(view.role, view.index) >= 0;
+            return view.index < GameBalance.StaffMaxCount(view.role, tier, OpenZones) || game.Staff.IndexOf(view.role, view.index) >= 0;
         }
 
         private void Refresh()
@@ -186,17 +230,30 @@ namespace Cafe
                 if (!visible) continue;
 
                 HudBuilder.SetFixed(view.card.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                    new Vector2(0f, -(HeaderH + shown * (RowH + RowGap))), new Vector2(PanelW - 50f, RowH));
+                    new Vector2(0f, -(shown * (RowH + RowGap))), new Vector2(PanelW - 50f, RowH));
                 shown++;
                 RefreshSlot(view, tier);
             }
 
-            bool moreAtT3 = tier < 3;
-            footer.gameObject.SetActive(unlocked && moreAtT3);
-            footer.text = "Pha chế và thêm người cho mỗi vai trò mở khi mua nhà hàng (cấp 3)";
-            float height = HeaderH + shown * (RowH + RowGap) + (moreAtT3 ? FooterH : 12f);
+            // Chân bảng: nhắc có thêm chỗ khi lên cấp 3 (cấp 2) hoặc khi mở khu (cấp 3 chưa đủ khu)
+            bool showFooter = unlocked && (tier < 3 || OpenZones < ZoneInfo.Buyable.Length);
+            footer.gameObject.SetActive(showFooter);
+            footer.text = tier < 3
+                ? "Pha chế và thêm người cho mỗi vai trò mở khi mua nhà hàng (cấp 3)"
+                : "Mỗi khu mở thêm 1 chỗ cho mỗi vai trò (nút MỞ RỘNG)";
+            float bottom = showFooter ? FooterH : BottomPad;
+            float need = shown > 0 ? shown * (RowH + RowGap) - RowGap : 0f;
+            // Không vượt vùng an toàn của màn hình (điện thoại có tai thỏ / thanh cuộn thấp hơn màn 1080)
+            RectTransform parentRect = panel.transform.parent as RectTransform;
+            float maxPanel = parentRect != null && parentRect.rect.height > 200f
+                ? Mathf.Min(MaxPanelH, parentRect.rect.height - 2f * EdgeMargin) : MaxPanelH;
+            float viewH = Mathf.Min(need, maxPanel - HeaderH - bottom);
+            content.sizeDelta = new Vector2(0f, need);
+            HudBuilder.SetRect(scrollRoot, Vector2.zero, Vector2.one, new Vector2(12f, bottom), new Vector2(-12f, -HeaderH));
+            // Đủ chỗ: về đầu danh sách. Đặt vị trí Content trực tiếp (verticalNormalizedPosition ép cập nhật cả canvas khi bảng đang đóng)
+            if (need <= viewH + 0.5f) content.anchoredPosition = new Vector2(content.anchoredPosition.x, 0f);
             HudBuilder.SetFixed(panel.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-28f, 0f), new Vector2(PanelW, height));
+                new Vector2(-28f, 0f), new Vector2(PanelW, HeaderH + viewH + bottom));
             HudBuilder.SetFixed(footer.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                 new Vector2(0f, 8f), new Vector2(PanelW - 60f, FooterH - 8f));
         }
@@ -205,7 +262,7 @@ namespace Cafe
         {
             int member = game.Staff.IndexOf(view.role, view.index);
             int wage = GameBalance.StaffDailyWage(view.role);
-            string number = GameBalance.StaffMaxCount(view.role, 3) > 1 ? " " + (view.index + 1) : "";
+            string number = MostSlots(view.role) > 1 ? " " + (view.index + 1) : "";
             if (member < 0)
             {
                 int fee = GameBalance.StaffHireFee(view.role);
@@ -233,7 +290,11 @@ namespace Cafe
             if (game != null)
             {
                 if (game.Staff != null) game.Staff.Changed -= Refresh;
-                if (game.Tier != null) game.Tier.TierChanged -= Refresh;
+                if (game.Tier != null)
+                {
+                    game.Tier.TierChanged -= Refresh;
+                    game.Tier.ZonesChanged -= Refresh;
+                }
             }
             GameEvents.MoneyChanged -= OnMoneyChanged;
         }

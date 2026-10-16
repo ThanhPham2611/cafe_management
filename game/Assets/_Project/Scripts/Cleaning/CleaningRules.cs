@@ -42,6 +42,28 @@ namespace Cafe
             }
         }
 
+        /// CI của khu chứa ghế (cấp 3 có nhiều khu); 100 khi luật dọn tắt hoặc chưa dựng hệ thống.
+        public static float CiAt(Seat seat)
+        {
+            CleaningSystem s = CleaningSystem.Instance;
+            GameBootstrap g = GameBootstrap.Instance;
+            if (s == null || s.Model == null || !Enabled) return 100f;
+            if (seat == null || g == null || g.Grid == null) return s.Model.CI;
+            return s.Model.CiOf(g.Grid.ZoneOf(seat.Furniture));
+        }
+
+        /// Xác suất khách bỏ đi vì quán bẩn theo CI khu mình ngồi.
+        public static float WalkAwayChanceAt(Seat seat)
+        {
+            return Enabled ? CleanlinessModel.WalkAwayChanceFor(CiAt(seat)) : 0f;
+        }
+
+        /// Hệ số tip theo CI khu chứa ghế.
+        public static float TipMultiplierAt(Seat seat)
+        {
+            return Enabled ? CleanlinessModel.TipMultiplierFor(CiAt(seat)) : 1f;
+        }
+
         /// Hệ số tip theo CI (×0,5 khi CI < 60); 1 khi luật dọn tắt.
         public static float TipMultiplier
         {

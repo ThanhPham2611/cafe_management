@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace Cafe
 {
     /// Chỉ thêm giá trị mới vào cuối: save lưu theo chuỗi id nhưng giữ thứ tự ổn định cho UI.
@@ -34,9 +36,9 @@ namespace Cafe
             return false;
         }
 
-        private static readonly string[] CleanerNames = { "Cô Út", "Cô Hạnh", "Chị Mai" };
-        private static readonly string[] ServerNames = { "Bạn An", "Bạn Lộc" };
-        private static readonly string[] BrewerNames = { "Anh Bảo", "Anh Khoa" };
+        private static readonly string[] CleanerNames = { "Cô Út", "Cô Hạnh", "Chị Mai", "Cô Tư", "Chị Lan", "Cô Sáu" };
+        private static readonly string[] ServerNames = { "Bạn An", "Bạn Lộc", "Bạn Vy", "Bạn Phúc", "Bạn Nhi" };
+        private static readonly string[] BrewerNames = { "Anh Bảo", "Anh Khoa", "Anh Tín", "Chị Thảo", "Anh Hưng", "Anh Dũng" };
 
         /// Tên mặc định cho người thứ n (từ 0) của vai trò; vượt danh sách thì quay vòng.
         public static string DefaultName(StaffRole role, int n = 0)
@@ -45,11 +47,11 @@ namespace Cafe
             return names[((n % names.Length) + names.Length) % names.Length];
         }
 
-        /// Dáng nhân viên (0..3 = PF_Char_Staff_M1, M2, F1, F2): mỗi vai trò một dáng riêng, người thứ hai đổi dáng.
+        /// Dáng nhân viên (0..3 = PF_Char_Staff_M1, M2, F1, F2): mỗi vai trò một dáng riêng, mỗi người kế tiếp đổi dáng (đủ 4 dáng).
         public static int DefaultPreset(StaffRole role, int n = 0)
         {
             int baseLook = role == StaffRole.Server ? 0 : (role == StaffRole.Brewer ? 1 : 2);
-            return (baseLook + 3 * (n & 1)) % 4;
+            return (baseLook + 3 * Mathf.Max(0, n)) % 4;
         }
     }
 }

@@ -19,7 +19,7 @@ namespace Cafe
         private const float CardGap = 12f;
         private const float BtnW = 300f;
         private const float BtnH = 96f;
-        private const float ButtonX = -420f; // lệch trái tâm màn hình: nằm trên mép bàn pha, né cột "Đơn chờ"
+        private const float ButtonX = -376f; // lệch trái tâm: trên mép bàn pha; ở canvas 1600 mép trái = 424 > 404 = mép phải cột "Đơn chờ"
         private const int MaxSteps = 6;
         private const int MaxTools = 3;
 

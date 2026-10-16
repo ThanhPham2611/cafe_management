@@ -108,7 +108,8 @@ namespace Cafe
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(refHeight * 16f / 9f, refHeight);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 1f;
+            scaler.matchWidthOrHeight = CanvasAspectMatch.MatchFor(Screen.width, Screen.height);
+            go.AddComponent<CanvasAspectMatch>(); // màn hẹp hơn 16:9 thì match width để HUD không đè nhau
             if (withRaycaster) go.AddComponent<GraphicRaycaster>();
             return canvas;
         }
