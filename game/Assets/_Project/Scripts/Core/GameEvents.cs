@@ -19,6 +19,8 @@ namespace Cafe
         public static event Action PrepStarted;
         /// Lên level uy tín (LevelRules); mỗi level báo một lần.
         public static event Action<int> LevelUp;
+        /// Đã nhận thưởng các level từ..đến (xu, hạt là tổng). Một lần chạm thẻ = 1 level; tự nhận cuối ngày = nhiều level.
+        public static event Action<int, int, int, int> LevelsClaimed;
         public static event Action<Customer> CustomerServed;
         public static event Action<Customer> CustomerLeft;
         public static event Action<string> Toast;
@@ -32,6 +34,8 @@ namespace Cafe
         public static void RaiseDayClosing() { if (DayClosing != null) DayClosing(); }
         public static void RaiseDayEnded(DaySummary s) { if (DayEnded != null) DayEnded(s); }
         public static void RaisePrepStarted() { if (PrepStarted != null) PrepStarted(); }
+        public static void RaiseLevelsClaimed(int from, int to, int xu, int gems) { if (LevelsClaimed != null) LevelsClaimed(from, to, xu, gems); }
+
         /// Gọi từng handler riêng: một handler lỗi không được làm đứt chuỗi Reputation.Add -> Customer.Pay đang gọi nó.
         public static void RaiseLevelUp(int level)
         {
@@ -60,6 +64,7 @@ namespace Cafe
             DayEnded = null;
             PrepStarted = null;
             LevelUp = null;
+            LevelsClaimed = null;
             CustomerServed = null;
             CustomerLeft = null;
             Toast = null;

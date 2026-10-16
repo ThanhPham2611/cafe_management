@@ -27,7 +27,8 @@ namespace Cafe
         public int xu;
         public int day = 1;
         public float rp;
-        public int levelRewarded;            // level uy tín cao nhất đã nhận thưởng (0 = save cũ); xem LevelRules
+        public int levelRewarded;            // level uy tín cao nhất ĐÃ ĐẠT (0 = save cũ); xem LevelRules
+        public int levelClaimed = -1;        // level cao nhất đã NHẬN thưởng (-1 = save cũ, thưởng trả ngay lúc đạt)
         public LayoutEntry[] layout;
 
         // v2

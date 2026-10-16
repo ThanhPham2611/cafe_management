@@ -14,6 +14,32 @@ namespace Cafe
         public const string LevelUpFmt = "LÊN LEVEL {0}!  +{1} Xu";
         public const string LevelGemsFmt = "  +{0} Hạt";
         public const string StarUpFmt = "SAO {0}!";
+        // Tên ngắn của cấp quán dùng khi nói "đang ở" / "cần": mỗi từ chỉ một nghĩa (sao ★ = uy tín, Lv = level uy tín, "cấp" chỉ dùng cho tay nghề nhân viên / dụng cụ)
+        public const string TierShort1 = "Vỉa hè";
+        public const string TierShort2 = "Mặt bằng";
+        public const string TierShort3 = "Nhà hàng";
+        public const string TierShort4 = "Chuỗi";
+        public static string TierShortName(int tier)
+        {
+            switch (tier)
+            {
+                case 1: return TierShort1;
+                case 2: return TierShort2;
+                case 3: return TierShort3;
+                default: return TierShort4;
+            }
+        }
+        public const string EventTodayFmt = "Hôm nay: {0} - {1}";
+        public const string EventTomorrowFmt = "Ngày mai: {0} - {1}";
+        public const string LevelCardFmt = "Lv {0}: NHẬN +{1} Xu";
+        public const string LevelCardStarFmt = "SAO {0}!  NHẬN +{1} Xu";
+        public const string LevelCardGemsFmt = " +{0} Hạt";
+        public const string LevelCardMoreFmt = "  (+{0})";
+        public const string LevelRangeFmt = "LEVEL {0}-{1}!  +{2} Xu";
+        public const string LevelReachedFmt = "LÊN LEVEL {0}!";
+        public const string LevelGiftToast = "Quà tri ân người chơi cũ: đã nhận thưởng các level bạn đã đạt!";
+        public const string SumLevelFmt = "  ·  Lv {0}";
+        public const string SumLevelUpFmt = "  ·  Lv {0}→{1}";
 
         public const string OrdersTitle = "Đơn chờ";
         public const string NoOrders = "Chờ khách ghé quán...";

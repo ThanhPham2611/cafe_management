@@ -12,7 +12,7 @@ namespace Cafe
         public const string OffMenu = "Ngoài menu";
         public const string MenuFullFmt = "Menu đã đủ {0} món - hãy tắt bớt một món";
         public const string MenuNeedOne = "Menu cần ít nhất 1 món";
-        public const string MenuLockedT1 = "Cấp 1: bán tất cả món";
+        public const string MenuLockedT1 = "Vỉa hè: bán tất cả món";
         public const string UnknownName = "???";
         public const string HintCostFmt = "Gợi ý {0} Hạt";
         public const string NeedGemsFmt = "Thiếu {0} Hạt";
@@ -20,12 +20,12 @@ namespace Cafe
         public const string GemsFmt = "{0} Hạt";
         public const string RecipeCostFmt = "Giá {0} Xu - vốn {1} Xu";
         public const string NeedMachineFmt = "Cần đặt {0} trong quán";
-        public const string TeaserT1 = "Còn nhiều công thức bí truyền khi bạn thuê mặt bằng (Cấp 2).";
+        public const string TeaserT1 = "Còn nhiều công thức bí truyền khi bạn thuê Mặt bằng.";
         public const string NoRecipes = "Chưa có công thức nào";
 
         // ---- Thử pha tự do ----
         public const string Experiment = "Thử pha tự do";
-        public const string ExperimentLockedT2 = "Mở từ Cấp 2";
+        public const string ExperimentLockedT2 = "Mở từ Mặt bằng";
         public const string ExperimentTitle = "Thử pha tự do";
         public const string ExperimentHintFmt = "Mỗi nguyên liệu {0} Xu - bấm Xong khi đủ";
         public const string ExperimentStepsFmt = "{0}/{1} nguyên liệu";

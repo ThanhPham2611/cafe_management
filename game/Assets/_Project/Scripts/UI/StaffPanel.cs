@@ -239,7 +239,7 @@ namespace Cafe
             bool showFooter = unlocked && (tier < 3 || OpenZones < ZoneInfo.Buyable.Length);
             footer.gameObject.SetActive(showFooter);
             footer.text = tier < 3
-                ? "Pha chế và thêm người cho mỗi vai trò mở khi mua nhà hàng (cấp 3)"
+                ? "Pha chế và thêm người cho mỗi vai trò mở khi mua Nhà hàng"
                 : "Mỗi khu mở thêm 1 chỗ cho mỗi vai trò (nút MỞ RỘNG)";
             float bottom = showFooter ? FooterH : BottomPad;
             float need = shown > 0 ? shown * (RowH + RowGap) - RowGap : 0f;
@@ -280,7 +280,7 @@ namespace Cafe
             bool tierLocked = item.level == 4 && tier < 3;
             view.title.text = RoleTitle(view.role) + number + " • " + item.name;
             view.detail.text = "Cấp " + item.level + " • Lương " + wage + "/ngày";
-            view.primaryLabel.text = max ? "TỐI ĐA" : (tierLocked ? "CẦN CẤP 3" : "NÂNG • " + cost + " XU");
+            view.primaryLabel.text = max ? "TỐI ĐA" : (tierLocked ? "CẦN NHÀ HÀNG" : "NÂNG • " + cost + " XU");
             view.primary.SetInteractable(!max && !tierLocked && game.Wallet.Xu >= cost);
             view.fire.gameObject.SetActive(true);
         }

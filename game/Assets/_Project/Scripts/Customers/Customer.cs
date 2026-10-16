@@ -45,10 +45,13 @@ namespace Cafe
         public string RegularId { get { return regular != null ? regular.id : null; } }
         public string RegularName { get { return regular != null ? regular.displayName : null; } }
 
+        /// Thời gian kiên nhẫn chờ món (giây): mặc định 60, nhân theo sự kiện của ngày (trời mưa ngồi lâu, giờ cao điểm sốt ruột).
+        private float PatienceLimit { get { return GameBalance.PatienceSeconds * (game != null ? game.TodayEvent.patience : 1f); } }
+
         /// 1 = vừa gọi món, 0 = hết kiên nhẫn.
         public float PatienceNormalized
         {
-            get { return Mathf.Clamp01(1f - patienceUsed / GameBalance.PatienceSeconds); }
+            get { return Mathf.Clamp01(1f - patienceUsed / PatienceLimit); }
         }
 
         private static readonly int[] ShirtSwatches = { 26, 28, 30, 58, 59, 60, 61 };
@@ -264,7 +267,7 @@ namespace Cafe
             // Ghế êm (comfort cao) làm thanh kiên nhẫn giảm chậm hơn
             patienceUsed += dt / (1f + 0.05f * seat.Def.comfort);
             if (bubble != null) bubble.SetPatience(PatienceNormalized);
-            if (patienceUsed >= GameBalance.PatienceSeconds) Abandon(true, LostReason.Patience);
+            if (patienceUsed >= PatienceLimit) Abandon(true, LostReason.Patience);
         }
 
         /// Được phục vụ ly với chất lượng 1..3 sao.
@@ -317,6 +320,7 @@ namespace Cafe
             float chance = GameBalance.TipChance(quality) + 0.2f * f;
             if (Random.value < chance)
                 tip = Mathf.RoundToInt(r.price * qMult * zoneMult * GameBalance.TipSize(quality) * (1f + 0.5f * f));
+            if (tip > 0) tip = Mathf.RoundToInt(tip * game.TodayEvent.tip); // sự kiện của ngày (cuối tuần, ngày sinh viên...)
             if (tip > 0 && CleaningRules.Enabled)
                 tip = Mathf.RoundToInt(tip * CleaningRules.TipMultiplierAt(seat)); // khu bẩn (CI < 60): tip ×0,5
 

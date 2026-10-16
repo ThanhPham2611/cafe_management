@@ -40,6 +40,7 @@ namespace Cafe
             int staff = game != null && game.Tier != null ? game.Tier.StaffCount : 0;
             float zoneMult = game != null && game.Tier != null ? game.Tier.ZoneDemandMult : 1f;
             int demand = GameBalance.DemandWithAttract(tier, curStars, curDay, attract, zoneMult);
+            if (game != null) demand = Mathf.Max(1, Mathf.RoundToInt(demand * game.TodayEvent.demand)); // sự kiện của ngày (DayEvents)
             return Mathf.Max(1, Mathf.Min(demand, GameBalance.CapacityFor(tier, seatCount, staff)));
         }
 

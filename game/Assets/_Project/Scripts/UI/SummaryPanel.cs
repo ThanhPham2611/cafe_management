@@ -169,7 +169,7 @@ namespace Cafe
 
         public void Show(DaySummary s)
         {
-            title.text = string.Format(Strings.SummaryTitleFmt, s.day);
+            title.text = string.Format(Strings.SummaryTitleFmt, s.day) + "  ·  " + Strings.TierShortName(s.tier);
             SetMoney(rowRevenue, s.revenue, true);
             SetMoney(rowTips, s.tips, true);
             SetMoney(rowScrap, s.scrap, true);
@@ -208,7 +208,9 @@ namespace Cafe
             rowServed.value.color = HudBuilder.GoodDark;
             rowLost.value.text = s.lost.ToString();
             rowLost.value.color = s.lost > 0 ? HudBuilder.Red : HudBuilder.InkSoft;
-            rowRp.value.text = (s.rpGained >= 0f ? "+" : "") + s.rpGained.ToString("0.0") + " RP";
+            int lvNow = game.Reputation.Level;
+            rowRp.value.text = (s.rpGained >= 0f ? "+" : "") + s.rpGained.ToString("0.0") + " RP"
+                + (s.levelStart < lvNow ? string.Format(Strings.SumLevelUpFmt, s.levelStart, lvNow) : string.Format(Strings.SumLevelFmt, lvNow));
             rowRp.value.color = s.rpGained >= 0f ? HudBuilder.GoodDark : HudBuilder.Red;
 
             bool showClean = CleaningRules.Enabled && s.cleanliness >= 0f;

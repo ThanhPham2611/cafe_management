@@ -2,9 +2,10 @@ using System.Collections.Generic;
 
 namespace Cafe
 {
-    /// Level uy tín: các bậc nhỏ chia đều giữa hai mốc sao liên tiếp (dựng từ GameBalance.StarThresholds nên đổi mốc sao thì
-    /// level đổi theo). Level lên thường xuyên cho người chơi thấy tiến bộ; mốc sao là level đặc biệt, thưởng lớn hơn.
-    /// Thưởng mỗi level: Xu = 100 + 40·level (x3 ở level trùng mốc sao) + Hạt ở level mốc sao (economy §22).
+    /// Level uy tín: các bậc nhỏ giữa hai mốc sao liên tiếp (dựng từ GameBalance.StarThresholds nên đổi mốc sao thì level đổi
+    /// theo). Bậc chia LỒI trong từng hạng sao (đầu hạng lên nhanh, cuối hạng chậm dần) để level đầu mỗi hạng đến sớm.
+    /// Level lên thường xuyên cho người chơi thấy tiến bộ; mốc sao là level đặc biệt, thưởng lớn hơn.
+    /// Thưởng mỗi level: Xu = (100 + 40·level) × số sao của hạng (x3 thêm ở level trùng mốc sao) + Hạt ở level mốc sao (economy §22).
     public static class LevelRules
     {
         /// Số level chia trong từng hạng sao: ★1→★2, ★2→★3, ★3→★4, ★4→★5.
@@ -17,13 +18,28 @@ namespace Cafe
 
         public static int MaxLevel { get { return Thresholds.Length; } }
 
+        /// Độ lồi của bậc trong hạng sao: vị trí = (i / n)^1,35. Level đầu hạng sao cách mốc sao rất gần, bước dãn dần.
+        private const double Curve = 1.35;
+
         private static int[] Build()
         {
             int[] th = GameBalance.StarThresholds;
             var list = new List<int>();
             for (int s = 0; s < StepsPerStar.Length && s + 1 < th.Length; s++)
-                for (int i = 0; i < StepsPerStar[s]; i++)
-                    list.Add(th[s] + (th[s + 1] - th[s]) * i / StepsPerStar[s]);
+            {
+                int n = StepsPerStar[s];
+                for (int i = 0; i < n; i++)
+                {
+                    int rp = th[s];
+                    if (i > 0)
+                    {
+                        double x = (th[s + 1] - th[s]) * System.Math.Pow(i / (double)n, Curve);
+                        rp += (int)(System.Math.Round(x / 5.0) * 5.0);          // làm tròn 5 cho dễ đọc
+                        if (rp <= list[list.Count - 1]) rp = list[list.Count - 1] + 5;
+                    }
+                    list.Add(rp);
+                }
+            }
             list.Add(th[th.Length - 1]); // level cuối = ★ cao nhất
             return list.ToArray();
         }
@@ -61,9 +77,20 @@ namespace Cafe
             return false;
         }
 
+        /// Số sao của hạng mà `level` thuộc về (level mốc sao tính là hạng mới): Lv1-5 = 1, Lv6-15 = 2, Lv16-30 = 3...
+        public static int StarAt(int level)
+        {
+            int rp = RpFor(level);
+            int[] th = GameBalance.StarThresholds;
+            int star = 1;
+            for (int s = 1; s < th.Length; s++)
+                if (rp >= th[s]) star = s + 1;
+            return star;
+        }
+
         public static int RewardXu(int level)
         {
-            int xu = 100 + 40 * level;
+            int xu = (100 + 40 * level) * StarAt(level);
             int star;
             return IsStarLevel(level, out star) ? xu * 3 : xu;
         }

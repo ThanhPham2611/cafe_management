@@ -408,13 +408,19 @@ namespace Cafe
             return r == null || string.IsNullOrEmpty(r.requiredMachine) || (game.Grid != null && game.Grid.HasMachine(r.requiredMachine));
         }
 
+        /// Món được ưa chuộng theo sự kiện của ngày (DayEvents): x2 xác suất được gọi.
+        private float EventWeight(RecipeDef r)
+        {
+            return game != null && r != null ? game.TodayEvent.WeightFor(r.id) : 1f;
+        }
+
         private RecipeDef Roll(int day, int tier, bool requireMenu)
         {
             RecipeDef[] all = game.recipes;
             if (all == null) return null;
             float total = 0f;
             for (int i = 0; i < all.Length; i++)
-                if (Orderable(all[i], day, tier, requireMenu)) total += Mathf.Max(0.01f, all[i].orderWeight);
+                if (Orderable(all[i], day, tier, requireMenu)) total += Mathf.Max(0.01f, all[i].orderWeight) * EventWeight(all[i]);
             if (total <= 0f) return null;
 
             float roll = UnityEngine.Random.value * total;
@@ -423,7 +429,7 @@ namespace Cafe
             {
                 if (!Orderable(all[i], day, tier, requireMenu)) continue;
                 last = all[i];
-                roll -= Mathf.Max(0.01f, last.orderWeight);
+                roll -= Mathf.Max(0.01f, last.orderWeight) * EventWeight(last);
                 if (roll <= 0f) return last;
             }
             return last;

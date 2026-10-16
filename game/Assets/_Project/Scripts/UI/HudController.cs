@@ -94,6 +94,10 @@ namespace Cafe
 #endif
 
         private ClayButton openShopButton; // nút MỞ CỬA, chỉ hiện ở pha chuẩn bị
+        private Text eventText;            // "Hôm nay: Trời mưa - ..." (chỉ ngày có sự kiện)
+        private ClayButton levelCard;      // thẻ "Lv N: NHẬN +X Xu" khi có thưởng level đang chờ
+        private Text levelCardText;
+        private float levelCardShownAt;
         private RectTransform menuRoot;
         private GameObject menuDot;     // chấm đỏ trên nút MENU khi có nhiệm vụ nhận được
         private GameObject missionDot;
@@ -155,6 +159,8 @@ namespace Cafe
             zonePanel = new ZonePanel(game, safe, canvas.transform);         // nút "MỞ RỘNG" (cấp 3) + bảng Sân vườn / Lầu / VIP
             BuildMenu(safe); // gom các nút phụ vào popup MENU
             BuildOpenShopButton(safe);
+            BuildLevelCard(safe);
+            BuildEventLabel(safe);
             storyDialog = new StoryDialog(game, canvas.transform);
 
             // Chữ nổi (trên cùng)
@@ -169,6 +175,7 @@ namespace Cafe
             GameEvents.DayEnded += OnDayEnded;
             GameEvents.PrepStarted += OnPrepStarted;
             GameEvents.LevelUp += OnLevelUp;
+            GameEvents.LevelsClaimed += OnLevelsClaimed;
             GameEvents.CustomerServed += OnServed;
             GameEvents.Toast += ShowToast;
             game.Station.Changed += RebuildCards;
@@ -205,6 +212,7 @@ namespace Cafe
             GameEvents.DayEnded -= OnDayEnded;
             GameEvents.PrepStarted -= OnPrepStarted;
             GameEvents.LevelUp -= OnLevelUp;
+            GameEvents.LevelsClaimed -= OnLevelsClaimed;
             GameEvents.CustomerServed -= OnServed;
             GameEvents.Toast -= ShowToast;
             if (game != null)
@@ -439,16 +447,84 @@ namespace Cafe
             rpBar.Set(next < 0 ? 1f : Mathf.Clamp01((rp - LevelRules.RpFor(level)) / (float)(next - LevelRules.RpFor(level))), HudBuilder.Accent);
         }
 
-        /// Lên level uy tín: chữ nổi giữa-trên (kèm thưởng), pháo giấy; level mốc sao thêm biểu ngữ "SAO N!".
+        /// Thẻ thưởng level, dưới hàng chip giữa-trên. Không chặn màn chơi (nhỏ, nằm giữa chip và cột đơn); chạm để nhận.
+        private void BuildLevelCard(RectTransform safe)
+        {
+            levelCard = HudBuilder.AddLabelButton(safe, "LevelCard", ClayStyle.Gold, "", 36, OnLevelCardTapped, out levelCardText);
+            HudBuilder.SetFixed((RectTransform)levelCard.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -(Margin + ChipH + 56f)), new Vector2(600f, 92f));
+            HudBuilder.Fit(levelCardText, 22);
+            levelCard.gameObject.SetActive(false);
+        }
+
+        /// Gọi sau khi dựng HUD để hiện thẻ cho thưởng đang chờ từ lần chơi trước.
+        public void RefreshLevelCardNow() { RefreshLevelCard(); }
+
+        /// Dòng sự kiện của ngày, giữa-trên dưới hàng chip (cân với tên quán bên phải).
+        private void BuildEventLabel(RectTransform safe)
+        {
+            eventText = HudBuilder.AddText(safe, "DayEvent", "", 28, TextAnchor.MiddleCenter, HudBuilder.Cream, true, true);
+            HudBuilder.SetFixed(eventText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -(Margin + ChipH + 8f)), new Vector2(720f, 40f));
+            HudBuilder.Fit(eventText, 18);
+            eventText.gameObject.SetActive(false);
+        }
+
+        /// today = true: "Hôm nay: ...", false: "Ngày mai: ..." (báo trước ở pha Chuẩn bị). Ngày thường thì ẩn dòng.
+        private void ShowEvent(DayEvent ev, bool today)
+        {
+            if (eventText == null) return;
+            bool show = ev != null && !ev.IsNormal;
+            eventText.gameObject.SetActive(show);
+            if (show) eventText.text = string.Format(today ? Strings.EventTodayFmt : Strings.EventTomorrowFmt, ev.name, ev.blurb);
+        }
+
+        private void OnLevelCardTapped()
+        {
+            if (game.ClaimNextLevel()) RefreshLevelCard();
+        }
+
+        /// Hiện / ẩn thẻ theo số thưởng đang chờ; chữ là level kế tiếp phải nhận (+ số level còn lại).
+        private void RefreshLevelCard()
+        {
+            if (levelCard == null) return;
+            int pending = game.PendingLevels;
+            if (pending <= 0) { levelCard.gameObject.SetActive(false); return; }
+            int level = game.ClaimedLevel + 1, star;
+            string xu = Strings.FormatInt(LevelRules.RewardXu(level));
+            string text = LevelRules.IsStarLevel(level, out star)
+                ? string.Format(Strings.LevelCardStarFmt, star, xu)
+                : string.Format(Strings.LevelCardFmt, level, xu);
+            int gems = LevelRules.RewardGems(level);
+            if (gems > 0) text += string.Format(Strings.LevelCardGemsFmt, gems);
+            if (pending > 1) text += string.Format(Strings.LevelCardMoreFmt, pending - 1);
+            levelCardText.text = text;
+            if (!levelCard.gameObject.activeSelf) { levelCard.gameObject.SetActive(true); levelCardShownAt = Time.unscaledTime; }
+        }
+
+        /// Đạt level mới (chưa nhận): chữ nổi ngắn + hiện thẻ nhận thưởng.
         private void OnLevelUp(int level)
         {
-            int star;
-            bool isStar = LevelRules.IsStarLevel(level, out star);
-            int gems = LevelRules.RewardGems(level);
-            string msg = string.Format(Strings.LevelUpFmt, level, Strings.FormatInt(LevelRules.RewardXu(level)));
+            UiFx.FloatTextTop(string.Format(Strings.LevelReachedFmt, level), HudBuilder.Accent);
+            RefreshLevelCard();
+        }
+
+        /// Đã nhận thưởng (chạm thẻ hoặc tự nhận cuối ngày): chữ nổi thưởng + pháo giấy; có level mốc sao thì thêm biểu ngữ "SAO N!".
+        private void OnLevelsClaimed(int from, int to, int xu, int gems)
+        {
+            int star = 0;
+            for (int lv = from; lv <= to; lv++)
+            {
+                int s;
+                if (LevelRules.IsStarLevel(lv, out s)) star = Mathf.Max(star, s);
+            }
+            string msg = from == to
+                ? string.Format(Strings.LevelUpFmt, from, Strings.FormatInt(xu))
+                : string.Format(Strings.LevelRangeFmt, from, to, Strings.FormatInt(xu));
             if (gems > 0) msg += string.Format(Strings.LevelGemsFmt, gems);
             UiFx.FloatTextTop(msg, HudBuilder.Accent);
-            if (game.Tier != null) game.Tier.PlayConfetti(isStar, isStar ? string.Format(Strings.StarUpFmt, star) : null);
+            if (game.Tier != null) game.Tier.PlayConfetti(star > 0, star > 0 ? string.Format(Strings.StarUpFmt, star) : null);
+            RefreshLevelCard();
         }
 
         private void OnCupChipClicked()
@@ -489,6 +565,7 @@ namespace Cafe
             shopPanel.SetVisible(true);
             openShopButton.gameObject.SetActive(true);
             dayText.text = string.Format(Strings.DayChipFmt, game.Day.Day + 1);
+            ShowEvent(DayEvents.For(game.Day.Day + 1), false);
             timeText.text = "06:00";
             lastMinute = -1;
         }
@@ -496,6 +573,8 @@ namespace Cafe
         private void OnDayStarted(int day)
         {
             summaryPanel.Hide();
+            ShowEvent(game.TodayEvent, true);
+            if (!game.TodayEvent.IsNormal) ShowToast(string.Format(Strings.EventTodayFmt, game.TodayEvent.name, game.TodayEvent.blurb));
             openShopButton.gameObject.SetActive(false);
             brewPanel.SetVisible(true);
             shopPanel.SetVisible(true);
@@ -517,6 +596,7 @@ namespace Cafe
             brewPanel.SetVisible(false);
             shopPanel.SetVisible(false);
             recipeBook.SetVisible(false);
+            if (eventText != null) eventText.gameObject.SetActive(false);
             summaryPanel.Show(s);
         }
 
@@ -589,6 +669,13 @@ namespace Cafe
             if (menuDot != null) menuDot.SetActive(!menuRoot.gameObject.activeSelf && missionDot != null && missionDot.activeSelf);
             float dt = Time.unscaledDeltaTime;
             RefreshCupWaiting();
+
+            // Thẻ thưởng level nhún nhẹ để dễ thấy (tắt khi Giảm chuyển động)
+            if (levelCard != null && levelCard.gameObject.activeSelf)
+            {
+                float k = GraphicsQuality.ReduceMotion ? 1f : 1f + 0.035f * Mathf.Sin((Time.unscaledTime - levelCardShownAt) * 6f);
+                levelCard.transform.localScale = new Vector3(k, k, 1f);
+            }
 
             // Vòng kiên nhẫn trên thẻ order
             for (int i = 0; i < MaxCards; i++)
