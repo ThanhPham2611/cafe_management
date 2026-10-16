@@ -5,7 +5,8 @@ namespace Cafe
     /// Một ngày: 210 giây thực (cấp 1-2) hoặc 300 giây (nhà hàng cấp 3) = 06:00 -> 22:00. Hết giờ -> đóng cửa, khi khách ra hết thì tổng kết.
     public class DayCycle : MonoBehaviour
     {
-        public enum Phase { Idle, Open, Closing, Summary }
+        /// Prep: sau tổng kết, trước khi mở cửa ngày kế tiếp; đồng hồ đứng, không có khách (trang trí, mua đồ, nâng cấp quán).
+        public enum Phase { Idle, Open, Closing, Summary, Prep }
 
         private GameBootstrap game;
         private float length = GameBalance.DayRealSeconds;
@@ -50,6 +51,12 @@ namespace Cafe
             ClosingSeconds = 0f;
             Summary = new DaySummary { day = day };
             CurrentPhase = Phase.Open;
+        }
+
+        /// Từ màn tổng kết sang pha chuẩn bị. Chưa tăng số ngày: ngày mới chỉ bắt đầu ở Begin().
+        public void EnterPrep()
+        {
+            if (CurrentPhase == Phase.Summary) CurrentPhase = Phase.Prep;
         }
 
         /// Lên cấp giữa ngày: đổi độ dài ngày mà giữ nguyên giờ trên đồng hồ (Elapsed co giãn theo tỉ lệ).

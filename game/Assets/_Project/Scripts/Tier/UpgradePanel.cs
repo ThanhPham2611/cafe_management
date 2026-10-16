@@ -249,7 +249,8 @@ namespace Cafe
         {
             if (chipRoot == null) return;
             DayCycle day = game.Day;
-            bool playing = day != null && (day.CurrentPhase == DayCycle.Phase.Open || day.CurrentPhase == DayCycle.Phase.Closing);
+            bool playing = day != null && (day.CurrentPhase == DayCycle.Phase.Open || day.CurrentPhase == DayCycle.Phase.Closing
+                                           || day.CurrentPhase == DayCycle.Phase.Prep);
             bool hidden = tier.Transitioning || !playing
                           || (game.Builder != null && game.Builder.IsOpen)
                           || (game.Creator != null && game.Creator.IsOpen);
@@ -357,7 +358,8 @@ namespace Cafe
             }
         }
 
-        public void PlayConfetti()
+        /// Pháo giấy; withBanner: kèm biểu ngữ lớn (mặc định "Khai trương!", hoặc bannerText).
+        public void PlayConfetti(bool withBanner = true, string bannerText = null)
         {
             EnsureConfetti();
             Vector2 size = confettiLayer.rect.size;
@@ -383,8 +385,12 @@ namespace Cafe
             confettiTime = 0f;
             confettiOn = true;
 
-            banner.gameObject.SetActive(true);
-            bannerTime = 0f;
+            if (withBanner)
+            {
+                banner.text = bannerText ?? Strings.GrandOpening;
+                banner.gameObject.SetActive(true);
+                bannerTime = 0f;
+            }
         }
 
         private void TickConfetti(float dt)

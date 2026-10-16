@@ -32,6 +32,14 @@ namespace Cafe.Tests
         }
 
         [Test]
+        public void Tier3_ManyLostForNoSeat_SuggestsStaffNotSeats()
+        {
+            var s = new DaySummary { served = 94, lost = 190, lostNoSeat = 180, cleanliness = 90f };
+            Assert.That(Advise(s, tier: 3), Is.EqualTo(DayAdvice.MoreStaff));
+            Assert.That(Advise(s, tier: 3, last: DayAdvice.MoreStaff), Is.Not.EqualTo(DayAdvice.BuySeats), "không lặp gợi ý, cũng không đổi sang mua ghế");
+        }
+
+        [Test]
         public void ManyLostForPatience_SuggestsStaff()
         {
             Assert.That(Advise(new DaySummary { served = 25, lost = 10, lostPatience = 7, cleanliness = 90f }), Is.EqualTo(DayAdvice.MoreStaff));
@@ -98,7 +106,7 @@ namespace Cafe.Tests
             Assert.That(Advise(quiet, tier: 3, canOpenZone: true, last: DayAdvice.OpenZone), Is.EqualTo(DayAdvice.None));
             Assert.That(Advise(quiet, tier: 3, canOpenZone: false), Is.EqualTo(DayAdvice.None));
             Assert.That(Advise(new DaySummary { served = 25, lost = 10, lostNoSeat = 8, cleanliness = 90f }, tier: 3, canOpenZone: true),
-                Is.EqualTo(DayAdvice.BuySeats), "vấn đề vận hành được ưu tiên hơn việc mở khu");
+                Is.EqualTo(DayAdvice.MoreStaff), "vấn đề vận hành được ưu tiên hơn việc mở khu (cấp 3 hết chỗ: thiếu tay nghề, không thiếu ghế)");
         }
     }
 }

@@ -28,7 +28,13 @@ namespace Cafe
             if (s == null) return DayAdvice.None;
 
             // Vấn đề vận hành trước, rồi tới nhắc nhở. Mỗi mục chỉ xét nếu chưa là gợi ý ngày hôm trước.
-            if (s.lostNoSeat >= LostThreshold && Allowed(DayAdvice.BuySeats, i)) return DayAdvice.BuySeats;
+            if (s.lostNoSeat >= LostThreshold)
+            {
+                // Cấp 3 bot đo: số khách phục vụ theo số nhân viên (2 NV ~43, 8 NV ~90), không theo ghế (36 -> 43 ghế không đổi)
+                // => hết chỗ là do tay nghề phục vụ, mua thêm ghế không giúp
+                DayAdvice a = i.tier >= 3 ? DayAdvice.MoreStaff : DayAdvice.BuySeats;
+                if (Allowed(a, i)) return a;
+            }
             if (s.lostPatience >= LostThreshold && Allowed(DayAdvice.MoreStaff, i)) return DayAdvice.MoreStaff;
             bool measured = s.cleanliness >= 0f;
             if (measured && (s.cleanliness < DirtyCleanliness || s.lostDirty >= DirtyLostThreshold) && Allowed(DayAdvice.CleanUp, i))

@@ -67,6 +67,36 @@ namespace Cafe.EditorTools
             if (Application.isBatchMode) EditorApplication.Exit(s.result == BuildResult.Succeeded ? 0 : 1);
         }
 
+        /// Bản Development cho macOS (chạy bot autoplay / chụp màn hình trên máy Mac):
+        ///   Unity -batchmode -quit -projectPath game -executeMethod Cafe.EditorTools.BuildTools.BuildMacTest
+        [MenuItem("Cafe/Build/macOS Test")]
+        public static void BuildMacTest()
+        {
+            PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
+            PlayerSettings.resizableWindow = true;
+            PlayerSettings.runInBackground = true; // test tự động không bị dừng khi mất focus
+
+            var options = new BuildPlayerOptions
+            {
+                scenes = new[] { "Assets/_Project/Scenes/Prototype_Tier1.unity" },
+                locationPathName = ArgValue("-buildOut") ?? "Builds/MacTest/QuanCaPhe.app",   // -buildOut <đường dẫn>: dựng ra chỗ khác để không đè bản đang chạy
+                target = BuildTarget.StandaloneOSX,
+                options = BuildOptions.Development,
+            };
+            BuildReport report = BuildPipeline.BuildPlayer(options);
+            var s = report.summary;
+            Debug.Log($"[Cafe] Build {s.result}: {s.outputPath} ({s.totalSize / (1024 * 1024)} MB, " +
+                      $"{s.totalErrors} lỗi, {s.totalWarnings} cảnh báo)");
+            if (Application.isBatchMode) EditorApplication.Exit(s.result == BuildResult.Succeeded ? 0 : 1);
+        }
+
+        static string ArgValue(string name)
+        {
+            string[] args = System.Environment.GetCommandLineArgs();
+            int i = System.Array.IndexOf(args, name);
+            return i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
+        }
+
         [MenuItem("Cafe/Build/Windows Test")]
         public static void BuildWindowsTest()
         {

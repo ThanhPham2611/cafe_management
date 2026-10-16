@@ -10,7 +10,7 @@ namespace Cafe
         private const float CardW = 1000f;
         private const float CardH = 700f;
         private const float OptionW = 290f;
-        private const float OptionH = 360f;
+        private const float OptionH = 340f;
         private const float OptionGap = 24f;
 
         private sealed class OptionView
@@ -20,9 +20,20 @@ namespace Cafe
             public Text badge;
         }
 
+        private const float RowH = 100f;        // chiều cao thêm vào thẻ cho mỗi hàng chọn FPS
+        private const float RowTop = -130f - OptionH - 30f;   // hàng đầu nằm ngay dưới 3 mức đồ họa
+        private const float FpsButtonW = 170f;
+        private const float MotionButtonW = 220f;
+        private const float FpsLabelW = 380f;
+        private const float RowLeft = -(FpsLabelW + 3 * (FpsButtonW + OptionGap)) * 0.5f;   // hai hàng thẳng cột nhau
+
         private readonly GameObject root;
         private readonly OptionView[] options = new OptionView[GraphicsPresets.Count];
         private readonly Text recommend;
+        private ClayButton motionButton;
+        private Text motionText;
+        private ClayButton[] fpsButtons = new ClayButton[0];
+        private int[] fpsChoices = new int[0];
         private bool open;
 
         public SettingsPanel(GameBootstrap game, Transform buttonParent, Transform overlayParent)
@@ -37,7 +48,10 @@ namespace Cafe
             HudBuilder.Stretch(dim.rectTransform);
             root = dim.gameObject;
             Image card = HudBuilder.Panel(dim.transform, "Card", true);
-            HudBuilder.SetFixed(card.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(CardW, CardH));
+            bool fpsRow = GraphicsQuality.FpsSelectable;
+            HudBuilder.SetFixed(card.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero,
+                new Vector2(CardW, CardH + RowH * (fpsRow ? 2 : 1)));
+            card.gameObject.AddComponent<FitInCanvas>(); // máy có thêm hàng chọn FPS: thẻ cao hơn màn hình thì tự thu nhỏ
 
             Text title = HudBuilder.AddText(card.transform, "Title", "Cài đặt đồ họa", 46, TextAnchor.MiddleCenter, HudBuilder.Ink, true, false);
             HudBuilder.SetFixed(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(800f, 60f));
@@ -48,6 +62,9 @@ namespace Cafe
                 float x = -total * 0.5f + OptionW * 0.5f + i * (OptionW + OptionGap);
                 options[i] = BuildOption(card.transform, GraphicsPresets.All[i], x);
             }
+
+            if (fpsRow) BuildFpsRow(card.transform);
+            BuildMotionRow(card.transform, RowTop - (fpsRow ? RowH : 0f));
 
             recommend = HudBuilder.AddText(card.transform, "Recommend", "", 28, TextAnchor.MiddleCenter, HudBuilder.InkSoft, false, false);
             HudBuilder.SetFixed(recommend.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 150f), new Vector2(900f, 44f));
@@ -91,6 +108,40 @@ namespace Cafe
             return v;
         }
 
+        /// Hàng "Khung hình/giây: 60 | 90 | 120" ngay dưới 3 mức đồ họa; chỉ dựng khi màn hình quét nhanh hơn 60 Hz.
+        private void BuildFpsRow(Transform card)
+        {
+            fpsChoices = GraphicsQuality.FpsChoices;
+            fpsButtons = new ClayButton[fpsChoices.Length];
+            Text label = HudBuilder.AddText(card, "FpsLabel", "Khung hình/giây (mức Thấp luôn 30)", 30, TextAnchor.MiddleLeft, HudBuilder.Ink, true, false);
+            HudBuilder.SetFixed(label.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, 1f), new Vector2(RowLeft, RowTop), new Vector2(FpsLabelW, 84f));
+            label.horizontalOverflow = HorizontalWrapMode.Wrap;
+            HudBuilder.Fit(label, 20);
+
+            for (int i = 0; i < fpsChoices.Length; i++)
+            {
+                int fps = fpsChoices[i];
+                Text text;
+                fpsButtons[i] = HudBuilder.AddLabelButton(card, "Fps_" + fps, ClayStyle.Green, fps.ToString(), 40, () => GraphicsQuality.SetFps(fps), out text);
+                HudBuilder.SetFixed((RectTransform)fpsButtons[i].transform, new Vector2(0.5f, 1f), new Vector2(0f, 1f),
+                    new Vector2(RowLeft + FpsLabelW + OptionGap + i * (FpsButtonW + OptionGap), RowTop), new Vector2(FpsButtonW, 84f));
+            }
+        }
+
+        /// Hàng "Giảm chuyển động: BẬT / TẮT" (camera bớt xoay gắt, chống chóng mặt). Luôn có, kể cả trên máy tính.
+        private void BuildMotionRow(Transform card, float top)
+        {
+            Text label = HudBuilder.AddText(card, "MotionLabel", "Giảm chuyển động (đỡ chóng mặt)", 30, TextAnchor.MiddleLeft, HudBuilder.Ink, true, false);
+            HudBuilder.SetFixed(label.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, 1f), new Vector2(RowLeft, top), new Vector2(FpsLabelW, 84f));
+            label.horizontalOverflow = HorizontalWrapMode.Wrap;
+            HudBuilder.Fit(label, 20);
+
+            motionButton = HudBuilder.AddLabelButton(card, "MotionToggle", ClayStyle.Green, "TẮT", 40,
+                () => GraphicsQuality.SetReduceMotion(!GraphicsQuality.ReduceMotion), out motionText);
+            HudBuilder.SetFixed((RectTransform)motionButton.transform, new Vector2(0.5f, 1f), new Vector2(0f, 1f),
+                new Vector2(RowLeft + FpsLabelW + OptionGap, top), new Vector2(MotionButtonW, 84f));
+        }
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public void DebugOpen(bool value) { SetOpen(value); }
 #endif
@@ -113,6 +164,15 @@ namespace Cafe
                 v.button.SetTint(selected ? Color.white : new Color(0.62f, 0.6f, 0.55f, 1f));
                 v.badge.text = selected ? "ĐANG DÙNG" : (v.level == GraphicsQuality.Recommended ? "Gợi ý cho máy bạn" : "");
             }
+            // Mức Thấp cố định 30 FPS nên không chọn nút nào; mức khác sáng đúng nút đang dùng
+            for (int i = 0; i < fpsButtons.Length; i++)
+            {
+                bool on = current != GraphicsLevel.Low && fpsChoices[i] == GraphicsQuality.TargetFps;
+                fpsButtons[i].SetTint(on ? Color.white : new Color(0.62f, 0.6f, 0.55f, 1f));
+            }
+            bool calm = GraphicsQuality.ReduceMotion;
+            motionText.text = calm ? "BẬT" : "TẮT";
+            motionButton.SetTint(calm ? Color.white : new Color(0.62f, 0.6f, 0.55f, 1f));
             recommend.text = "Đổi mức có hiệu lực ngay. Máy giật thì chọn THẤP; máy mạnh chọn CAO.";
         }
 

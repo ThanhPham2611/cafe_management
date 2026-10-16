@@ -95,6 +95,13 @@ namespace Cafe
             return false;
         }
 
+        /// Khách quen regularId có đang nhận đúng món ruột recipeId không.
+        public bool IsFavorite(string regularId, string recipeId)
+        {
+            RegularDefinition def = FindDefinition(regularId);
+            return def != null && recipeId == def.favoriteRecipe;
+        }
+
         public void RecordService(string regularId, string recipeId, int quality, float waitSeconds, float cleanliness)
         {
             RegularDefinition def = FindDefinition(regularId);
@@ -130,6 +137,13 @@ namespace Cafe
             if (item == null || !item.TryCompleteChapter(view.ChapterIndex)) return false;
             queued.Remove(view.Chapter.id);
             GrantReward(view.Chapter.reward);
+            if (game != null)
+            {
+                // Truyện khách quen cũng là đường lên sao: RP cố định theo chương (economy §20)
+                float rp = game.Reputation.Add(GameBalance.StoryChapterRp(view.ChapterIndex));
+                game.NotifyRewardGranted(0, rp);
+                GameEvents.RaiseToast(string.Format(Strings.StoryRpFmt, Mathf.RoundToInt(rp)));
+            }
             RaiseChanged();
             if (game != null) game.SaveSnapshot();
             return true;

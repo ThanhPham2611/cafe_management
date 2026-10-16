@@ -89,9 +89,11 @@ namespace Cafe
         public void DebugToggleStaffPanel() { if (staffPanel != null) staffPanel.DebugToggle(); }
         public void DebugScrollStaff(float normalized) { if (staffPanel != null) staffPanel.DebugScroll(normalized); }
         public void DebugOpenSettings(bool open) { if (settingsPanel != null) settingsPanel.DebugOpen(open); }
+        public void DebugOpenMissions(bool open) { if (missionPanel != null) missionPanel.DebugOpen(open); }
         public void DebugOpenZones(bool open) { if (zonePanel != null) zonePanel.DebugOpen(open); }
 #endif
 
+        private ClayButton openShopButton; // nút MỞ CỬA, chỉ hiện ở pha chuẩn bị
         private RectTransform menuRoot;
         private GameObject menuDot;     // chấm đỏ trên nút MENU khi có nhiệm vụ nhận được
         private GameObject missionDot;
@@ -152,6 +154,7 @@ namespace Cafe
             settingsPanel = new SettingsPanel(game, safe, canvas.transform); // nút "ĐỒ HỌA" + chọn Thấp / Vừa / Cao
             zonePanel = new ZonePanel(game, safe, canvas.transform);         // nút "MỞ RỘNG" (cấp 3) + bảng Sân vườn / Lầu / VIP
             BuildMenu(safe); // gom các nút phụ vào popup MENU
+            BuildOpenShopButton(safe);
             storyDialog = new StoryDialog(game, canvas.transform);
 
             // Chữ nổi (trên cùng)
@@ -164,6 +167,8 @@ namespace Cafe
             GameEvents.OrderClaimChanged += OnOrderChanged;
             GameEvents.DayStarted += OnDayStarted;
             GameEvents.DayEnded += OnDayEnded;
+            GameEvents.PrepStarted += OnPrepStarted;
+            GameEvents.LevelUp += OnLevelUp;
             GameEvents.CustomerServed += OnServed;
             GameEvents.Toast += ShowToast;
             game.Station.Changed += RebuildCards;
@@ -198,6 +203,8 @@ namespace Cafe
             GameEvents.OrderClaimChanged -= OnOrderChanged;
             GameEvents.DayStarted -= OnDayStarted;
             GameEvents.DayEnded -= OnDayEnded;
+            GameEvents.PrepStarted -= OnPrepStarted;
+            GameEvents.LevelUp -= OnLevelUp;
             GameEvents.CustomerServed -= OnServed;
             GameEvents.Toast -= ShowToast;
             if (game != null)
@@ -335,6 +342,17 @@ namespace Cafe
             }
         }
 
+        /// Nút MỞ CỬA giữa-dưới (pha chuẩn bị). Nằm dưới bảng Cửa hàng để bảng phủ lên khi mở ở màn hẹp.
+        private void BuildOpenShopButton(RectTransform safe)
+        {
+            Text label;
+            openShopButton = HudBuilder.AddLabelButton(safe, "OpenShopButton", ClayStyle.Red, Strings.OpenShop, 54, game.StartNextDay, out label);
+            HudBuilder.SetFixed((RectTransform)openShopButton.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, Margin), new Vector2(480f, 136f));
+            openShopButton.gameObject.SetActive(false);
+            Transform shop = safe.Find("ShopPanel");
+            if (shop != null) openShopButton.transform.SetSiblingIndex(shop.GetSiblingIndex());
+        }
+
         private void ToggleMenu() { menuRoot.gameObject.SetActive(!menuRoot.gameObject.activeSelf); }
         private void CloseMenu() { menuRoot.gameObject.SetActive(false); }
 
@@ -411,12 +429,25 @@ namespace Cafe
         {
             if (starCountText == null) return;
             starCountText.text = stars.ToString();
-            int next;
-            game.Reputation.GetRange(out _, out next);
+            // Thanh và chữ theo LEVEL (bậc nhỏ, đầy nhanh) thay vì cả hạng sao: người chơi thấy tiến bộ thường xuyên
+            int level = LevelRules.LevelFor(rp);
+            int next = LevelRules.NextRp(level);
             rpText.text = next < 0
-                ? string.Format(Strings.RpMaxFmt, Mathf.FloorToInt(rp))
-                : string.Format(Strings.RpFmt, Mathf.FloorToInt(rp), next);
-            rpBar.Set(game.Reputation.ProgressToNext, HudBuilder.Accent);
+                ? string.Format(Strings.LevelMaxFmt, level, Strings.FormatInt(Mathf.FloorToInt(rp)))
+                : string.Format(Strings.LevelRpFmt, level, Strings.FormatInt(Mathf.FloorToInt(rp)), Strings.FormatInt(next));
+            rpBar.Set(next < 0 ? 1f : Mathf.Clamp01((rp - LevelRules.RpFor(level)) / (float)(next - LevelRules.RpFor(level))), HudBuilder.Accent);
+        }
+
+        /// Lên level uy tín: chữ nổi giữa-trên (kèm thưởng), pháo giấy; level mốc sao thêm biểu ngữ "SAO N!".
+        private void OnLevelUp(int level)
+        {
+            int star;
+            bool isStar = LevelRules.IsStarLevel(level, out star);
+            int gems = LevelRules.RewardGems(level);
+            string msg = string.Format(Strings.LevelUpFmt, level, Strings.FormatInt(LevelRules.RewardXu(level)));
+            if (gems > 0) msg += string.Format(Strings.LevelGemsFmt, gems);
+            UiFx.FloatTextTop(msg, HudBuilder.Accent);
+            if (game.Tier != null) game.Tier.PlayConfetti(isStar, isStar ? string.Format(Strings.StarUpFmt, star) : null);
         }
 
         private void OnCupChipClicked()
@@ -450,9 +481,21 @@ namespace Cafe
             RebuildCards();
         }
 
+        /// Pha chuẩn bị: ẩn tổng kết, giữ nút Cửa hàng, hiện MỞ CỬA; đồng hồ đứng ở 06:00 của ngày kế tiếp.
+        private void OnPrepStarted()
+        {
+            summaryPanel.Hide();
+            shopPanel.SetVisible(true);
+            openShopButton.gameObject.SetActive(true);
+            dayText.text = string.Format(Strings.DayChipFmt, game.Day.Day + 1);
+            timeText.text = "06:00";
+            lastMinute = -1;
+        }
+
         private void OnDayStarted(int day)
         {
             summaryPanel.Hide();
+            openShopButton.gameObject.SetActive(false);
             brewPanel.SetVisible(true);
             shopPanel.SetVisible(true);
             recipeBook.SetVisible(true);

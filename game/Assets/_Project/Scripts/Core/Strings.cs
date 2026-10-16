@@ -9,6 +9,11 @@ namespace Cafe
         public const string CupsFmt = "{0}";
         public const string RpFmt = "{0} / {1} RP";
         public const string RpMaxFmt = "{0} RP";
+        public const string LevelRpFmt = "Lv {0}  {1}/{2}";
+        public const string LevelMaxFmt = "Lv {0}  {1} RP";
+        public const string LevelUpFmt = "LÊN LEVEL {0}!  +{1} Xu";
+        public const string LevelGemsFmt = "  +{0} Hạt";
+        public const string StarUpFmt = "SAO {0}!";
 
         public const string OrdersTitle = "Đơn chờ";
         public const string NoOrders = "Chờ khách ghé quán...";
@@ -56,6 +61,10 @@ namespace Cafe
         public const string SumRp = "Uy tín";
         public const string SumStars = "Hạng sao";
         public const string NewDay = "Ngày mới";
+        public const string PrepShop = "Chuẩn bị quán";
+        public const string OpenShop = "MỞ CỬA";
+        public const string StoryRpFmt = "Truyện khách quen: +{0} RP";
+        public const string OpeningGiftFmt = "Quà khai trương: +{0} Xu";
 
         // Cửa hàng / Build mode
         public const string Shop = "Cửa hàng";

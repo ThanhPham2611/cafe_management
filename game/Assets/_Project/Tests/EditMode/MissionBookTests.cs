@@ -185,6 +185,88 @@ namespace Cafe.Tests
         }
 
         [Test]
+        public void EnsureToday_PicksOneMissionPerSlot()
+        {
+            for (int tier = 1; tier <= 3; tier++)
+                for (int key = 0; key < 200; key++)
+                {
+                    var b = new MissionBook(x => { }, g => { }, r => { });
+                    b.EnsureToday(key, tier, AllKnown);
+                    var slots = new System.Collections.Generic.HashSet<int>();
+                    for (int i = 0; i < b.Items.Count; i++) slots.Add(MissionCatalog.Find(b.Items[i].id).slot);
+                    Assert.That(slots.Count, Is.EqualTo(MissionBook.DailyCount), "tier " + tier + " key " + key);
+                }
+        }
+
+        [Test]
+        public void EnsureToday_Tier1_NeverOffersExperiment()
+        {
+            for (int key = 0; key < 200; key++)
+            {
+                var b = new MissionBook(x => { }, g => { }, r => { });
+                b.EnsureToday(key, 1, AllKnown);
+                for (int i = 0; i < b.Items.Count; i++)
+                    Assert.That(MissionCatalog.Find(b.Items[i].id).kind, Is.Not.EqualTo(MissionKind.Experiment));
+            }
+        }
+
+        [Test]
+        public void RecordPurchase_AdvancesBuyItems_AndIgnoresOtherMissions()
+        {
+            int idx = GenerateUntil(MissionKind.BuyItems, 1, AllKnown);
+            int target = book.Items[idx].target;
+
+            book.RecordServed("tra_da", 2, false, 0);
+            Assert.That(book.Items[idx].progress, Is.Zero);
+            for (int i = 0; i < target + 3; i++) book.RecordPurchase();
+
+            Assert.That(book.Items[idx].progress, Is.EqualTo(target));
+            Assert.That(book.Items[idx].IsDone, Is.True);
+        }
+
+        [Test]
+        public void RecordServed_RegularFavorite_OnlyCountsFavoriteServes()
+        {
+            int idx = GenerateUntil(MissionKind.RegularFavorite, 1, AllKnown);
+
+            book.RecordServed("ca_phe_sua", 2, false, 0);
+            Assert.That(book.Items[idx].progress, Is.Zero, "khách thường / sai món không tính");
+            book.RecordServed("ca_phe_sua", 2, false, 0, favorite: true);
+            Assert.That(book.Items[idx].progress, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void RecordExperiment_AdvancesTryRecipe_AndClaimPaysRpAndGems()
+        {
+            int idx = GenerateUntil(MissionKind.Experiment, 2, AllKnown);
+            MissionTemplate t = MissionCatalog.Find(book.Items[idx].id);
+
+            for (int i = 0; i < book.Items[idx].target; i++) book.RecordExperiment();
+            Assert.That(book.Items[idx].IsDone, Is.True);
+
+            Assert.That(book.Claim(idx), Is.True);
+            Assert.That(rpPaid, Is.EqualTo(t.rewardRp).Within(0.001f));
+            Assert.That(gemsPaid, Is.EqualTo(t.rewardGems));
+            Assert.That(book.Claim(idx), Is.False);
+            Assert.That(rpPaid, Is.EqualTo(t.rewardRp).Within(0.001f), "nhận một lần");
+        }
+
+        [Test]
+        public void RecordDay_NoWalkaway_MinServedGrowsWithTier()
+        {
+            Assert.That(MissionBook.MinServedFor(1), Is.EqualTo(MissionBook.MinServedForDayMission));
+            Assert.That(MissionBook.MinServedFor(3), Is.GreaterThan(MissionBook.MinServedFor(2)));
+
+            int idx = GenerateUntil(MissionKind.NoWalkaway, 2, AllKnown);
+            int need = MissionBook.MinServedFor(2);
+
+            book.RecordDay(served: need - 1, lost: 0, cleanliness: -1f, tier: 2);
+            Assert.That(book.Items[idx].progress, Is.Zero, "cấp 2 cần đủ khách mới tính");
+            book.RecordDay(served: need, lost: 0, cleanliness: -1f, tier: 2);
+            Assert.That(book.Items[idx].IsDone, Is.True);
+        }
+
+        [Test]
         public void RecordDay_CleanDay_NeedsCleanlinessAtLeast80()
         {
             int idx = GenerateUntil(MissionKind.CleanDay, 2, AllKnown);
@@ -241,7 +323,9 @@ namespace Cafe.Tests
                 book.RecordServed("tra_da", 3, false, 50);
                 book.RecordServed("ca_phe_sua", 3, false, 50);
                 book.RecordServed("ca_phe_den", 3, false, 50);
-                book.RecordServed("bac_xiu", 3, false, 50);
+                book.RecordServed("bac_xiu", 3, false, 50, favorite: true);
+                book.RecordPurchase();
+                book.RecordExperiment();
             }
             book.RecordDay(20, 0, 90f);
             for (int i = 0; i < book.Items.Count; i++)
@@ -254,11 +338,14 @@ namespace Cafe.Tests
             Assert.That(book.Claim(2), Is.True);
             Assert.That(book.ChestReady, Is.True);
 
+            // Nhiệm vụ có thể tự thưởng RP / Hạt khi nhận (buy_items, regular_fav, try_recipe): chỉ so phần tăng thêm của rương
+            int gemsBefore = gemsPaid;
+            float rpBefore = rpPaid;
             Assert.That(book.ClaimChest(), Is.True);
-            Assert.That(gemsPaid, Is.EqualTo(MissionBook.ChestGems));
-            Assert.That(rpPaid, Is.EqualTo(MissionBook.ChestRp).Within(0.001f));
+            Assert.That(gemsPaid - gemsBefore, Is.EqualTo(MissionBook.ChestGems));
+            Assert.That(rpPaid - rpBefore, Is.EqualTo(MissionBook.ChestRp).Within(0.001f));
             Assert.That(book.ClaimChest(), Is.False);
-            Assert.That(gemsPaid, Is.EqualTo(MissionBook.ChestGems));
+            Assert.That(gemsPaid - gemsBefore, Is.EqualTo(MissionBook.ChestGems));
         }
 
         [Test]

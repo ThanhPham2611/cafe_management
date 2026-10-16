@@ -331,6 +331,7 @@ namespace Cafe
             RecipeBook rb = game.Recipes;
             BrewStep[] seq = expSteps.ToArray();
             int spent = seq.Length * RecipeBalance.ExperimentIngredientXu;
+            if (game.Missions != null) game.Missions.RecordExperiment();
 
             int gain;
             string message;

@@ -122,6 +122,11 @@ namespace Cafe
             ClayButton edit = HudBuilder.AddLabelButton(card, "EditLook", ClayStyle.Cream, Strings.EditLook, 30, OnEditLook, out editLabel);
             HudBuilder.SetFixed((RectTransform)edit.transform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(34f, 40f), new Vector2(210f, 110f));
 
+            // Trang trí / mua đồ / nâng cấp quán trước khi mở cửa (đồng hồ đứng, chưa có khách)
+            Text prepLabel;
+            ClayButton prep = HudBuilder.AddLabelButton(card, "PrepShop", ClayStyle.Gold, Strings.PrepShop, 30, OnPrep, out prepLabel);
+            HudBuilder.SetFixed((RectTransform)prep.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-34f, 40f), new Vector2(210f, 110f));
+
             root.SetActive(false);
         }
 
@@ -143,6 +148,11 @@ namespace Cafe
         private void OnEditLook()
         {
             game.OpenCreator(true);
+        }
+
+        private void OnPrep()
+        {
+            game.EnterPrep();
         }
 
         private void OnNextDay()

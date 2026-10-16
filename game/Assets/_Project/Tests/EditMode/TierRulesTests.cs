@@ -9,7 +9,7 @@ namespace Cafe.Tests
         public void UpgradeCost_Tier2IsDeposit_Tier3IsPriceMinusRefundedDeposit()
         {
             Assert.That(GameBalance.UpgradeCost(2, 0), Is.EqualTo(GameBalance.Tier2Deposit));
-            Assert.That(GameBalance.UpgradeCost(3, GameBalance.Tier2Deposit), Is.EqualTo(232000), "250.000 - cọc 18.000 (economy §3.5)");
+            Assert.That(GameBalance.UpgradeCost(3, GameBalance.Tier2Deposit), Is.EqualTo(122000), "140.000 - cọc 18.000 (economy §3.5, §20)");
             Assert.That(GameBalance.UpgradeCost(3, 0), Is.EqualTo(GameBalance.Tier3Price));
             Assert.That(GameBalance.UpgradeCost(3, 999999), Is.EqualTo(0), "cọc không bao giờ làm giá âm");
         }
@@ -19,6 +19,23 @@ namespace Cafe.Tests
         {
             Assert.That(GameBalance.UpgradeStarRP(2), Is.EqualTo(GameBalance.StarThresholds[1]));
             Assert.That(GameBalance.UpgradeStarRP(3), Is.EqualTo(GameBalance.StarThresholds[2]));
+        }
+
+        [Test]
+        public void StarThresholds_UseTierConstants_AndStayAscending()
+        {
+            Assert.That(GameBalance.StarThresholds[1], Is.EqualTo(GameBalance.Tier2StarRP));
+            Assert.That(GameBalance.StarThresholds[2], Is.EqualTo(GameBalance.Tier3StarRP));
+            for (int i = 1; i < GameBalance.StarThresholds.Length; i++)
+                Assert.That(GameBalance.StarThresholds[i], Is.GreaterThan(GameBalance.StarThresholds[i - 1]));
+        }
+
+        [Test]
+        public void StoryChapterRp_GrowsWithChapter()
+        {
+            Assert.That(GameBalance.StoryChapterRp(0), Is.EqualTo(60));
+            Assert.That(GameBalance.StoryChapterRp(1), Is.EqualTo(80));
+            Assert.That(GameBalance.StoryChapterRp(2), Is.EqualTo(100));
         }
 
         [Test]
@@ -104,6 +121,14 @@ namespace Cafe.Tests
             ledger.ClearRentCycle();
             Assert.That(ledger.Debt, Is.EqualTo(1200));
             Assert.That(ledger.DaysSinceRent, Is.Zero);
+        }
+
+        [Test]
+        public void NoSeatWalkAway_CostsNoReputation_ButImpatienceDoes()
+        {
+            Assert.That(GameBalance.WalkAwayRpNoSeat, Is.Zero);
+            Assert.That(GameBalance.WalkAwayRp, Is.LessThan(0f));
+            Assert.That(GameBalance.StarThresholds[3], Is.EqualTo(12000), "★4 phải đạt được trong vài chục ngày cấp 3 (economy §21)");
         }
 
         [Test]

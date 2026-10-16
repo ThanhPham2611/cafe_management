@@ -22,9 +22,15 @@ namespace Cafe
     {
         public const int DailyCount = 3;
         public const int ChestGems = 10;
-        public const float ChestRp = 20f;
-        /// Ngày in-game phải phục vụ ít nhất ngần này khách mới tính nhiệm vụ "cả ngày" (tránh ngày vắng trống).
+        public const float ChestRp = 30f;
+        /// Ngày in-game phải phục vụ ít nhất ngần này khách mới tính nhiệm vụ "cả ngày" (tránh ngày vắng trống). Cấp 1.
         public const int MinServedForDayMission = 8;
+
+        /// Cấp 2 đo ~38 khách/ngày, cấp 3 ~53-88: ngưỡng theo cấp để "ngày trọn vẹn" không thành nhiệm vụ rỗng.
+        public static int MinServedFor(int tier)
+        {
+            return tier >= 3 ? 40 : (tier == 2 ? 25 : MinServedForDayMission);
+        }
         public const float CleanDayThreshold = 80f;
 
         private readonly Action<int> giveXu;
@@ -96,12 +102,20 @@ namespace Cafe
                 pool[j] = tmp;
             }
 
-            // Mỗi loại tối đa một nhiệm vụ trong ngày; thiếu thì lấy thêm bất kể loại
+            // Mỗi khe (vận hành / tay nghề / quán và khách quen) một nhiệm vụ để ngày nào cũng chạm đủ các trụ cột;
+            // rồi mỗi loại tối đa một nhiệm vụ; thiếu thì lấy thêm bất kể loại
             var usedKinds = new HashSet<MissionKind>();
             var picked = new List<MissionTemplate>(DailyCount);
+            for (int slot = 0; slot < DailyCount; slot++)
+                for (int i = 0; i < pool.Count; i++)
+                {
+                    if (pool[i].slot != slot || !usedKinds.Add(pool[i].kind)) continue;
+                    picked.Add(pool[i]);
+                    break;
+                }
             for (int i = 0; i < pool.Count && picked.Count < DailyCount; i++)
             {
-                if (!usedKinds.Add(pool[i].kind)) continue;
+                if (picked.Contains(pool[i]) || !usedKinds.Add(pool[i].kind)) continue;
                 picked.Add(pool[i]);
             }
             for (int i = 0; i < pool.Count && picked.Count < DailyCount; i++)
@@ -118,8 +132,8 @@ namespace Cafe
 
         // ------------------------------------------------------------------ ghi nhận tiến độ
 
-        /// Khách vừa được phục vụ. tip = Xu tiền tip của khách đó.
-        public void RecordServed(string recipeId, int quality, bool hidden, int tip)
+        /// Khách vừa được phục vụ. tip = Xu tiền tip của khách đó; favorite = khách quen nhận đúng món ruột.
+        public void RecordServed(string recipeId, int quality, bool hidden, int tip, bool favorite = false)
         {
             bool changed = false;
             for (int i = 0; i < items.Count; i++)
@@ -134,16 +148,34 @@ namespace Cafe
                     case MissionKind.ThreeStar: add = quality >= 3 ? 1 : 0; break;
                     case MissionKind.SellHidden: add = hidden ? 1 : 0; break;
                     case MissionKind.EarnTips: add = Math.Max(0, tip); break;
+                    case MissionKind.RegularFavorite: add = favorite ? 1 : 0; break;
                 }
                 if (add > 0 && Advance(i, add)) changed = true;
             }
             if (changed) Raise();
         }
 
-        /// Hết một ngày in-game.
-        public void RecordDay(int served, int lost, float cleanliness)
+        /// Vừa mua một món đồ (tốn Xu) cho quán.
+        public void RecordPurchase() { RecordKind(MissionKind.BuyItems); }
+
+        /// Vừa chốt một lần thử nghiệm công thức ở Sổ công thức.
+        public void RecordExperiment() { RecordKind(MissionKind.Experiment); }
+
+        private void RecordKind(MissionKind kind)
         {
-            if (served < MinServedForDayMission) return;
+            bool changed = false;
+            for (int i = 0; i < items.Count; i++)
+            {
+                MissionTemplate t = MissionCatalog.Find(items[i].id);
+                if (t != null && t.kind == kind && Advance(i, 1)) changed = true;
+            }
+            if (changed) Raise();
+        }
+
+        /// Hết một ngày in-game. tier = cấp quán lúc đóng cửa (quyết định số khách tối thiểu của nhiệm vụ "cả ngày").
+        public void RecordDay(int served, int lost, float cleanliness, int tier = 1)
+        {
+            if (served < MinServedFor(tier)) return;
             bool changed = false;
             for (int i = 0; i < items.Count; i++)
             {
@@ -176,6 +208,9 @@ namespace Cafe
             m.claimed = true;
             items[index] = m;
             if (m.rewardXu > 0 && giveXu != null) giveXu(m.rewardXu);
+            MissionTemplate t = MissionCatalog.Find(m.id);
+            if (t != null && t.rewardGems > 0 && giveGems != null) giveGems(t.rewardGems);
+            if (t != null && t.rewardRp > 0 && giveRp != null) giveRp(t.rewardRp);
             Raise();
             return true;
         }

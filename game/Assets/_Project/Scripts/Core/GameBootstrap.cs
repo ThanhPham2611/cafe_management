@@ -140,7 +140,7 @@ namespace Cafe
             Station = new BrewStation(this);
 
             Wallet.Init(hasSave ? save.xu : GameBalance.StartXu);
-            Reputation.Init(hasSave ? save.rp : 0f);
+            Reputation.Init(hasSave ? save.rp : 0f, hasSave ? save.levelRewarded : 0);
             // Cấp quán: phải có trước sổ công thức và lưới (cả hai đọc cấp hiện tại)
             Tier = new GameObject("TierManager").AddComponent<TierManager>();
             Tier.Init(this, hasSave ? save : null);
@@ -228,6 +228,7 @@ namespace Cafe
             GameEvents.CustomerServed += OnCustomerServedForMissions;
             GameEvents.DayStarted += OnDayStartedForMissions;
             GameEvents.DayEnded += OnDayEndedForMissions;
+            GameEvents.LevelUp += OnLevelUpReward;
 
             // Camera + input
             Camera cam = Camera.main;
@@ -318,14 +319,25 @@ namespace Cafe
 
         // ---- Ngày ----
 
+        /// Mở cửa ngày kế tiếp: từ nút "Ngày mới" ở màn tổng kết hoặc nút "Mở cửa" ở pha chuẩn bị.
         public void StartNextDay()
         {
             StartDay(Day.Day + 1);
         }
 
-        private void StartDay(int day)
+        /// Màn tổng kết -> pha chuẩn bị: đồng hồ đứng, chưa có khách; mua đồ / bày quán / nâng cấp quán rồi mới mở cửa.
+        public void EnterPrep()
         {
-            // Qua đêm: thu hết ly để lại
+            if (Day.CurrentPhase != DayCycle.Phase.Summary) return;
+            ResetForNight();
+            Day.EnterPrep();
+            SaveSnapshot();
+            GameEvents.RaisePrepStarted();
+        }
+
+        /// Qua đêm: thu hết ly để lại, dọn đơn / quầy, chủ quán và nhân viên về chỗ.
+        private void ResetForNight()
+        {
             while (LeftoverCups.Count > 0)
             {
                 LeftoverCup c = LeftoverCups[LeftoverCups.Count - 1];
@@ -338,6 +350,11 @@ namespace Cafe
             Station.ResetAll();
             if (Owner != null) Owner.ResetForNewDay();
             if (Staff != null) Staff.ResetForNewDay();
+        }
+
+        private void StartDay(int day)
+        {
+            ResetForNight();
 
             Day.Begin(day);
             Tier.OnDayBegin(Day.Summary); // cấp 2: tới kỳ thì trừ tiền thuê nhà (trước khi chốt mốc Xu đầu ngày)
@@ -431,7 +448,8 @@ namespace Cafe
             if (Regulars != null) Regulars.WriteToSave(data);
             if (Missions != null) Missions.WriteToSave(data);
             if (Tutorial != null) Tutorial.WriteToSave(data);
-            if (Day.CurrentPhase == DayCycle.Phase.Summary)
+            data.levelRewarded = Reputation.RewardedLevel;
+            if (Day.CurrentPhase == DayCycle.Phase.Summary || Day.CurrentPhase == DayCycle.Phase.Prep)
             {
                 data.day = Day.Day + 1;
                 data.xu = Wallet.Xu;
@@ -518,7 +536,8 @@ namespace Cafe
         {
             RecipeDef r = c != null ? c.ServedRecipe : null;
             if (r == null || Missions == null) return;
-            Missions.RecordServed(r.id, c.ServedQuality, r.hidden, c.LastTip);
+            bool favorite = Regulars != null && Regulars.IsFavorite(c.RegularId, r.id);
+            Missions.RecordServed(r.id, c.ServedQuality, r.hidden, c.LastTip, favorite);
         }
 
         private void OnDayStartedForMissions(int day)
@@ -526,10 +545,23 @@ namespace Cafe
             EnsureMissions(); // phiên chơi dài qua 04:00 thì sang bộ nhiệm vụ mới
         }
 
+        /// Lên level uy tín: cộng Xu (và Hạt ở level mốc sao). Dời mốc Xu đầu ngày như thưởng nhiệm vụ để vào lại giữa ngày
+        /// không mất thưởng; level đã thưởng được lưu cùng lúc nên không bị thưởng hai lần. Hiệu ứng nằm ở HudController.
+        private void OnLevelUpReward(int level)
+        {
+            int xu = LevelRules.RewardXu(level);
+            int gems = LevelRules.RewardGems(level);
+            Wallet.Earn(xu);
+            if (gems > 0 && Gems != null) Gems.Add(gems);
+            Debug.Log($"[Level] lên Lv {level} (RP {Reputation.RP:0}): +{xu} Xu" + (gems > 0 ? $", +{gems} Hạt" : ""));
+            NotifyRewardGranted(xu, 0f);
+        }
+
         private void OnDayEndedForMissions(DaySummary s)
         {
             if (Missions == null || s == null) return;
-            Missions.RecordDay(s.served, s.lost, s.cleanliness);
+            // "Không ai bỏ về" chỉ tính khách bực (chờ lâu / bẩn); hết chỗ là quán đông, không phải lỗi người chơi
+            Missions.RecordDay(s.served, s.lost - s.lostNoSeat, s.cleanliness, s.tier);
             SaveSnapshot();
         }
 
@@ -549,6 +581,7 @@ namespace Cafe
             GameEvents.CustomerServed -= OnCustomerServedForMissions;
             GameEvents.DayStarted -= OnDayStartedForMissions;
             GameEvents.DayEnded -= OnDayEndedForMissions;
+            GameEvents.LevelUp -= OnLevelUpReward;
             if (Staff != null) Staff.Dispose();
             if (Station != null) Station.Dispose();
             if (Recipes != null)

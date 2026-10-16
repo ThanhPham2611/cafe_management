@@ -360,7 +360,7 @@ namespace Cafe
 
         // ---- Rời đi ----
 
-        /// Bỏ đi (hết kiên nhẫn / không có ghế): penalty = -2 RP.
+        /// Bỏ đi (hết kiên nhẫn / không có ghế / quán bẩn). penalty = true: khách bực, trừ RP (WalkAwayRp; hết chỗ thì WalkAwayRpNoSeat).
         private enum LostReason { Other, NoSeat, Patience, Dirty }
 
         private void Abandon(bool penalty, LostReason reason = LostReason.Other)
@@ -384,8 +384,12 @@ namespace Cafe
             if (penalty)
             {
                 visual.SetPose(CustomerPose.Angry);
-                float rp = game.Reputation.Add(GameBalance.WalkAwayRp);
-                if (sum != null) sum.rpGained += rp;
+                float delta = reason == LostReason.NoSeat ? GameBalance.WalkAwayRpNoSeat : GameBalance.WalkAwayRp;
+                if (delta != 0f)
+                {
+                    float rp = game.Reputation.Add(delta);
+                    if (sum != null) sum.rpGained += rp;
+                }
             }
             BeginLeaving();
         }

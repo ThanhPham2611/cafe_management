@@ -65,10 +65,11 @@ Chữ trên nền màu dùng `Outline`/`Shadow` component màu `coffee` 2px đ�
 ## 6. Camera (cảm ứng)
 | Thao tác | Kết quả |
 |---|---|
-| 1 ngón kéo ngang | **Xoay 360° tự do** quanh tâm quán (có quán tính) |
-| 1 ngón kéo dọc | Nghiêng camera (pitch 30°–70°) |
+| 1 ngón kéo ngang | **Xoay 360° tự do** quanh tâm quán, 0,14°/pixel; quán tính ngắn (văng tối đa ~60°, dừng sau ~0,5 giây) |
+| 1 ngón kéo dọc | Nghiêng camera (pitch 30°–70°); vuốt chủ yếu theo chiều ngang thì không nghiêng |
 | 2 ngón kéo | Di chuyển (pan) |
 | 2 ngón chụm/mở | Zoom |
-| 2 ngón xoay | Xoay (twist) |
+| 2 ngón xoay | Xoay (twist), chỉ khi đã xoay quá 10° (zoom / pan không tự xoay) |
+| Cài đặt → "Giảm chuyển động" | Tắt quán tính, xoay chậm một nửa (≤ 150°/giây), thả tay thì dính góc 45°, không nghiêng, không xoay bằng 2 ngón. Lưu theo máy (PlayerPrefs `cafe.reducemotion`) |
 | Chuột: trái kéo = xoay, phải/giữa kéo = pan, lăn = zoom | |
 | Chạm nhanh (không kéo) | Chọn khách / ly / đơn |

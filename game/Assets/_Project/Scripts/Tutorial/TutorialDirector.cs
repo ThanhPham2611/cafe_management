@@ -126,6 +126,7 @@ namespace Cafe
 
             GameEvents.DayStarted += OnDayStarted;
             GameEvents.DayEnded += OnDayEnded;
+            GameEvents.PrepStarted += OnPrepStarted;
             GameEvents.CustomerLeft += OnCustomerLeft;
         }
 
@@ -133,6 +134,7 @@ namespace Cafe
         {
             GameEvents.DayStarted -= OnDayStarted;
             GameEvents.DayEnded -= OnDayEnded;
+            GameEvents.PrepStarted -= OnPrepStarted;
             GameEvents.CustomerLeft -= OnCustomerLeft;
             TutorialGate.Reset();
         }
@@ -174,6 +176,15 @@ namespace Cafe
                 recapIndex = 0;
                 ShowRecap();
             }
+        }
+
+        /// Người chơi vào pha Chuẩn bị thay vì bấm "Ngày mới": thẻ tổng kết không còn nút để chỉ tay vào nên tắt nó.
+        /// Bước Summary vẫn kết thúc bình thường khi mở cửa ngày kế (OnDayStarted).
+        private void OnPrepStarted()
+        {
+            if (disabled || step != TutorialStep.Summary) return;
+            summaryPending = false;
+            HidePrompt();
         }
 
         private void OnDayEnded(DaySummary s)

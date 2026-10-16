@@ -48,9 +48,9 @@
 |---|---|---|
 | Nguyên liệu | 5–100 Xu/ly (~30–35% giá) | trừ tự động khi pha |
 | Ghế/bàn/nội thất thường | xem §3.6 | sink chính T1–T2 |
-| Tiền cọc + thuê mặt bằng | cọc 18.000; 7.000/tuần | T2 |
+| Tiền cọc + thuê mặt bằng | cọc 18.000; 5.000/tuần | T2 |
 | Lương nhân viên | 300–2.500/ngày/người | T2+ |
-| Mua nhà hàng | 250.000 | T3 |
+| Mua nhà hàng | 140.000 | T3 |
 | Nâng cấp máy móc / dụng cụ | 1.500–150.000 | T2–T3 |
 | Mở khu (zone) mới | 40.000 / 90.000 / 180.000 | T3 |
 | Chi nhánh | 2.000.000 (CN1), ×1,6 mỗi CN tiếp | T4 |
@@ -145,7 +145,7 @@ Chất lượng ly quyết định bởi: đúng nguyên liệu, đúng dụng c
 
 | | **T1 Vỉa hè** | **T2 Thuê mặt bằng** | **T3 Mua nhà hàng** | **T4 Chuỗi** |
 |---|---|---|---|---|
-| Điều kiện mở | — | ★2 + **18.000 Xu** cọc | ★3 + **250.000 Xu** | ★4 + **2.000.000 Xu** (CN1) |
+| Điều kiện mở | — | ★2 + **18.000 Xu** cọc | ★3 + **140.000 Xu** | ★4 + **2.000.000 Xu** (CN1) |
 | Chỗ ngồi | 4 → 12 ghế nhựa | 8 → 24 (bàn 2 ghế) | 30 → 80 (3 zone) | mỗi CN 40 (tự vận hành) |
 | Khách/ngày | 16 → 40 | 35 → 110 | 100 → 260 | CN: 80–200 (idle) |
 | Giá TB/ly | ~75–80 | ~120 | ~150 | ~150 |
@@ -166,7 +166,7 @@ Demand_T3 = 2,6 × Demand_T1-formula  (+ zone bonus: × (1 + 0,2 · số khu ph�
 Khách thực = min(Demand × eventMult × adBoost, Capacity)
 Capacity_T1 = ghế × 4 lượt/ngày
 Capacity_T2 = chỗ × 4,5 × (1 + 0,25·số NV)
-Capacity_T3 = chỗ × 5   × (1 + 0,15·số NV)
+Capacity_T3 = chỗ × 5   × (1 + 0,15·số NV)   # sức chứa cao hơn thực phục vụ là cố ý: hàng khách chờ ở cửa giữ ghế và nhân viên luôn bận (§20)
 ```
 
 Ý nghĩa: ở mỗi tier, ban đầu **Capacity** là nút thắt (→ mua ghế/bàn), sau đó **Demand/★** là nút thắt (→ nâng chất lượng, nội thất, độ sạch). Hai nút thắt thay phiên nhau = vòng lặp tycoon.
@@ -187,7 +187,7 @@ Capacity_T3 = chỗ × 5   × (1 + 0,15·số NV)
 | Hạng mục | Số |
 |---|---|
 | Tiền cọc | **18.000 Xu** (hoàn lại 100% khi chuyển sang T3 — cảm giác "được thưởng") |
-| Tiền thuê | **7.000 Xu/tuần** (trả tự động sáng thứ Hai in-game, ~17% doanh thu T2) |
+| Tiền thuê | **5.000 Xu/tuần** (trả tự động sáng thứ Hai in-game, ~12% doanh thu T2; trước 2026-10-15 là 7.000, xem §20) |
 | Thiếu tiền thuê | ghi nợ, trừ 30% doanh thu mỗi ngày cho đến hết; không phạt ★, không mất quán |
 | Bàn + 2 ghế thứ k | `700 + 120·(k)` Xu (k = số bàn đã mua thêm) |
 | Phí tuyển NV | 1.500 Xu |
@@ -198,7 +198,7 @@ Capacity_T3 = chỗ × 5   × (1 + 0,15·số NV)
 
 | Hạng mục | Số |
 |---|---|
-| Giá mua nhà | **250.000 Xu** (cọc T2 18.000 được hoàn → thực trả 232.000) |
+| Giá mua nhà | **140.000 Xu** (cọc T2 18.000 được hoàn → thực trả 122.000; trước 2026-10-15 là 250.000, xem §20) |
 | Zone 2 (sân vườn) / Zone 3 (lầu, view) / Zone VIP | 40.000 / 90.000 / 180.000 Xu |
 | Máy xay 2 họng / Máy cold brew / Máy pha espresso | 25.000 / 60.000 / 150.000 Xu |
 | Ca làm (sáng/chiều/tối) | NV mỗi ca; thiếu ca → Capacity −30% trong ca đó |
@@ -233,7 +233,7 @@ F = clamp01( (ΣComfort_zone + ΣStyle_zone) / F_ref_tier )
 ```
 
 - **T1 (vỉa hè, chưa có dọn bàn):** trọng số đổi thành `0,40·Q + 0,35·W + 0,10·C_ly + 0,15·F`, với `C_ly = 1` nếu ly được thu trong 30 s in-game, giảm tuyến tính về 0 sau 2 giờ in-game.
-- **Bỏ đi (walk-away):** không có chỗ > 10 s, hoặc t_wait > 60 s, hoặc CI < 60 (xác suất §5). Walk-away = −2 RP, không doanh thu.
+- **Bỏ đi (walk-away):** không có chỗ > 10 s, hoặc t_wait > 60 s, hoặc CI < 60 (xác suất §5). Walk-away = −1 RP, không doanh thu (trước 2026-10-15 là −2, xem §20). **Riêng "không có chỗ" = 0 RP** (quán đông không phải khách bực; xem §21).
 - `F_ref` tăng theo tier → lên tier mới, quán "trống trơn" → động lực build mode.
 
 ### 4.2 Điểm uy tín (RP) và ★
@@ -247,9 +247,9 @@ RP += Σ RP_khach + RP_bonus (nhiệm vụ, sự kiện, khen trên "mạng xã 
 |---|---|---|---|---|
 | ★1 | 0 | — | — | — |
 | ★2 | **300** | ≥ 0,55 | đủ điều kiện T2 | 50 Hạt |
-| ★3 | **4.000** | ≥ 0,65 | đủ điều kiện T3 | 100 Hạt |
-| ★4 | **40.000** | ≥ 0,72 | đủ điều kiện T4 | 200 Hạt |
-| ★5 | **120.000** | ≥ 0,80 | danh hiệu, khách du lịch nước ngoài | 400 Hạt |
+| ★3 | **3.000** | ≥ 0,65 | đủ điều kiện T3 | 100 Hạt |
+| ★4 | **12.000** | ≥ 0,72 | đủ điều kiện T4 | 200 Hạt |
+| ★5 | **40.000** | ≥ 0,80 | danh hiệu, khách du lịch nước ngoài | 400 Hạt |
 
 - RP **không bao giờ giảm dưới ngưỡng ★ đã đạt** (sàn mềm). Nếu TB S < điều kiện giữ: ★ hiển thị "đang lung lay", Demand −10%, nhưng **tier đã mở không bị thu hồi** (cozy).
 - Demand +9 khách/ngày/★ (×1,5 / ×2,6 theo tier) → ★ là đòn bẩy doanh thu, không chỉ là cổng.
@@ -606,19 +606,19 @@ Funnel cần dashboard: Install → T1 ngày 3 → ★2 → T2 → công thức 
 | `quality_tip_chance` / `quality_tip_size` | [0.05,0.25,0.5] / [0.05,0.10,0.15] | |
 | `demand_base` / `demand_per_star` / `demand_per_day` | 18 / 9 / 0.5 | |
 | `demand_tier_mult` | [1, 1.5, 2.6, 2.6] | |
-| `turnover_per_seat` | [4, 4.5, 5] | |
+| `turnover_per_seat` | [4, 4.5, 5] | đã thử hạ T3 xuống 2,5: bot phục vụ ít hơn ~13%, lãi ít hơn ~26% (§21) |
 | `staff_capacity_bonus` | [0, 0.25, 0.15] | |
 | `t1_stool_cost_base` / `_step` | 200 / 75 | |
-| `t2_deposit` / `t2_rent_week` / `t2_star_req` | 18000 / 7000 / 2 | |
+| `t2_deposit` / `t2_rent_week` / `t2_star_req` | 18000 / 5000 / 2 | |
 | `t2_table_cost_base` / `_step` | 700 / 120 | |
-| `t3_price` / `t3_star_req` / `zone_costs` | 250000 / 3 / [40k, 90k, 180k] | |
+| `t3_price` / `t3_star_req` / `zone_costs` | 140000 / 3 / [40k, 90k, 180k] | |
 | `branch_cost_base` / `branch_cost_growth` / `t4_star_req` | 2000000 / 1.6 / 4 | |
 | `staff_wages` (JSON) | §6 | |
 | `upkeep_per_day` | [60, 150, 700] | |
 | `sat_weights` / `sat_weights_t1` | [0.35,0.30,0.20,0.15] / [0.40,0.35,0.10,0.15] | |
 | `wait_ok_s` / `wait_max_s` | 20 / 60 | |
 | `f_ref_per_tier` | [20, 200, 400] | |
-| `rp_star_thresholds` | [0, 300, 4000, 40000, 120000] | |
+| `rp_star_thresholds` | [0, 300, 3000, 12000, 40000] | ★4/★5 hạ 2026-10-15 (§21) |
 | `rp_per_customer_scale` | 1.5 | |
 | `star_hold_avg_s` | [0.55, 0.65, 0.72, 0.80] | |
 | `ci_weights` (dirty_table, floor, bin) | 40 / 0.4 / 10 | |
@@ -680,7 +680,7 @@ P = {
     "ad_double_day_rate": 0.35,   # ti le ngay nguoi choi xem ad "Doanh thu x1.3" o man tong ket
     "ad_bonus_frac": 0.30,        # ad tong ket cong +30% doanh thu ngay
     "rp_per_customer": 3.0, "sat_t1": 0.68, "sat_t2": 0.74,
-    "star_thresholds": [0, 300, 4000, 40000, 120000],   # ★1..★5 (RP)
+    "star_thresholds": [0, 300, 3000, 12000, 40000],   # ★1..★5 (RP)
     "reserve": 300,
 }
 
@@ -832,7 +832,7 @@ Nhà hàng cấp 3 là lưới 44 × 24 ô (ô 0,5 m) chia thành bốn khu; m�
 | Lầu (gác gỗ cùng mặt sàn) | 90.000 | 6 × 6 m (12 × 12 ô) | +20% | ×1 | 150 | riêng |
 | VIP | 180.000 | 6 × 6 m (12 × 12 ô) | +20% | ×1,5 | 150 | riêng |
 
-Tổng giá ba khu = 310.000 Xu, nhiều hơn cả giá mua nhà (250.000).
+Tổng giá ba khu = 310.000 Xu, nhiều hơn cả giá mua nhà (140.000 sau chỉnh 2026-10-15, §20; lúc đo là 250.000).
 
 - **Nhu cầu.** `Demand_T3 = 2,6 × Demand_T1-formula × (1 + 0,2·n)`, n = số khu phụ đã mở (0–3). Cộng chứ không nhân dồn: 1 khu ×1,2 · 2 khu ×1,4 · 3 khu ×1,6. Đây là "zone bonus" của §3.2 (`GameBalance.ZoneDemandMult`); nhu cầu được cập nhật ngay khi mua khu.
 - **VIP ×1,5.** Áp cho cả giá ly và tip của khách ngồi khu VIP; bằng đáy dải 1,5–2× của đơn đặc biệt (§1.1).
@@ -936,3 +936,80 @@ Hai quyết định đi cùng nhau vì cùng trả lời một câu hỏi: ngư�
 - **Quy mô đầu tư khi không nhân TierScale.** Một người Lv1→5 = 25.375 Xu; 8 người ở sảnh = 203.000; 17 người đều Lv5 ≈ **431.000** Xu (17 × 25.375 = 431.375), cùng bậc với giá ba khu (310.000, §19.1), bằng khoảng 1,4 lần. Vẫn là khoản đầu tư lớn, chỉ không còn nằm ngoài tầm với.
 - **Cấp 5 vẫn chỉ nâng được từ cấp 4 khi quán ở cấp 3** (`StaffRoster.Upgrade`).
 - **Phạm vi TierScale.** Vẫn áp cho thưởng nhiệm vụ / login / sự kiện (§1.1); chỉ không áp cho giá nâng cấp nhân viên. Giá cơ sở 1.000 và hệ số 2,5 hiện viết thẳng trong `StaffUpgradeCost`, chưa là tunable trong §19.4.
+
+---
+
+## 20. Chỉnh pacing 2026-10-15 (sau review game-designer)
+
+Từ số đo §17–18 (cấp 2 ~38 khách/ngày, lãi ~2.100/ngày sau thuê, ~57 RP/ngày): mua nhà 250.000 Xu mất ~110 ngày (~6,4 giờ), ★3 (4.000 RP) mất ~62 ngày (~3,6 giờ). **Xu là nút thắt, RP không phải.** Chạm cấp 3 mất ~7–8 giờ chơi, thiết kế là ~4,2 giờ.
+
+| Núm (`GameBalance`) | Cũ | Mới |
+|---|---|---|
+| `Tier3Price` | 250.000 | 140.000 (trả thực 122.000 sau hoàn cọc) |
+| `Tier2RentPerWeek` | 7.000 | 5.000 |
+| `Tier3StarRP` / `StarThresholds[2]` | 4.000 | 3.000 |
+| `WalkAwayRp` | −2 | −1 |
+
+Ước tính (chưa chạy thật): tiết kiệm ~2.000 Xu/ngày → 122.000 mất ~60 ngày; ★3 ở khoảng ngày 50 → cấp 3 ở khoảng ngày 70–75 (~4,3 giờ). Cần chạy lại bot autoplay 60 ngày cấp 2 để xác nhận. Các mục §7 (pacing mục tiêu), §16 (mô phỏng), §17–18 (số đo) vẫn ghi theo giá trị cũ vì là số liệu lịch sử.
+
+Cùng đợt này game thêm **pha Chuẩn bị** (`DayCycle.Phase.Prep`): từ màn tổng kết bấm "Chuẩn bị quán" để mua đồ / bày quán / nâng cấp quán khi đồng hồ đứng và chưa có khách, rồi "MỞ CỬA". Nút đỏ "Ngày mới" vẫn mở cửa ngay.
+
+---
+
+## 21. Cân bằng cấp 3, đợt 2 — 2026-10-15 (sau bot 100 ngày + review game-designer)
+
+**Vấn đề (bot 100 ngày, cấp 3 ngày 58–100).** Ngày 100: 293 khách đến, **94 phục vụ, 199 mất (180 hết chỗ, 12 hết kiên nhẫn, 0 bẩn, 7 khác)**. RP/ngày TB ~ −9: +165 từ khách phục vụ bị triệt tiêu bởi −199 (mỗi khách bỏ về −1, kể cả khách chỉ vì hết chỗ). Kẹt ở ★3; ★4 (40.000 RP) không thể đạt.
+
+**Đã đổi:**
+
+| Núm | Cũ | Mới | Ghi chú |
+|---|---|---|---|
+| `WalkAwayRpNoSeat` (mới, `GameBalance`) | −1 (dùng chung `WalkAwayRp`) | **0** | hết chỗ = quán đắt khách, không phải khách bực; hết kiên nhẫn / bẩn / khác vẫn −1 |
+| `StarThresholds[3]` / `[4]` (★4 / ★5) | 40.000 / 120.000 | **12.000 / 40.000** | với ~+120 RP/ngày: ★4 sau ~70 ngày ở cấp 3 |
+| Nhiệm vụ `no_walkaway` | `lost == 0` | `lost − lostNoSeat == 0` | hết chỗ không còn phá nhiệm vụ |
+| `DayAdvisor` cấp 3, nhiều khách hết chỗ | "mua thêm bàn ghế" | "thuê / nâng cấp nhân viên" | số đo bên dưới: ghế không phải cổ chai |
+
+**Đã đo, có chứng cứ.** Số khách phục vụ phụ thuộc số nhân viên, không phụ thuộc ghế (bot 100 ngày: 2 NV ~43, 3 NV ~37, 5 NV ~42, 7 NV ~72, 8 NV ~85–95; ghế 36 → 43 không đổi).
+
+**So sánh A / B / C (bot cấp 3, `-autoplay -autoprep -autobuy -autohidden -upgradestaff -autostaff -autoupgrade3 -cheatt3 -days 45 -timescale 8`, ngày 36–45, cùng cấu hình):**
+
+| Bản | Phục vụ | Mất | Lãi | RP/ngày |
+|---|---|---|---|---|
+| A: cũ (RP −1, sức chứa cũ) | 85 | 106 | 6.672 | +51 |
+| B: RP hết chỗ = 0 **và** hạ sức chứa T3 (`SeatTurnsTier3` 5 → 2,5, `StaffCapacityBonusTier3` 0,15 → 0,05) | 74 | 100 | 4.935 | +92 |
+| **C: chỉ RP hết chỗ = 0 (bản giữ lại)** | **86** | 105 | **6.669** | **+127** |
+
+Kết luận: **không hạ sức chứa cấp 3**. Số khách đến cao hơn số quán phục vụ được (hàng khách chờ ở cửa) giữ ghế và nhân viên luôn bận; bản B đưa số khách đến sát số phục vụ thì phục vụ giảm ~13% và lãi giảm ~26%. Phần RP âm được gỡ bằng cách bỏ phạt "hết chỗ", không phải bằng giảm khách đến. Công thức `min(Demand, Capacity)` giữ nguyên (sức chứa cao ~5 lần thực phục vụ là chủ ý).
+
+**Không đổi (có chủ ý):** mục tiêu nhiệm vụ cấp 3 (`serve_30` 120, `tips_300` 2.400) vì nhiệm vụ cộng dồn **cả ngày thực** (nhiều ngày trong game), nên 94 khách/ngày không làm chúng bất khả thi; bộ nhiệm vụ trong log bot 100 ngày luôn là cấp 1 vì bot chơi 100 ngày game trong một ngày thực, không phải lỗi. Cũng chưa đổi: giá / nhu cầu cấp 3, luật chặn sinh khách khi hàng chờ dài (cảnh khách vào rồi quay ra ở cổng vẫn còn), tiền thuê theo ngày, cấp 2 (cùng tật hết chỗ ~50% nhưng không còn ảnh hưởng RP).
+
+**Mục tiêu đo lần sau (bot 100 ngày):** RP/ngày cấp 3 ≥ +100 (45 ngày: +127 ✓); ★4 vào khoảng ngày 120–130; lãi ròng cấp 3 không tụt (✓ so với A); chạy lại bot 100 ngày để xác nhận ở ngày 100, nơi bản cũ mất 199 khách.
+
+---
+
+## 22. Level uy tín — 2026-10-16
+
+**Vì sao.** Người chơi báo cảm giác "chơi mãi không lên được cấp". Sao ★ chỉ có 4 bước (300 / 3.000 / 12.000 / 40.000 RP) và khi lên sao game không thưởng, không hiệu ứng (§4.2 hứa 50 / 100 / 200 / 400 Hạt nhưng chưa có code). Thêm **level**: các bậc nhỏ chia đều giữa hai mốc sao, dựng trên RP có sẵn (không thêm loại điểm mới), lên thường xuyên và có thưởng.
+
+**Sao, level và cấp quán là ba thứ khác nhau.** ★ là hạng uy tín (điều kiện mở cấp quán và làm khách đông hơn); level là bậc nhỏ giữa các sao; cấp quán (vỉa hè → thuê mặt bằng → nhà hàng → chuỗi) là bước đổi cửa hàng, cần đủ sao **và** đủ tiền.
+
+| Hạng sao | RP | Số level trong hạng | Level mốc sao |
+|---|---|---|---|
+| ★1 → ★2 | 0 – 300 | 5 (mỗi 60 RP) | Lv6 = ★2 |
+| ★2 → ★3 | 300 – 3.000 | 10 (mỗi 270 RP) | Lv16 = ★3 |
+| ★3 → ★4 | 3.000 – 12.000 | 15 (mỗi 600 RP) | Lv31 = ★4 |
+| ★4 → ★5 | 12.000 – 40.000 | 10 (mỗi 2.800 RP) | Lv41 = ★5 (tối đa) |
+
+Tổng 41 level (`LevelRules`). Với số đo bot (§21): cấp 1–2 lên khoảng 1 level mỗi ngày đến vài ngày; cấp 3 khoảng 1 level mỗi ~5 ngày (+120 RP/ngày, 600 RP/level).
+
+**Thưởng mỗi level** (`LevelRules.RewardXu` / `RewardGems`): **Xu = 100 + 40 × level**; level mốc sao thưởng **x3 Xu** và thêm **Hạt** 50 / 100 / 200 / 400 cho ★2 / ★3 / ★4 / ★5 (đúng bảng §4.2). Ví dụ: Lv2 +180 Xu, Lv10 +500, Lv6 (★2) +1.020 Xu +50 Hạt. Ước tính tổng thưởng đến lúc lên cấp 3 (~Lv26) khoảng 18.000 Xu ≈ 13% giá mua nhà 140.000; **chưa đo bằng bot**, cần chạy lại để xác nhận không làm lệch nhịp §21.
+
+**Cơ chế.**
+- `Reputation.Level` tính từ RP; mỗi lần RP làm tăng level thì `GameEvents.LevelUp(level)` báo đúng một lần (kể cả khi một khoản RP lớn, vd. chương truyện, nhảy nhiều level cùng lúc).
+- Sàn mềm của RP chuyển từ mốc sao sang **mốc level**: RP không tụt dưới level đã đạt (khách bỏ về không làm mất level).
+- `GameBootstrap.OnLevelUpReward` cộng Xu / Hạt rồi dời mốc Xu đầu ngày (như thưởng nhiệm vụ). `SaveData.levelRewarded` lưu level cao nhất đã nhận thưởng: vào lại giữa ngày (RP về mốc đầu ngày) không bị thưởng hai lần; save cũ (chưa có trường này) không được thưởng bù.
+- HUD: thanh dưới số sao hiện **"Lv N  RP/RP kế"** và tiến độ tới level kế (trước đây tới sao kế).
+- Hiệu ứng: chữ nổi "LÊN LEVEL N! +X Xu" (kèm Hạt), pháo giấy; level mốc sao thêm biểu ngữ lớn "SAO N!".
+
+**Chưa làm / để sau.** Âm thanh lên level; thưởng khai trương cấp 2 (cấp 3 đã có quà 10.000 Xu); mở khóa nội dung theo level (món, đồ trang trí); ghi level vào màn tổng kết; đo ảnh hưởng của thưởng lên nhịp lên cấp bằng bot.
+

@@ -31,24 +31,37 @@ namespace Cafe.EditorTools
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26;
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, BundleId);
+            // iPhone ProMotion chạy quá 60 FPS (Unity ghi CADisableMinimumFrameDurationOnPhone = true vào Info.plist); API công khai không có
+            SetProjectInt("appleEnableProMotion", 1);
 
             // Prototype dùng UnityEngine.Input cũ (không cài Input System package)
-            SetActiveInputHandler(0);
+            SetProjectInt("activeInputHandler", 0);
 
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = 60;
+            AssetDatabase.SaveAssets(); // ghi ProjectSettings.asset để mở bằng menu Unity cũng có thiết lập này
             Debug.Log("[Cafe] Project settings: landscape, Android IL2CPP ARM64, Linear.");
         }
 
-        /// 0 = Input Manager (cũ), 1 = Input System, 2 = cả hai.
-        static void SetActiveInputHandler(int value)
+        /// Ghi thẳng một số nguyên (hoặc bool: 0 / 1) vào ProjectSettings.asset (thiết lập chưa có API công khai).
+        /// activeInputHandler: 0 = Input Manager (cũ), 1 = Input System, 2 = cả hai.
+        static void SetProjectInt(string name, int value)
         {
             var assets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset");
             if (assets == null || assets.Length == 0) return;
             var so = new SerializedObject(assets[0]);
-            var prop = so.FindProperty("activeInputHandler");
-            if (prop == null || prop.intValue == value) return;
-            prop.intValue = value;
+            var prop = so.FindProperty(name);
+            if (prop == null) return;
+            if (prop.propertyType == SerializedPropertyType.Boolean)
+            {
+                if (prop.boolValue == (value != 0)) return;
+                prop.boolValue = value != 0;
+            }
+            else
+            {
+                if (prop.intValue == value) return;
+                prop.intValue = value;
+            }
             so.ApplyModifiedPropertiesWithoutUndo();
         }
     }
