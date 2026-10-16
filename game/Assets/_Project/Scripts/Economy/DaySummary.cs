@@ -18,6 +18,7 @@ namespace Cafe
         public float rpGained;
         public float satisfactionSum;
         public int stars;
+        public int levelStart = 1;   // level uy tín lúc mở cửa (tổng kết hiện "Lv a → b")
         /// CI trung bình trong ngày (T2+). -1 = không áp dụng (T1).
         public float cleanliness = -1f;
 

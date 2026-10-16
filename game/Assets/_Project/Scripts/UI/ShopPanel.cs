@@ -111,6 +111,7 @@ namespace Cafe
             panelRoot.gameObject.SetActive(false);
 
             GameEvents.MoneyChanged += OnMoney;
+            GameEvents.LevelUp += OnLevelUp;
             game.Grid.LayoutChanged += OnLayout;
             builder.Changed += SyncVisibility;
 
@@ -133,6 +134,7 @@ namespace Cafe
         public void Dispose()
         {
             GameEvents.MoneyChanged -= OnMoney;
+            GameEvents.LevelUp -= OnLevelUp;
             if (game != null && game.Grid != null) game.Grid.LayoutChanged -= OnLayout;
             if (builder != null) builder.Changed -= SyncVisibility;
         }
@@ -159,6 +161,10 @@ namespace Cafe
             builder.Close();
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public void DebugSetTab(bool decor) { SetTab(decor); }
+#endif
+
         private void OnTabSeats()
         {
             SetTab(false);
@@ -183,6 +189,11 @@ namespace Cafe
             Color off = new Color(0.82f, 0.78f, 0.7f, 1f);
             tabSeats.SetTint(decorTab ? off : on);
             tabDecor.SetTint(decorTab ? on : off);
+        }
+
+        private void OnLevelUp(int level)
+        {
+            if (panelRoot != null && panelRoot.gameObject.activeSelf) Refresh();
         }
 
         private void OnMoney(int xu)
@@ -316,9 +327,13 @@ namespace Cafe
                 cv.price.color = poor ? HudBuilder.Bad : (inv ? HudBuilder.GoodDark : HudBuilder.Ink);
                 cv.coin.enabled = !inv && HudBuilder.T.iconCoin != null;
 
-                bool blocked = maxed || poor;
+                // Khóa theo level uy tín (ShopUnlocks): chỉ chặn MUA món mới, đồ trong kho đặt được như thường
+                int needLv = inv ? 1 : ShopUnlocks.RequiredLevel(d.id);
+                bool levelLocked = game.Reputation.RewardedLevel < needLv;
+                bool blocked = maxed || poor || levelLocked;
                 cv.reason.gameObject.SetActive(blocked);
-                if (maxed) cv.reason.text = string.Format(Strings.MaxReachedFmt, d.maxCount);
+                if (levelLocked) cv.reason.text = string.Format(Strings.UnlockAtLevelFmt, needLv);
+                else if (maxed) cv.reason.text = string.Format(Strings.MaxReachedFmt, d.maxCount);
                 else if (poor) cv.reason.text = string.Format(Strings.NeedMoreXuFmt, Strings.FormatInt(price - xu));
 
                 bool isMachine = !string.IsNullOrEmpty(d.machineId);

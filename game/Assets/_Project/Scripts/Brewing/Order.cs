@@ -7,6 +7,10 @@ namespace Cafe
         public Customer customer;
         public RecipeDef recipe;
         public float timeOrdered;
+        /// Đơn đặc biệt (SpecialOrders): chỉ chủ quán pha, nhân viên Pha chế không nhận.
+        public bool ownerOnly;
+        /// Hệ số thưởng giá ly và tip (1 = thường, SpecialOrders.RewardMult = đặc biệt).
+        public float rewardMult = 1f;
         /// Người đang làm đơn này (nhân viên Pha chế). Chủ quán không giữ chỗ: chủ quán dùng BrewStation.Selected.
         public object claimedBy;
 

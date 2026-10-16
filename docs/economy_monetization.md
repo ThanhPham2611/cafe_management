@@ -995,21 +995,68 @@ Kết luận: **không hạ sức chứa cấp 3**. Số khách đến cao hơn 
 
 | Hạng sao | RP | Số level trong hạng | Level mốc sao |
 |---|---|---|---|
-| ★1 → ★2 | 0 – 300 | 5 (mỗi 60 RP) | Lv6 = ★2 |
-| ★2 → ★3 | 300 – 3.000 | 10 (mỗi 270 RP) | Lv16 = ★3 |
-| ★3 → ★4 | 3.000 – 12.000 | 15 (mỗi 600 RP) | Lv31 = ★4 |
-| ★4 → ★5 | 12.000 – 40.000 | 10 (mỗi 2.800 RP) | Lv41 = ★5 (tối đa) |
+| ★1 → ★2 | 0 – 300 | 5 | Lv6 = ★2 |
+| ★2 → ★3 | 300 – 3.000 | 10 | Lv16 = ★3 |
+| ★3 → ★4 | 3.000 – 12.000 | 15 | Lv31 = ★4 |
+| ★4 → ★5 | 12.000 – 40.000 | 10 | Lv41 = ★5 (tối đa) |
 
-Tổng 41 level (`LevelRules`). Với số đo bot (§21): cấp 1–2 lên khoảng 1 level mỗi ngày đến vài ngày; cấp 3 khoảng 1 level mỗi ~5 ngày (+120 RP/ngày, 600 RP/level).
+Tổng 41 level (`LevelRules`). Bậc chia **lồi** trong mỗi hạng sao (vị trí = (i/n)^1,35, làm tròn 5): level đầu hạng đến sớm, bước dãn dần. Mốc RP: Lv2 = 35, Lv3 = 85, Lv4 = 150, Lv5 = 220, Lv6 = 300 (★2), Lv7 = 420, Lv10 = 1.085, Lv16 = 3.000 (★3), Lv17 = 3.235, Lv20 = 4.510, Lv31 = 12.000 (★4), Lv41 = 40.000 (★5). Bước ở cấp 3 (Lv16 → Lv31) từ 235 RP lên 800 RP (~2 → ~7 ngày với +120 RP/ngày).
 
-**Thưởng mỗi level** (`LevelRules.RewardXu` / `RewardGems`): **Xu = 100 + 40 × level**; level mốc sao thưởng **x3 Xu** và thêm **Hạt** 50 / 100 / 200 / 400 cho ★2 / ★3 / ★4 / ★5 (đúng bảng §4.2). Ví dụ: Lv2 +180 Xu, Lv10 +500, Lv6 (★2) +1.020 Xu +50 Hạt. Ước tính tổng thưởng đến lúc lên cấp 3 (~Lv26) khoảng 18.000 Xu ≈ 13% giá mua nhà 140.000; **chưa đo bằng bot**, cần chạy lại để xác nhận không làm lệch nhịp §21.
+**Thưởng mỗi level** (`LevelRules.RewardXu` / `RewardGems`): **Xu = (100 + 40 × level) × số sao của hạng**, level mốc sao nhân thêm **x3**, và **Hạt** 50 / 100 / 200 / 400 ở ★2 / ★3 / ★4 / ★5 (đúng bảng §4.2). Ví dụ: Lv2 +180, Lv5 +300, Lv6 (★2) +2.040 Xu +50 Hạt, Lv16 (★3) +6.660 Xu +100 Hạt, Lv31 +16.080, Lv41 +26.100. Tổng tính từ công thức: đến Lv16 = **19.380 Xu** (~14% giá nhà 140.000), đến Lv20 (lúc bot mua nhà, ngày ~56) = 29.460 Xu (~21%), đến Lv31 = 79.140, đến Lv41 = 160.680 Xu + 750 Hạt. **Chưa đo bằng bot**: thưởng này, cộng dự án tuần (§23), có thể đưa cấp 3 sớm hơn khoảng 7–10 ngày; cần chạy lại bot 100 ngày để xác nhận.
 
 **Cơ chế.**
 - `Reputation.Level` tính từ RP; mỗi lần RP làm tăng level thì `GameEvents.LevelUp(level)` báo đúng một lần (kể cả khi một khoản RP lớn, vd. chương truyện, nhảy nhiều level cùng lúc).
 - Sàn mềm của RP chuyển từ mốc sao sang **mốc level**: RP không tụt dưới level đã đạt (khách bỏ về không làm mất level).
-- `GameBootstrap.OnLevelUpReward` cộng Xu / Hạt rồi dời mốc Xu đầu ngày (như thưởng nhiệm vụ). `SaveData.levelRewarded` lưu level cao nhất đã nhận thưởng: vào lại giữa ngày (RP về mốc đầu ngày) không bị thưởng hai lần; save cũ (chưa có trường này) không được thưởng bù.
+- Đạt level thì HUD hiện thẻ vàng **"Lv N: NHẬN +X Xu"**; chạm để nhận (kèm pháo giấy, level mốc sao thêm biểu ngữ "SAO N!"). Nhảy nhiều level thì xếp hàng, mỗi chạm một level; cuối ngày thưởng chưa nhận tự nhận hết. `GameBootstrap.ClaimedLevel` (lưu `SaveData.levelClaimed`) là level cao nhất đã nhận; `Reputation.RewardedLevel` (`levelRewarded`) là level cao nhất đã đạt. Vào lại giữa ngày không thưởng hai lần.
+- Save từ trước hệ level (cả hai trường trống) được **trả bù một lần** (quà tri ân) cho các level đã đạt, kèm toast.
 - HUD: thanh dưới số sao hiện **"Lv N  RP/RP kế"** và tiến độ tới level kế (trước đây tới sao kế).
 - Hiệu ứng: chữ nổi "LÊN LEVEL N! +X Xu" (kèm Hạt), pháo giấy; level mốc sao thêm biểu ngữ lớn "SAO N!".
 
 **Chưa làm / để sau.** Âm thanh lên level; thưởng khai trương cấp 2 (cấp 3 đã có quà 10.000 Xu); mở khóa nội dung theo level (món, đồ trang trí); ghi level vào màn tổng kết; đo ảnh hưởng của thưởng lên nhịp lên cấp bằng bot.
 
+---
+
+## 23. Những hệ giữ chân người chơi — 2026-10-16
+
+Từ đánh giá game-designer ("dễ chán ở đâu") và phản hồi người chơi. Mọi con số dưới đây là **thiết kế + test đơn vị**; chưa đo bằng bot trừ khi ghi khác.
+
+### 23.1 Quỹ lên cấp quán 4 chặng (`HouseFund`)
+Thanh Xu của thẻ tiến độ cấp kế tiếp (Mặt bằng 18.000 Xu; Nhà hàng 122.000 Xu sau hoàn cọc) chia 4 chặng 25 / 50 / 75 / 100% (vạch trên thanh). Ba chặng đầu thưởng **Hạt một lần cho mỗi cấp đích**: 5 / 10 / 15 (Mặt bằng), 10 / 20 / 30 (Nhà hàng); chặng 100% là nút lên cấp. Xu lên xuống không làm mất chặng; save cũ không được thưởng bù. Mục đích: lấp đoạn dài chỉ gom tiền (ngày ~30–56 trên bot).
+
+### 23.2 Dự án tuần (`WeeklyProject`)
+Mỗi tuần game (7 ngày) một mục tiêu cộng dồn, luân phiên **khách → tip → lãi ròng**. Mục tiêu ≈ 65% số bot đo (người thật chậm hơn): khách 110 / 180 / 350, tip 1.500 / 2.500 / 6.000, lãi 7.000 / 16.000 / 24.000 (Vỉa hè / Mặt bằng / Nhà hàng). Cấp quán chốt ở ngày đầu tuần. Xong thì thưởng **Xu 800 / 2.000 / 5.000 + Hạt 10 / 15 / 20** một lần. Tiến độ hiện ở tổng kết ("Tuần 3/7: khách  64/110"). Ước tính ~10–14 tuần đến lúc mua nhà → thêm khoảng 10.000–16.000 Xu.
+
+### 23.3 Sự kiện theo ngày (`DayEvents`)
+Cố định theo số ngày (báo trước ở pha Chuẩn bị): Trời mưa (khách x0,8, kiên nhẫn x1,3, cà phê đen / sữa x2), Giờ cao điểm (khách x1,15, kiên nhẫn x0,85), Cuối tuần (ngày 6 và 7 trong tuần: khách x1,1, tip x1,1), Nắng nóng (trà đá / trà chanh x2), Ngày sinh viên (khách x1,1, tip x0,9, bạc xỉu / cà phê sữa x2); ngày 1–2 luôn thường. Test: trung bình trên 700 ngày nhu cầu 0,98–1,08, tip 0,98–1,05 (không lệch nhịp §21).
+
+### 23.4 Khóa đồ theo level (`ShopUnlocks`) và danh hiệu (`LevelTitles`)
+Đồ trang trí / nội thất cao cấp mở dần: Vỉa hè Lv2–5, Mặt bằng Lv7–14, Nhà hàng Lv17–28 (rải ≥ 5 mốc ở cấp 3). Món rẻ nhất mỗi cấp, ghế bàn thường và máy pha luôn mở. Chỉ khóa MUA món mới (đồ trong kho, đang đặt, di chuyển không bị chặn). **Bot bỏ qua khóa** (`DebugPlace`) nên số đo kinh tế không đổi; người thật có thể mua đồ trang trí chậm hơn bot ở cấp 2. 10 danh hiệu theo level (Lv1 "Chủ quán tập sự" … Lv41 "Huyền thoại cà phê Việt") ở tiêu đề tổng kết.
+
+### 23.5 Khách quen
+Bật đủ 6 nhân vật × 4 chương (`docs/story/README.md`): Bà Sáu, Minh, Chú Tư (Vỉa hè), Chị Lan, Ken (Mặt bằng), **Chị Mai** (Nhà hàng, mới). **Lỗi đã sửa:** khách quen chỉ gọi món ruột khi món đó còn trong menu, nên người chơi tắt món rẻ (trà đá) khỏi menu từ cấp 2 thì Bà Sáu không bao giờ lên thân thiết (bot: bond 1 sau 28 ngày). Nay khách quen luôn gọi món ruột nếu quán biết công thức và có máy; chưa biết thì họ chưa ghé (không phí lượt). Phần thưởng "mũ" (chưa có model) quy ra 300 Xu. Barks (`barks.json`) hiện trên đầu khách, xác suất thấp + nghỉ chung 2,2 giây.
+
+### 23.6 Đơn đặc biệt (`SpecialOrders`, từ Nhà hàng)
+10% đơn (tối đa 2 cùng lúc) là đơn đặc biệt: **chỉ chủ quán pha**, tiền ly và tip **x2**, khách chờ lâu hơn 1,5 lần. Nhân viên Pha chế bỏ qua; nhân viên Phục vụ ưu tiên mang ly cho đơn đặc biệt cùng món. Tác động kinh tế ước tính: +10% doanh thu nếu chủ quán pha kịp, nhưng chiếm thời gian chủ quán; **cần đo bằng bot**.
+
+### 23.7 Số đo bot 100 ngày (2026-10-16, cờ `-autoplay -autoprep -autobuy -autohidden -upgradestaff -autostaff -autoupgrade3`, ngày cấp 3 = 300 s)
+
+So bản `main` + sửa RP (chưa có các hệ §22–23.6) với bản đầy đủ. Mỗi cấu hình chạy **một lần**; bot thuê nhân viên rất dè dặt (cần dư 8.500 Xu mới thuê Pha chế) nên không đại diện người chơi giỏi.
+
+| | Chưa có hệ mới | Có hệ mới |
+|---|---|---|
+| Lên Mặt bằng / Nhà hàng sau ngày | 8 / 55 | **7 / 44** (sớm hơn 11 ngày) |
+| ★2 / ★3 vào ngày | 4 / 30 | 4 / 26 |
+| Thưởng nhận được trong 100 ngày | — | level 38.280 Xu + 150 Hạt (21 lần); dự án tuần 36.600 Xu + 195 Hạt (12 lần); quỹ 90 Hạt (6 lần) |
+| Thưởng Xu trước khi mua nhà | — | **41.880 Xu = 34% giá thực trả 122.000** (level 32.280 + tuần 9.600) |
+| Ngày 60–80: lãi / RP mỗi ngày | 2.087 / −26 | 3.721 / +26 |
+| Ngày 81–100: phục vụ / lãi / RP | 63,7 / 2.469 / +15 | 72,7 / 4.545 / +48 |
+| Exception / kiểm tra Chuẩn bị | 0 / 99 OK | 0 / 99 OK |
+
+Nhận xét:
+- Mục tiêu "cấp 3 sớm hơn 7–14 ngày" đạt (11 ngày). Phần lớn do thưởng level (Lv20 ≈ 29.000 Xu) và dự án tuần; quỹ chỉ thêm Hạt.
+- Thưởng dồn vào đoạn trước khi mua nhà (34% giá nhà): đúng ý "đoạn gom tiền bớt dài", nhưng gần gấp rưỡi ước tính §22 (21%). Nếu thấy cấp 3 đến quá nhanh khi chơi thật: giảm `LevelRules` hệ số 40 → 30, hoặc thưởng tuần Mặt bằng 2.000 → 1.500.
+- Sau khi mua nhà, thưởng tuần (5.000 Xu/tuần ≈ 1,2 ngày lãi) lớn hơn thưởng level; đoạn này bot vẫn kẹt vì hết kiên nhẫn (~80 khách/ngày): thưởng giúp bot có Xu thuê nhân viên sớm hơn nên lãi và RP khá hơn, nhưng chưa đạt mục tiêu §21 (RP ≥ +100/ngày).
+- Bot không khám phá món ẩn nên Chị Lan và Ken không ghé; bot không đo được hết tác động của đơn đặc biệt (không có log riêng).
+
+### 23.8 Việc cần đo tiếp
+Chạy `-fullstaff` (thuê đủ nhân viên ngay) để thấy người chơi giỏi; thêm log số đơn đặc biệt hoàn thành / bỏ lỡ; playtest người thật: cảm giác thẻ nhận thưởng, mức hiểu "sao / Lv / tên cấp quán", sự kiện ngày có gây khó chịu không, cấp 3 có đến quá nhanh không.

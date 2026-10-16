@@ -17,8 +17,8 @@ namespace Cafe.Tests
         }
 
         [TestCase(0f, 1)]
-        [TestCase(59.9f, 1)]
-        [TestCase(60f, 2)]
+        [TestCase(34.9f, 1)]
+        [TestCase(35f, 2)]
         [TestCase(299f, 5)]
         [TestCase(300f, 6)]      // ★2
         [TestCase(2999f, 15)]
@@ -45,11 +45,33 @@ namespace Cafe.Tests
         }
 
         [Test]
-        public void Rewards_GrowWithLevel_AndStarLevelsPayTripleXuPlusGems()
+        public void Steps_AreConvexInsideEachStar_FirstLevelOfAStarComesEarly()
         {
+            // 5 level đầu (★1): 0, 35, 85, 150, 220 rồi ★2 ở 300 RP
+            Assert.That(LevelRules.Thresholds[1], Is.EqualTo(35));
+            Assert.That(LevelRules.Thresholds[2], Is.EqualTo(85));
+            Assert.That(LevelRules.Thresholds[4], Is.EqualTo(220));
+            // bước tăng dần trong một hạng sao (lồi): bước cuối lớn hơn bước đầu
+            int firstStep = LevelRules.Thresholds[1] - LevelRules.Thresholds[0];
+            int lastStep = LevelRules.Thresholds[5] - LevelRules.Thresholds[4];
+            Assert.That(lastStep, Is.GreaterThan(firstStep));
+            // Lv7 đến sớm sau ★2: chưa tới 5% khoảng ★2→★3
+            Assert.That(LevelRules.Thresholds[6] - LevelRules.Thresholds[5], Is.LessThan(0.05f * (3000 - 300)));
+        }
+
+        [Test]
+        public void Rewards_GrowWithLevel_ScaleWithStarRank_AndStarLevelsPayTripleXuPlusGems()
+        {
+            Assert.That(LevelRules.StarAt(5), Is.EqualTo(1));
+            Assert.That(LevelRules.StarAt(6), Is.EqualTo(2));
+            Assert.That(LevelRules.StarAt(15), Is.EqualTo(2));
+            Assert.That(LevelRules.StarAt(16), Is.EqualTo(3));
             Assert.That(LevelRules.RewardXu(2), Is.EqualTo(180));
-            Assert.That(LevelRules.RewardXu(10), Is.EqualTo(500));
-            Assert.That(LevelRules.RewardXu(6), Is.EqualTo(3 * 340), "level mốc ★2 thưởng x3");
+            Assert.That(LevelRules.RewardXu(10), Is.EqualTo(1000), "(100 + 40·10) x 2 sao");
+            Assert.That(LevelRules.RewardXu(6), Is.EqualTo(2040), "mốc ★2: (100 + 240) x 2 sao x 3");
+            Assert.That(LevelRules.RewardXu(16), Is.EqualTo(6660));
+            Assert.That(LevelRules.RewardXu(31), Is.EqualTo(16080));
+            Assert.That(LevelRules.RewardXu(41), Is.EqualTo(26100));
             Assert.That(LevelRules.RewardGems(2), Is.Zero);
             Assert.That(LevelRules.RewardGems(6), Is.EqualTo(50));
             Assert.That(LevelRules.RewardGems(16), Is.EqualTo(100));
@@ -94,9 +116,9 @@ namespace Cafe.Tests
         public void Reputation_NeverFallsBelowTheLevelReached()
         {
             var rep = new Reputation();
-            rep.Init(130f);                       // level 3 (từ 120 RP)
+            rep.Init(130f);                       // level 3 (từ 85 RP)
             rep.Add(-500f);
-            Assert.That(rep.RP, Is.EqualTo(120f));
+            Assert.That(rep.RP, Is.EqualTo(85f));
             Assert.That(rep.Level, Is.EqualTo(3));
         }
 
@@ -114,6 +136,71 @@ namespace Cafe.Tests
             reloaded.Init(0f, rewarded);
             Assert.That(Collect(() => reloaded.Add(130f)), Is.Empty, "đã thưởng level 2 và 3 rồi");
             Assert.That(Collect(() => reloaded.Add(60f)), Is.EqualTo(new[] { 4 }), "level mới thì vẫn thưởng");
+        }
+
+        [Test]
+        public void RewardBudget_UpToTheTierThreeStarStaysUnderFifteenPercentOfTheHousePrice()
+        {
+            int xu = 0, gems = 0;
+            for (int lv = 2; lv <= 16; lv++) xu += LevelRules.RewardXu(lv);
+            for (int lv = 2; lv <= LevelRules.MaxLevel; lv++) gems += LevelRules.RewardGems(lv);
+            Assert.That(xu, Is.EqualTo(19380));
+            Assert.That(xu, Is.LessThanOrEqualTo(GameBalance.Tier3Price * 0.15f), "thưởng level không được làm lệch nhịp mua nhà (economy §22)");
+            Assert.That(gems, Is.EqualTo(750), "50 + 100 + 200 + 400 Hạt");
+        }
+
+        [Test]
+        public void Reputation_RpNeverGoesNegative_AndAddReportsTheClampedChange()
+        {
+            var rep = new Reputation();
+            rep.Init(0f);
+            Assert.That(rep.Add(-50f), Is.Zero);
+            Assert.That(rep.RP, Is.Zero);
+            rep.Init(130f);                       // sàn 85
+            Assert.That(rep.Add(-500f), Is.EqualTo(-45f));
+        }
+
+        [Test]
+        public void OldSaveJson_WithoutLevelFields_ReadsAsUnknown()
+        {
+            SaveData d = UnityEngine.JsonUtility.FromJson<SaveData>("{\"xu\":500,\"rp\":2500}");
+            Assert.That(d.levelRewarded, Is.Zero);
+            Assert.That(d.levelClaimed, Is.EqualTo(-1), "-1 = save cũ: GameBootstrap suy ra từ levelRewarded hoặc trả bù một lần");
+        }
+
+        [Test]
+        public void ThrowingLevelUpHandler_DoesNotBreakAddOrOtherHandlers()
+        {
+            var rep = new Reputation();
+            rep.Init(0f);
+            var got = new List<int>();
+            System.Action<int> bad = lv => { throw new System.InvalidOperationException("boom"); };
+            System.Action<int> good = lv => got.Add(lv);
+            GameEvents.LevelUp += bad;
+            GameEvents.LevelUp += good;
+            try
+            {
+                UnityEngine.TestTools.LogAssert.Expect(UnityEngine.LogType.Exception, new System.Text.RegularExpressions.Regex("boom"));
+                Assert.DoesNotThrow(() => rep.Add(70f));
+            }
+            finally { GameEvents.LevelUp -= bad; GameEvents.LevelUp -= good; }
+            Assert.That(got, Is.EqualTo(new[] { 2 }));
+            Assert.That(rep.RewardedLevel, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void SaveData_RoundTripsEveryRetentionField()
+        {
+            var d = new SaveData
+            {
+                levelRewarded = 9, levelClaimed = 7, fundTier = 3, fundStage = 2,
+                weekIndex = 5, weekProgress = 1234, weekDone = true, weekTier = 2,
+            };
+            SaveData back = UnityEngine.JsonUtility.FromJson<SaveData>(UnityEngine.JsonUtility.ToJson(d));
+            Assert.That((back.levelRewarded, back.levelClaimed, back.fundTier, back.fundStage), Is.EqualTo((9, 7, 3, 2)));
+            Assert.That((back.weekIndex, back.weekProgress, back.weekDone, back.weekTier), Is.EqualTo((5, 1234, true, 2)));
+            SaveData old = UnityEngine.JsonUtility.FromJson<SaveData>("{\"xu\":500}");
+            Assert.That((old.fundTier, old.weekTier, old.weekDone), Is.EqualTo((0, 1, false)), "save cũ: quỹ chưa có, tuần chốt cấp 1");
         }
 
         [Test]

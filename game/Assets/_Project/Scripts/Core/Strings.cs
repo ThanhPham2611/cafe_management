@@ -14,6 +14,52 @@ namespace Cafe
         public const string LevelUpFmt = "LÊN LEVEL {0}!  +{1} Xu";
         public const string LevelGemsFmt = "  +{0} Hạt";
         public const string StarUpFmt = "SAO {0}!";
+        // Tên ngắn của cấp quán dùng khi nói "đang ở" / "cần": mỗi từ chỉ một nghĩa (sao ★ = uy tín, Lv = level uy tín, "cấp" chỉ dùng cho tay nghề nhân viên / dụng cụ)
+        public const string TierShort1 = "Vỉa hè";
+        public const string TierShort2 = "Mặt bằng";
+        public const string TierShort3 = "Nhà hàng";
+        public const string TierShort4 = "Chuỗi";
+        public static string TierShortName(int tier)
+        {
+            switch (tier)
+            {
+                case 1: return TierShort1;
+                case 2: return TierShort2;
+                case 3: return TierShort3;
+                default: return TierShort4;
+            }
+        }
+        public const string SpecialOrderToast = "Đơn đặc biệt: chỉ chủ quán pha, thưởng x2!";
+        public const string SpecialPriceFmt = "x2 {0} Xu";
+        public const string StoryGiftXuFmt = "Quà: +{0} Xu";
+        public const string StoryGiftItemFmt = "Quà: {0} (đã vào kho)";
+        public const string StoryGiftRecipeFmt = "Quà: công thức {0}";
+        public const string StoryGiftHatFmt = "Quà kỷ niệm: +{0} Xu";
+        public const string RegularLockedTierFmt = "Xuất hiện khi lên {0}";
+        public const string RegularNeedRecipeFmt = "Cần công thức: {0}";
+        public const string RegularFavoriteFmt = "Món ruột: {0}";
+        public const string UnlockAtLevelFmt = "Mở ở Lv {0}";
+        public const string UnlockedItemFmt = "Mở khóa trong Cửa hàng: {0}";
+        public const string NewTitleFmt = "Danh hiệu mới: {0}";
+        public const string TitleLineFmt = "Danh hiệu: {0}";
+        public const string LockedByLevelToast = "Cần đạt Lv {0} để mua món này";
+        public const string FundStageFmt = "Quỹ {0} đạt {1}%!  +{2} Hạt";
+        public const string WeeklyLabel = "Dự án tuần";
+        public const string WeeklyServeValueFmt = "{0}/{1} khách";
+        public const string WeeklyMoneyValueFmt = "{0}/{1} Xu";
+        public const string WeeklyDone = "XONG!";
+        public const string WeeklyDoneFmt = "DỰ ÁN TUẦN XONG!  +{0} Xu  +{1} Hạt";
+        public const string EventTodayFmt = "Hôm nay: {0} - {1}";
+        public const string EventTomorrowFmt = "Ngày mai: {0} - {1}";
+        public const string LevelCardFmt = "Lv {0}: NHẬN +{1} Xu";
+        public const string LevelCardStarFmt = "SAO {0}!  NHẬN +{1} Xu";
+        public const string LevelCardGemsFmt = " +{0} Hạt";
+        public const string LevelCardMoreFmt = "  (+{0})";
+        public const string LevelRangeFmt = "LEVEL {0}-{1}!  +{2} Xu";
+        public const string LevelReachedFmt = "LÊN LEVEL {0}!";
+        public const string LevelGiftToast = "Quà tri ân người chơi cũ: đã nhận thưởng các level bạn đã đạt!";
+        public const string SumTitleLineFmt = "Lv {0}  ·  Danh hiệu: {1}";
+        public const string SumTitleLineUpFmt = "Lv {0}→{1}  ·  Danh hiệu: {2}";
 
         public const string OrdersTitle = "Đơn chờ";
         public const string NoOrders = "Chờ khách ghé quán...";
@@ -132,7 +178,7 @@ namespace Cafe
         public const string TierName4 = "Chuỗi cửa hàng";
         public const string TierCardTitle = "Thuê mặt bằng";
         public const string TierXuFmt = "Xu {0}/{1}";
-        public const string TierRpFmt = "RP {0}/{1}";
+        public const string TierRpFmt = "RP {0}/{1} (Lv {2})";   // mẫu số là mốc sao của cấp kế, khác mẫu số level ở thanh HUD
         public const string TierCtaTitle = "Thuê mặt bằng!";
         public const string TierCtaSubFmt = "Đặt cọc {0} Xu";
         public const string TierNeedFmt = "Cần đủ {0} Xu và {1} RP để thuê mặt bằng";

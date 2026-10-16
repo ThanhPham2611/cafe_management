@@ -73,3 +73,14 @@ Chữ trên nền màu dùng `Outline`/`Shadow` component màu `coffee` 2px đ�
 | Cài đặt → "Giảm chuyển động" | Tắt quán tính, xoay chậm một nửa (≤ 150°/giây), thả tay thì dính góc 45°, không nghiêng, không xoay bằng 2 ngón. Lưu theo máy (PlayerPrefs `cafe.reducemotion`) |
 | Chuột: trái kéo = xoay, phải/giữa kéo = pan, lăn = zoom | |
 | Chạm nhanh (không kéo) | Chọn khách / ly / đơn |
+
+## 7. Thuật ngữ (2026-10-16)
+Mỗi từ chỉ MỘT nghĩa để người chơi không nhầm:
+| Từ | Nghĩa | Hiển thị |
+|---|---|---|
+| **Sao ★** | hạng uy tín (1–5), mở khóa cấp quán và làm khách đông | số cạnh biểu tượng sao ở HUD; biểu ngữ "SAO N!" |
+| **Lv** | level uy tín: bậc nhỏ giữa các sao (41 level) | "Lv N  RP/RP kế" dưới số sao; thẻ "Lv N: NHẬN +X Xu" |
+| **Cấp quán** | tên riêng: **Vỉa hè / Mặt bằng / Nhà hàng / Chuỗi** (`Strings.TierShortName`) | không nói "cấp 2", "cấp 3" cho quán |
+| **Cấp** (không kèm quán) | chỉ tay nghề nhân viên và dụng cụ ("Cấp 3 • Lương…") | bảng nhân viên, dụng cụ |
+| Ly 3★ | chất lượng ly (nhiệm vụ "pha 5 ly đạt 3★") | khác hẳn sao uy tín |
+

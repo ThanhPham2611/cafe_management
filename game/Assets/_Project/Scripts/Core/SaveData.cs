@@ -27,7 +27,14 @@ namespace Cafe
         public int xu;
         public int day = 1;
         public float rp;
-        public int levelRewarded;            // level uy tín cao nhất đã nhận thưởng (0 = save cũ); xem LevelRules
+        public int levelRewarded;            // level uy tín cao nhất ĐÃ ĐẠT (0 = save cũ); xem LevelRules
+        public int levelClaimed = -1;        // level cao nhất đã NHẬN thưởng (-1 = save cũ, thưởng trả ngay lúc đạt)
+        public int fundTier;                 // cấp đích của quỹ lên cấp quán (2 hoặc 3; 0 = save cũ, không thưởng bù); xem HouseFund
+        public int fundStage;                // chặng quỹ đã nhận thưởng (0..4)
+        public int weekIndex;                // tuần game của dự án tuần (ngày chia 7); xem WeeklyProject
+        public int weekProgress;
+        public bool weekDone;
+        public int weekTier = 1;             // cấp quán chốt ở ngày đầu tuần
         public LayoutEntry[] layout;
 
         // v2

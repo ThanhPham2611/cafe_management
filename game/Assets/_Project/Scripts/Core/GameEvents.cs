@@ -19,6 +19,12 @@ namespace Cafe
         public static event Action PrepStarted;
         /// Lên level uy tín (LevelRules); mỗi level báo một lần.
         public static event Action<int> LevelUp;
+        /// Đã nhận thưởng các level từ..đến (xu, hạt là tổng). Một lần chạm thẻ = 1 level; tự nhận cuối ngày = nhiều level.
+        public static event Action<int, int, int, int> LevelsClaimed;
+        /// Quỹ lên cấp quán đạt chặng mới (cấp đích, chặng 1..3, Hạt thưởng).
+        public static event Action<int, int, int> FundStage;
+        /// Hoàn thành dự án tuần (Xu, Hạt thưởng).
+        public static event Action<int, int> WeeklyDone;
         public static event Action<Customer> CustomerServed;
         public static event Action<Customer> CustomerLeft;
         public static event Action<string> Toast;
@@ -30,9 +36,32 @@ namespace Cafe
         public static void RaiseOrderClaimChanged(Order o) { if (OrderClaimChanged != null) OrderClaimChanged(o); }
         public static void RaiseDayStarted(int day) { if (DayStarted != null) DayStarted(day); }
         public static void RaiseDayClosing() { if (DayClosing != null) DayClosing(); }
-        public static void RaiseDayEnded(DaySummary s) { if (DayEnded != null) DayEnded(s); }
+        /// Gọi từng handler riêng: chuỗi cuối ngày dài (nhiệm vụ, dự án tuần, nhận level, tổng kết); một handler lỗi không được làm
+        /// game kẹt không có bảng tổng kết.
+        public static void RaiseDayEnded(DaySummary s)
+        {
+            if (DayEnded == null) return;
+            foreach (Delegate h in DayEnded.GetInvocationList())
+            {
+                try { ((Action<DaySummary>)h)(s); }
+                catch (Exception e) { Debug.LogException(e); }
+            }
+        }
         public static void RaisePrepStarted() { if (PrepStarted != null) PrepStarted(); }
-        public static void RaiseLevelUp(int level) { if (LevelUp != null) LevelUp(level); }
+        public static void RaiseLevelsClaimed(int from, int to, int xu, int gems) { if (LevelsClaimed != null) LevelsClaimed(from, to, xu, gems); }
+        public static void RaiseFundStage(int toTier, int stage, int gems) { if (FundStage != null) FundStage(toTier, stage, gems); }
+        public static void RaiseWeeklyDone(int xu, int gems) { if (WeeklyDone != null) WeeklyDone(xu, gems); }
+
+        /// Gọi từng handler riêng: một handler lỗi không được làm đứt chuỗi Reputation.Add -> Customer.Pay đang gọi nó.
+        public static void RaiseLevelUp(int level)
+        {
+            if (LevelUp == null) return;
+            foreach (Delegate h in LevelUp.GetInvocationList())
+            {
+                try { ((Action<int>)h)(level); }
+                catch (Exception e) { Debug.LogException(e); }
+            }
+        }
         public static void RaiseCustomerServed(Customer c) { if (CustomerServed != null) CustomerServed(c); }
         public static void RaiseCustomerLeft(Customer c) { if (CustomerLeft != null) CustomerLeft(c); }
         public static void RaiseToast(string msg) { if (Toast != null) Toast(msg); }
@@ -51,6 +80,9 @@ namespace Cafe
             DayEnded = null;
             PrepStarted = null;
             LevelUp = null;
+            LevelsClaimed = null;
+            FundStage = null;
+            WeeklyDone = null;
             CustomerServed = null;
             CustomerLeft = null;
             Toast = null;

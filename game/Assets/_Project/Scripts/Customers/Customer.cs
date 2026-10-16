@@ -45,10 +45,22 @@ namespace Cafe
         public string RegularId { get { return regular != null ? regular.id : null; } }
         public string RegularName { get { return regular != null ? regular.displayName : null; } }
 
+        /// Thời gian kiên nhẫn chờ món (giây): mặc định 60, nhân theo sự kiện của ngày (trời mưa ngồi lâu, giờ cao điểm sốt ruột).
+        private float PatienceLimit
+        {
+            get
+            {
+                float limit = GameBalance.PatienceSeconds * (game != null ? game.TodayEvent.patience : 1f);
+                return specialMult > 1f ? limit * SpecialOrders.PatienceMult : limit;   // đơn đặc biệt: chờ lâu hơn vì chỉ chủ quán pha
+            }
+        }
+
+        private float specialMult = 1f;   // thưởng x2 của đơn đặc biệt; giữ lại vì order = null sau Serve mà Pay chạy sau đó
+
         /// 1 = vừa gọi món, 0 = hết kiên nhẫn.
         public float PatienceNormalized
         {
-            get { return Mathf.Clamp01(1f - patienceUsed / GameBalance.PatienceSeconds); }
+            get { return Mathf.Clamp01(1f - patienceUsed / PatienceLimit); }
         }
 
         private static readonly int[] ShirtSwatches = { 26, 28, 30, 58, 59, 60, 61 };
@@ -234,8 +246,10 @@ namespace Cafe
             RecipeDef recipe = null;
             if (regular != null && game.Recipes != null)
             {
+                // Khách quen luôn gọi món ruột nếu quán biết và pha được, kể cả khi người chơi đã tắt món đó khỏi menu
+                // (trước đây tắt món rẻ khỏi menu từ Mặt bằng làm Bà Sáu không bao giờ lên thân thiết)
                 RecipeDef favorite = game.Recipes.Get(regular.favoriteRecipe);
-                if (favorite != null && game.Recipes.InMenu(favorite)) recipe = favorite;
+                if (favorite != null && game.Recipes.IsKnown(favorite) && game.Recipes.MachineReady(favorite)) recipe = favorite;
             }
             if (recipe == null && regular == null) recipe = TutorialGate.TakeForcedRecipe(game); // hướng dẫn: 2 đơn đầu ép món
             if (recipe == null) recipe = game.PickRecipe(game.Day.Day);
@@ -245,8 +259,12 @@ namespace Cafe
                 return;
             }
             orderedRecipe = recipe;
-            order = game.Orders.Add(this, recipe);
-            if (bubble != null) bubble.Show(regular != null);
+            int tier = game.Tier != null ? game.Tier.Current : 1;
+            bool special = SpecialOrders.ShouldBeSpecial(tier, SpecialOrders.Count(game.Orders.Items), Random.value);
+            order = game.Orders.Add(this, recipe, special);
+            specialMult = order.rewardMult;
+            if (bubble != null) bubble.Show(regular != null, special);
+            Bark("order", 0.12f);
             State = CustomerState.WaitOrder;
             stateTime = 0f;
             waited = 0f;
@@ -264,7 +282,20 @@ namespace Cafe
             // Ghế êm (comfort cao) làm thanh kiên nhẫn giảm chậm hơn
             patienceUsed += dt / (1f + 0.05f * seat.Def.comfort);
             if (bubble != null) bubble.SetPatience(PatienceNormalized);
-            if (patienceUsed >= GameBalance.PatienceSeconds) Abandon(true, LostReason.Patience);
+            if (!barkedWaiting && PatienceNormalized < 0.4f) { barkedWaiting = true; Bark("waiting", 0.5f); }
+            if (patienceUsed >= PatienceLimit) Abandon(true, LostReason.Patience);
+        }
+
+        private bool barkedWaiting;
+
+        /// Câu thoại nền trên đầu khách (hiếm, có thời gian nghỉ chung; không chen vào thẻ hướng dẫn / lúc game dừng).
+        private void Bark(string group, float chance)
+        {
+            if (game == null || game.Barks == null || Time.timeScale <= 0f) return;
+            if (game.Tutorial != null && game.Tutorial.IsShowingCard) return;
+            if (!game.Barks.Allow(chance, Time.unscaledTime)) return;
+            string line = game.Barks.Pick(group, RegularName);
+            if (line != null) UiFx.Bark(transform.position + Vector3.up * 1.5f, line, HudBuilder.Cream);
         }
 
         /// Được phục vụ ly với chất lượng 1..3 sao.
@@ -312,11 +343,13 @@ namespace Cafe
             float f = game.Grid.FurnitureScoreAt(seat);
             float zoneMult = seat != null ? ZoneInfo.PriceMult(game.Grid.ZoneOf(seat.Furniture)) : 1f;
 
+            zoneMult *= specialMult;
             int pay = Mathf.RoundToInt(r.price * qMult * zoneMult);
             int tip = 0;
             float chance = GameBalance.TipChance(quality) + 0.2f * f;
             if (Random.value < chance)
                 tip = Mathf.RoundToInt(r.price * qMult * zoneMult * GameBalance.TipSize(quality) * (1f + 0.5f * f));
+            if (tip > 0) tip = Mathf.RoundToInt(tip * game.TodayEvent.tip); // sự kiện của ngày (cuối tuần, ngày sinh viên...)
             if (tip > 0 && CleaningRules.Enabled)
                 tip = Mathf.RoundToInt(tip * CleaningRules.TipMultiplierAt(seat)); // khu bẩn (CI < 60): tip ×0,5
 
@@ -338,6 +371,9 @@ namespace Cafe
 
             game.Wallet.Earn(pay + tip);
             float rp = game.Reputation.Add(GameBalance.RpPerCustomer(s));
+            if (tip > 0) Bark("tip", 0.4f);
+            else if (s >= 0.72f) Bark("served_happy", 0.3f);
+            else if (s < 0.5f) Bark("served_meh", 0.5f);
 
             DaySummary sum = game.Day.Summary;
             if (sum != null)
@@ -381,6 +417,8 @@ namespace Cafe
                 else if (reason == LostReason.Patience) sum.lostPatience++;
                 else if (reason == LostReason.Dirty) sum.lostDirty++;
             }
+            if (reason == LostReason.Patience) Bark("leaving_angry", 0.7f);
+            else if (reason == LostReason.NoSeat) Bark("leaving_angry", 0.3f);
             if (penalty)
             {
                 visual.SetPose(CustomerPose.Angry);

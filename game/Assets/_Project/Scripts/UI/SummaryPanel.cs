@@ -23,6 +23,9 @@ namespace Cafe
         private readonly Row rowRevenue, rowTips, rowScrap, rowIngredients, rowFee, rowStaffWages;
         private readonly Row rowServed, rowLost, rowRp;
         private readonly Row rowMissions;    // tiến độ nhiệm vụ ngày
+        private Text titleLine;              // "Danh hiệu: Quán có tiếng" (LevelTitles)
+        private readonly Row rowWeekly;      // dự án tuần (WeeklyProject)
+        private const float WeeklyExtra = 64f; // cấp 1: thẻ cao thêm cho dòng dự án tuần (các cấp khác còn chỗ trống)
         private readonly GameObject adviceChip;  // gợi ý đầu ngày mới (DayAdvisor), chỉ hiện khi có
         private readonly Text adviceText;
         private readonly Row rowClean;       // độ sạch TB trong ngày (chỉ hiện khi CleaningRules.Enabled)
@@ -51,6 +54,10 @@ namespace Cafe
 
             title = HudBuilder.AddText(card, "Title", "", 58, TextAnchor.MiddleCenter, HudBuilder.Ink, true, false);
             HudBuilder.SetFixed(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -26f), new Vector2(900f, 84f));
+
+            titleLine = HudBuilder.AddText(card, "TitleLine", "", 24, TextAnchor.MiddleCenter, HudBuilder.InkSoft, false, false);
+            HudBuilder.SetFixed(titleLine.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -102f), new Vector2(900f, 30f));
+            HudBuilder.Fit(titleLine, 18);
 
             // cột trái: tiền
             rowRevenue = MakeRow(card, 52f, -134f, 450f, HudBuilder.T.iconCoin, Strings.SumRevenue);
@@ -90,6 +97,9 @@ namespace Cafe
             rowCleanRoot = rowClean.value.transform.parent.gameObject;
             rowCleanRoot.SetActive(false);
             rowMissions = MakeRow(card, 540f, -534f, 410f, HudBuilder.T.iconHeart, MissionStrings.SummaryRow);
+            rowWeekly = MakeRow(card, 540f, -598f, 410f, HudBuilder.T.iconCup, "");
+            HudBuilder.Fit(rowWeekly.label, 18);
+            HudBuilder.Fit(rowWeekly.value, 22);
 
             // dải gợi ý nằm sát đáy, trên hàng nút (thẻ cao thêm AdviceExtra khi hiện)
             Image advice = HudBuilder.Chip(card, "AdviceChip", false);
@@ -169,7 +179,7 @@ namespace Cafe
 
         public void Show(DaySummary s)
         {
-            title.text = string.Format(Strings.SummaryTitleFmt, s.day);
+            title.text = string.Format(Strings.SummaryTitleFmt, s.day) + "  ·  " + Strings.TierShortName(s.tier);
             SetMoney(rowRevenue, s.revenue, true);
             SetMoney(rowTips, s.tips, true);
             SetMoney(rowScrap, s.scrap, true);
@@ -191,7 +201,13 @@ namespace Cafe
             adviceChip.SetActive(hasAdvice);
             if (hasAdvice) adviceText.text = "Gợi ý: " + adviceMsg;
             // cấp 2: thêm dòng thuê nhà + nợ, chừa chỗ để nút không che; có gợi ý thì cao thêm một dải
-            card.sizeDelta = new Vector2(1000f, (paysRent ? 960f : (rented ? 900f : 800f)) + (hasAdvice ? AdviceExtra : 0f));
+            card.sizeDelta = new Vector2(1000f, (paysRent ? 960f : (rented ? 900f : 800f + WeeklyExtra)) + (hasAdvice ? AdviceExtra : 0f));
+            ShowWeekly(s.day);
+            int lvNow = game.Reputation.Level;
+            string rank = LevelTitles.TitleFor(lvNow);
+            titleLine.text = s.levelStart < lvNow
+                ? string.Format(Strings.SumTitleLineUpFmt, s.levelStart, lvNow, rank)
+                : string.Format(Strings.SumTitleLineFmt, lvNow, rank);
             if (rented)
             {
                 SetMoney(rowRent, -s.rent, true);
@@ -228,6 +244,17 @@ namespace Cafe
             popTimer = 0f;
             card.localScale = new Vector3(0.9f, 0.9f, 1f);
             dim.color = new Color(0f, 0f, 0f, 0f);
+        }
+
+        /// Dòng "Dự án tuần  96/110 khách" (loại dự án đổi theo tuần: khách / tip / lãi); xong thì "XONG!".
+        private void ShowWeekly(int day)
+        {
+            WeeklyProject w = game.Weekly;
+            rowWeekly.label.text = Strings.WeeklyLabel;
+            string progress = Strings.FormatInt(w.Progress), target = Strings.FormatInt(w.Target);
+            rowWeekly.value.text = w.Done ? Strings.WeeklyDone
+                : string.Format(w.Kind == WeeklyKind.Serve ? Strings.WeeklyServeValueFmt : Strings.WeeklyMoneyValueFmt, progress, target);
+            rowWeekly.value.color = w.Done ? HudBuilder.Red : HudBuilder.GoodDark;
         }
 
         private void ShowMissions()
