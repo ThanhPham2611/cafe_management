@@ -30,6 +30,7 @@ namespace Cafe
         private Text cardTitle, ctaTitle;
         private Text xuText, rpText;
         private BarView xuBar, rpBar;
+        private Image[] fundTicks;
         private RectTransform ctaWrap;
         private Text ctaSub;
         private Text infoText;
@@ -98,6 +99,19 @@ namespace Cafe
             HudBuilder.SetFixed(xuText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -44f), new Vector2(384f, 26f));
             xuBar = HudBuilder.CreateBar(c, "XuBar");
             HudBuilder.SetFixed(xuBar.root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -72f), new Vector2(384f, 18f));
+            // Quỹ lên cấp 4 chặng: 3 vạch ở 25 / 50 / 75% (HouseFund); vạch sẫm lại khi đã qua chặng
+            fundTicks = new Image[HouseFund.Stages - 1];
+            for (int i = 0; i < fundTicks.Length; i++)
+            {
+                fundTicks[i] = HudBuilder.Img(xuBar.root, "FundTick" + (i + 1), null, HudBuilder.Ink, false, false);
+                RectTransform tr = fundTicks[i].rectTransform;
+                float x = (i + 1) / (float)HouseFund.Stages;
+                tr.anchorMin = new Vector2(x, -0.25f);
+                tr.anchorMax = new Vector2(x, 1.25f);
+                tr.pivot = new Vector2(0.5f, 0.5f);
+                tr.sizeDelta = new Vector2(4f, 0f);
+                tr.anchoredPosition = Vector2.zero;
+            }
 
             rpText = HudBuilder.AddText(c, "Rp", "", 24, TextAnchor.MiddleLeft, HudBuilder.InkSoft, false, false);
             HudBuilder.SetFixed(rpText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -94f), new Vector2(384f, 26f));
@@ -309,6 +323,9 @@ namespace Cafe
             xuText.text = string.Format(Strings.TierXuFmt, Strings.FormatInt(xu), Strings.FormatInt(needXu));
             rpText.text = string.Format(Strings.TierRpFmt, Strings.FormatInt(rp), Strings.FormatInt(needRp), LevelRules.LevelFor(needRp));
             xuBar.Set(xu / (float)needXu, xu >= needXu ? HudBuilder.Good : HudBuilder.Accent);
+            int stage = HouseFund.StageFor(xu, needXu);
+            for (int i = 0; i < fundTicks.Length; i++)
+                fundTicks[i].color = stage > i ? new Color(1f, 1f, 1f, 0.9f) : new Color(HudBuilder.Ink.r, HudBuilder.Ink.g, HudBuilder.Ink.b, 0.55f);
             rpBar.Set(rp / (float)needRp, rp >= needRp ? HudBuilder.Good : HudBuilder.Accent);
         }
 

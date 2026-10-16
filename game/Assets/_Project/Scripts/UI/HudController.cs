@@ -176,6 +176,8 @@ namespace Cafe
             GameEvents.PrepStarted += OnPrepStarted;
             GameEvents.LevelUp += OnLevelUp;
             GameEvents.LevelsClaimed += OnLevelsClaimed;
+            GameEvents.FundStage += OnFundStage;
+            GameEvents.WeeklyDone += OnWeeklyDone;
             GameEvents.CustomerServed += OnServed;
             GameEvents.Toast += ShowToast;
             game.Station.Changed += RebuildCards;
@@ -213,6 +215,8 @@ namespace Cafe
             GameEvents.PrepStarted -= OnPrepStarted;
             GameEvents.LevelUp -= OnLevelUp;
             GameEvents.LevelsClaimed -= OnLevelsClaimed;
+            GameEvents.FundStage -= OnFundStage;
+            GameEvents.WeeklyDone -= OnWeeklyDone;
             GameEvents.CustomerServed -= OnServed;
             GameEvents.Toast -= ShowToast;
             if (game != null)
@@ -507,6 +511,19 @@ namespace Cafe
         {
             UiFx.FloatTextTop(string.Format(Strings.LevelReachedFmt, level), HudBuilder.Accent);
             RefreshLevelCard();
+        }
+
+        /// Quỹ lên cấp quán đạt chặng mới: chữ nổi kèm Hạt (không pháo giấy: chặng nhỏ, tránh nhiễu với lên level).
+        private void OnFundStage(int toTier, int stage, int gems)
+        {
+            UiFx.FloatTextTop(string.Format(Strings.FundStageFmt, Strings.TierShortName(toTier), stage * 100 / HouseFund.Stages, gems), HudBuilder.Good);
+        }
+
+        /// Xong dự án tuần: chữ nổi + pháo giấy (không biểu ngữ lớn).
+        private void OnWeeklyDone(int xu, int gems)
+        {
+            UiFx.FloatTextTop(string.Format(Strings.WeeklyDoneFmt, Strings.FormatInt(xu), gems), HudBuilder.Accent);
+            if (game.Tier != null) game.Tier.PlayConfetti(false, null);
         }
 
         /// Đã nhận thưởng (chạm thẻ hoặc tự nhận cuối ngày): chữ nổi thưởng + pháo giấy; có level mốc sao thì thêm biểu ngữ "SAO N!".

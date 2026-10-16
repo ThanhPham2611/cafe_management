@@ -154,6 +154,9 @@ namespace Cafe
             // Hạt + sổ công thức (SaveData v3: gems, knownRecipes, menuToday, toolLevels). RecipeBook.TierProvider phải được gán TRƯỚC dòng này.
             Gems = new GemWallet();
             Gems.Init(hasSave ? save.gems : 0);
+            Weekly.Load(hasSave ? save.weekIndex : 0, hasSave ? save.weekProgress : 0, hasSave && save.weekDone, hasSave ? save.weekTier : 1);
+            if (hasSave && save.fundTier > 0) Fund.Load(save.fundTier, save.fundStage);
+            else Fund.Reset(Tier.NextTier, Wallet.Xu, Tier.NextTierXu); // save cũ / ván mới: không thưởng bù chặng đã qua
             Recipes = new RecipeBook(this);
             Recipes.Load(hasSave ? save : null);
             if (Tier != null) Tier.TierChanged += Recipes.NotifyTierChanged; // lên cấp: mở món thường của cấp mới, làm mới khay/sổ
@@ -234,6 +237,7 @@ namespace Cafe
             GameEvents.DayStarted += OnDayStartedForMissions;
             GameEvents.DayEnded += OnDayEndedForMissions;
             GameEvents.LevelUp += OnLevelReached;
+            GameEvents.MoneyChanged += OnMoneyForFund;
             GameEvents.DayEnded += OnDayEndedClaimLevels;
 
             // Camera + input
@@ -372,6 +376,7 @@ namespace Cafe
 
             Day.Begin(day);
             Day.Summary.levelStart = Reputation.Level;
+            Weekly.Sync(day, Tier.Current);
             TodayEvent = DayEvents.For(day);
             if (!TodayEvent.IsNormal) Debug.Log($"[Event] ngày {day}: {TodayEvent.name} (khách x{TodayEvent.demand:0.00}, tip x{TodayEvent.tip:0.00}, kiên nhẫn x{TodayEvent.patience:0.00})");
             Tier.OnDayBegin(Day.Summary); // cấp 2: tới kỳ thì trừ tiền thuê nhà (trước khi chốt mốc Xu đầu ngày)
@@ -467,6 +472,12 @@ namespace Cafe
             if (Tutorial != null) Tutorial.WriteToSave(data);
             data.levelRewarded = Reputation.RewardedLevel;
             data.levelClaimed = ClaimedLevel;
+            data.fundTier = Fund.TargetTier;
+            data.fundStage = Fund.Stage;
+            data.weekIndex = Weekly.Week;
+            data.weekProgress = Weekly.Progress;
+            data.weekDone = Weekly.Done;
+            data.weekTier = Weekly.Tier;
             if (Day.CurrentPhase == DayCycle.Phase.Summary || Day.CurrentPhase == DayCycle.Phase.Prep)
             {
                 data.day = Day.Day + 1;
@@ -572,6 +583,10 @@ namespace Cafe
         /// Sự kiện của ngày đang chơi (DayEvents.For theo số ngày); báo trước ở pha Chuẩn bị.
         public DayEvent TodayEvent { get; private set; } = DayEvents.Normal;
 
+        /// Dự án tuần (tuần game = 7 ngày) và quỹ lên cấp quán 4 chặng; xem Economy/WeeklyProject.cs, HouseFund.cs.
+        public WeeklyProject Weekly { get; } = new WeeklyProject();
+        public HouseFundTracker Fund { get; } = new HouseFundTracker();
+
         public int PendingLevels { get { return Mathf.Max(0, Reputation.RewardedLevel - ClaimedLevel); } }
 
         private void OnLevelReached(int level)
@@ -616,7 +631,31 @@ namespace Cafe
             if (Missions == null || s == null) return;
             // "Không ai bỏ về" chỉ tính khách bực (chờ lâu / bẩn); hết chỗ là quán đông, không phải lỗi người chơi
             Missions.RecordDay(s.served, s.lost - s.lostNoSeat, s.cleanliness, s.tier);
+            if (Weekly.RecordDay(s.day, s.tier, s.served, s.tips, s.NetProfit))
+            {
+                int xu = WeeklyProject.RewardXu(Weekly.Tier), gems = WeeklyProject.RewardGems(Weekly.Tier);
+                Wallet.Earn(xu);
+                if (Gems != null) Gems.Add(gems);
+                Debug.Log($"[Weekly] xong dự án tuần {Weekly.Week + 1} ({Weekly.Kind}, {Weekly.Progress}/{Weekly.Target}): +{xu} Xu, +{gems} Hạt");
+                NotifyRewardGranted(xu, 0f);
+                GameEvents.RaiseWeeklyDone(xu, gems);
+            }
             SaveSnapshot();
+        }
+
+        /// Xu đổi: quỹ lên cấp quán đạt chặng mới thì thưởng Hạt (mỗi chặng một lần cho mỗi cấp đích).
+        private void OnMoneyForFund(int xu)
+        {
+            if (Tier == null || Wallet == null || Tier.Transitioning || Day == null || Day.CurrentPhase == DayCycle.Phase.Idle) return;
+            int from, to;
+            if (!Fund.Advance(Tier.NextTier, Wallet.Xu, Tier.NextTierXu, out from, out to)) return;
+            int gemsTotal = 0;
+            for (int stage = from + 1; stage <= to; stage++) gemsTotal += HouseFund.RewardGems(stage, Fund.TargetTier);
+            if (gemsTotal <= 0 || Gems == null) return;
+            Gems.Add(gemsTotal);
+            Debug.Log($"[Fund] quỹ cấp {Fund.TargetTier} đạt chặng {to}/4: +{gemsTotal} Hạt");
+            NotifyRewardGranted(0, 0f);
+            GameEvents.RaiseFundStage(Fund.TargetTier, Mathf.Min(to, HouseFund.Stages - 1), gemsTotal);
         }
 
         private void OnApplicationPause(bool paused)
@@ -636,6 +675,7 @@ namespace Cafe
             GameEvents.DayStarted -= OnDayStartedForMissions;
             GameEvents.DayEnded -= OnDayEndedForMissions;
             GameEvents.LevelUp -= OnLevelReached;
+            GameEvents.MoneyChanged -= OnMoneyForFund;
             GameEvents.DayEnded -= OnDayEndedClaimLevels;
             if (Staff != null) Staff.Dispose();
             if (Station != null) Station.Dispose();

@@ -29,6 +29,12 @@ namespace Cafe
                 default: return TierShort4;
             }
         }
+        public const string FundStageFmt = "Quỹ {0} đạt {1}%!  +{2} Hạt";
+        public const string WeeklyServeFmt = "Tuần {0}/7: khách";
+        public const string WeeklyTipsFmt = "Tuần {0}/7: tip";
+        public const string WeeklyProfitFmt = "Tuần {0}/7: lãi";
+        public const string WeeklyDone = "XONG!";
+        public const string WeeklyDoneFmt = "DỰ ÁN TUẦN XONG!  +{0} Xu  +{1} Hạt";
         public const string EventTodayFmt = "Hôm nay: {0} - {1}";
         public const string EventTomorrowFmt = "Ngày mai: {0} - {1}";
         public const string LevelCardFmt = "Lv {0}: NHẬN +{1} Xu";

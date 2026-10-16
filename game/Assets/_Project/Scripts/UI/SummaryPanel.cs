@@ -23,6 +23,8 @@ namespace Cafe
         private readonly Row rowRevenue, rowTips, rowScrap, rowIngredients, rowFee, rowStaffWages;
         private readonly Row rowServed, rowLost, rowRp;
         private readonly Row rowMissions;    // tiến độ nhiệm vụ ngày
+        private readonly Row rowWeekly;      // dự án tuần (WeeklyProject)
+        private const float WeeklyExtra = 64f; // cấp 1: thẻ cao thêm cho dòng dự án tuần (các cấp khác còn chỗ trống)
         private readonly GameObject adviceChip;  // gợi ý đầu ngày mới (DayAdvisor), chỉ hiện khi có
         private readonly Text adviceText;
         private readonly Row rowClean;       // độ sạch TB trong ngày (chỉ hiện khi CleaningRules.Enabled)
@@ -90,6 +92,9 @@ namespace Cafe
             rowCleanRoot = rowClean.value.transform.parent.gameObject;
             rowCleanRoot.SetActive(false);
             rowMissions = MakeRow(card, 540f, -534f, 410f, HudBuilder.T.iconHeart, MissionStrings.SummaryRow);
+            rowWeekly = MakeRow(card, 540f, -598f, 410f, HudBuilder.T.iconCup, "");
+            HudBuilder.Fit(rowWeekly.label, 18);
+            HudBuilder.Fit(rowWeekly.value, 22);
 
             // dải gợi ý nằm sát đáy, trên hàng nút (thẻ cao thêm AdviceExtra khi hiện)
             Image advice = HudBuilder.Chip(card, "AdviceChip", false);
@@ -191,7 +196,8 @@ namespace Cafe
             adviceChip.SetActive(hasAdvice);
             if (hasAdvice) adviceText.text = "Gợi ý: " + adviceMsg;
             // cấp 2: thêm dòng thuê nhà + nợ, chừa chỗ để nút không che; có gợi ý thì cao thêm một dải
-            card.sizeDelta = new Vector2(1000f, (paysRent ? 960f : (rented ? 900f : 800f)) + (hasAdvice ? AdviceExtra : 0f));
+            card.sizeDelta = new Vector2(1000f, (paysRent ? 960f : (rented ? 900f : 800f + WeeklyExtra)) + (hasAdvice ? AdviceExtra : 0f));
+            ShowWeekly(s.day);
             if (rented)
             {
                 SetMoney(rowRent, -s.rent, true);
@@ -230,6 +236,16 @@ namespace Cafe
             popTimer = 0f;
             card.localScale = new Vector3(0.9f, 0.9f, 1f);
             dim.color = new Color(0f, 0f, 0f, 0f);
+        }
+
+        /// Dòng "Tuần 3/7: khách  64/110" (đổi theo loại dự án của tuần); xong thì "XONG!".
+        private void ShowWeekly(int day)
+        {
+            WeeklyProject w = game.Weekly;
+            string fmt = w.Kind == WeeklyKind.Serve ? Strings.WeeklyServeFmt : (w.Kind == WeeklyKind.Tips ? Strings.WeeklyTipsFmt : Strings.WeeklyProfitFmt);
+            rowWeekly.label.text = string.Format(fmt, WeeklyProject.DayInWeek(day));
+            rowWeekly.value.text = w.Done ? Strings.WeeklyDone : Strings.FormatInt(w.Progress) + "/" + Strings.FormatInt(w.Target);
+            rowWeekly.value.color = w.Done ? HudBuilder.Red : HudBuilder.GoodDark;
         }
 
         private void ShowMissions()
