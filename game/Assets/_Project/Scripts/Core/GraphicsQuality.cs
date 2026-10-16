@@ -32,6 +32,8 @@ namespace Cafe
         public static GraphicsLevel Recommended { get; private set; }
         public static event Action Changed;
 
+        public static int DayNightHz { get { return GraphicsPresets.DayNightHz(Current); } }
+
         public static bool UiOutlines { get { return GraphicsPresets.UiOutlines(Current); } }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

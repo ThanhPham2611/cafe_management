@@ -12,8 +12,8 @@ namespace Cafe
             // Vỉa hè (Lv1-5)
             { "Plant_Areca_Tall", 2 }, { "Board_Menu_A", 3 }, { "Fan_Stand", 3 }, { "Jar_Tea_Big", 4 }, { "Umbrella_Street_4x4", 5 },
             // Mặt bằng (Lv6-15)
-            { "Plant_Monstera", 7 }, { "Lamp_Floor", 8 }, { "Lantern_Hoian", 9 }, { "Radio_Stand", 10 },
-            { "Shelf_Cups", 11 }, { "Fan_Ceiling", 12 }, { "Bookshelf_Low", 14 },
+            { "Plant_Monstera", 7 }, { "Lamp_Bulb", 7 }, { "Lamp_Floor", 8 }, { "Lantern_Hoian", 9 }, { "Radio_Stand", 10 },
+            { "Shelf_Cups", 11 }, { "Fan_Ceiling", 12 }, { "Lamp_Desk", 13 }, { "Bookshelf_Low", 14 },
             // Nhà hàng (Lv16+)
             { "Chair_Leather", 17 }, { "Easel_Art", 18 }, { "Armchair_Velvet", 20 }, { "Aircon_Standing", 20 },
             { "Chandelier_Brass", 22 }, { "Table_Marble_Round", 24 }, { "Piano_Upright", 28 },

@@ -49,8 +49,8 @@ namespace Cafe
 
             // Vùng chạm rộng hơn ly một chút cho ngón tay
             var box = gameObject.AddComponent<BoxCollider>();
-            box.size = new Vector3(0.35f, 0.35f, 0.35f);
-            box.center = new Vector3(0f, 0.15f, 0f);
+            box.size = new Vector3(0.6f, 0.55f, 0.6f);
+            box.center = new Vector3(0f, 0.25f, 0f);
 
             seat.Cup = this;
             g.LeftoverCups.Add(this);

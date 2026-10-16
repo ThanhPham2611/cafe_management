@@ -411,7 +411,7 @@ namespace Cafe
             float press; // 0..1 nhấn xuống
             if (prompt.hand == HandMode.Hold)
             {
-                float ph = (t % 2.0f) / 2.0f;
+                float ph = (t % 1.4f) / 1.4f;
                 if (ph < 0.2f) { k = 1f - ph / 0.2f; press = 0f; }
                 else if (ph < 0.8f) { k = 0f; press = 1f; }
                 else { k = (ph - 0.8f) / 0.2f; press = 0f; }

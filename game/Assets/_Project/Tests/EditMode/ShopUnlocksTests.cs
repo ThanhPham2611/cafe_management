@@ -58,6 +58,13 @@ namespace Cafe.Tests
         }
 
         [Test]
+        public void CounterLamps_UnlockAtTheirLevels()
+        {
+            Assert.That(ShopUnlocks.RequiredLevel("Lamp_Bulb"), Is.EqualTo(7));
+            Assert.That(ShopUnlocks.RequiredLevel("Lamp_Desk"), Is.EqualTo(13));
+        }
+
+        [Test]
         public void Titles_ChangeAtTheTitleLevels_AndEveryLevelHasOne()
         {
             Assert.That(LevelTitles.TitleFor(1), Is.EqualTo("Chủ quán tập sự"));

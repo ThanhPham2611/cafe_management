@@ -285,6 +285,15 @@ namespace Cafe
             return true;
         }
 
+        /// Còn chỗ nhận thêm một việc thu ly (không báo toast).
+        public bool CanQueueCollect()
+        {
+            int queuedCollects = 0;
+            for (int i = 0; i < queue.Count; i++)
+                if (queue[i].type == OwnerTaskType.CollectCup) queuedCollects++;
+            return PlayerTaskCount() < MaxQueue && CarriedCups + queuedCollects < MaxCarriedCups;
+        }
+
         /// Chạm ly để lại. Trả true nếu đã giao việc (hoặc đã có trong hàng).
         public bool QueueCollect(LeftoverCup cup)
         {

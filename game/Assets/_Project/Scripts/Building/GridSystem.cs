@@ -79,6 +79,7 @@ namespace Cafe
         }
 
         private PlacedFurniture[] cells;
+        private PlacedFurniture[] mountCells; // đồ đặt trên mặt quầy (không chiếm ô sàn)
         private readonly Transform root;
         private readonly List<Seat> scratch = new List<Seat>();
         private bool batching;
@@ -89,6 +90,7 @@ namespace Cafe
             Size = size;
             this.root = root;
             cells = new PlacedFurniture[Mathf.Max(1, size.x * size.y)];
+            mountCells = new PlacedFurniture[cells.Length];
         }
 
         public static int NormalizeRotation(int rotation)
@@ -103,6 +105,11 @@ namespace Cafe
         }
 
         /// Dù che nắng lớn: nằm phía trên, không chiếm ô.
+        public static bool IsMount(FurnitureDef def)
+        {
+            return def != null && def.counterMount;
+        }
+
         public static bool IsOverhead(FurnitureDef def)
         {
             return def.overhead || (def.kind == FurnitureKind.Decor && def.footprint.x * def.footprint.y >= 9);
@@ -153,10 +160,43 @@ namespace Cafe
             return InBounds(cell);
         }
 
+        /// Vị trí thế giới của món: như FootprintCenter, nhưng đồ đặt trên quầy nâng lên mặt quầy.
+        public Vector3 PlacePos(FurnitureDef def, Vector2Int cell, int rotation)
+        {
+            Vector3 p = FootprintCenter(def, cell, rotation);
+            if (def != null && def.counterMount) p.y = Origin.y + CounterTopY;
+            return p;
+        }
+
+        /// Độ cao mặt quầy pha (0 khi quầy không nhận đồ đặt trên mặt).
+        public float CounterTopY
+        {
+            get { return BrewStationFurniture != null && BrewStationFurniture.Def != null ? BrewStationFurniture.Def.counterTopY : 0f; }
+        }
+
+        private bool CanPlaceMount(FurnitureDef def, Vector2Int cell, int rotation, Vector2Int fp)
+        {
+            PlacedFurniture bar = BrewStationFurniture;
+            if (bar == null || bar.Def == null || bar.Def.counterTopY <= 0f) return false;
+            for (int y = 0; y < fp.y; y++)
+            {
+                for (int x = 0; x < fp.x; x++)
+                {
+                    var c = new Vector2Int(cell.x + x, cell.y + y);
+                    if (!InBounds(c)) return false;
+                    int i = c.y * Size.x + c.x;
+                    if (cells[i] != bar || mountCells[i] != null) return false;
+                }
+            }
+            Vector3 local = bar.transform.InverseTransformPoint(PlacePos(def, cell, rotation));
+            return CounterMountRules.Contains(bar.Def.counterMountArea, local);
+        }
+
         public bool CanPlace(FurnitureDef def, Vector2Int cell, int rotation)
         {
             if (def == null) return false;
             Vector2Int fp = RotatedFootprint(def.footprint, rotation);
+            if (def.counterMount) return CanPlaceMount(def, cell, rotation, fp);
             bool overhead = IsOverhead(def);
             for (int y = 0; y < fp.y; y++)
             {
@@ -178,7 +218,7 @@ namespace Cafe
 
             Vector2Int fp = RotatedFootprint(def.footprint, rotation);
             bool overhead = IsOverhead(def);
-            Vector3 pos = FootprintCenter(def, cell, rotation);
+            Vector3 pos = PlacePos(def, cell, rotation);
             GameObject go = Object.Instantiate(def.prefab, pos, Quaternion.Euler(0f, 90f * rotation, 0f), root);
             go.name = string.IsNullOrEmpty(def.id) ? def.name : def.id;
 
@@ -192,9 +232,10 @@ namespace Cafe
             }
             else
             {
+                PlacedFurniture[] grid = def.counterMount ? mountCells : cells;
                 for (int y = 0; y < fp.y; y++)
                     for (int x = 0; x < fp.x; x++)
-                        cells[(cell.y + y) * Size.x + (cell.x + x)] = pf;
+                        grid[(cell.y + y) * Size.x + (cell.x + x)] = pf;
             }
 
             Placed.Add(pf);
@@ -222,7 +263,10 @@ namespace Cafe
         {
             if (pf == null || !Placed.Remove(pf)) return false;
             for (int i = 0; i < cells.Length; i++)
+            {
                 if (cells[i] == pf) cells[i] = null;
+                if (mountCells[i] == pf) mountCells[i] = null;
+            }
 
             ComfortStyleTotal -= pf.Def.comfort + pf.Def.style;
             Seat seat = pf.GetComponent<Seat>();
@@ -260,6 +304,7 @@ namespace Cafe
             Size = size;
             Zones = null; // TierManager.OnGridCreated gán lại theo cấp
             cells = new PlacedFurniture[Mathf.Max(1, size.x * size.y)];
+            mountCells = new PlacedFurniture[cells.Length];
             ComfortStyleTotal = 0;
             if (LayoutChanged != null) LayoutChanged();
         }

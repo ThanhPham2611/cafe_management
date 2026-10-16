@@ -12,6 +12,8 @@ namespace Cafe
         public Vector2Int Footprint { get; private set; }
         /// Vật thể "trên cao" (dù che): không chiếm ô, không chặn đường/chạm.
         public bool Overhead { get; private set; }
+        /// Đồ đặt trên mặt quầy pha: có collider để chọn nhưng không chặn đường đi.
+        public bool IsMount { get { return Def != null && Def.counterMount; } }
         public Bounds WorldBounds { get; private set; }
         public float TopY { get { return WorldBounds.max.y; } }
         /// Trạng thái bẩn của bàn (chỉ có ở kind = Table; null với đồ khác). Xem Scripts/Cleaning/TableDirt.cs.

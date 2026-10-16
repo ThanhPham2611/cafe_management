@@ -774,7 +774,7 @@ namespace Cafe
         private TutorialTarget UiTarget(string path)
         {
             // Nút phụ nằm trong popup MENU (đang đóng thì không thấy): chỉ vào nút MENU
-            bool inMenu = path == "StaffButton" || path == "ZonesButton" || path == "MissionButton" || path == "RegularsButton" || path == "GraphicsButton";
+            bool inMenu = path == "StaffButton" || path == "ZonesButton" || path == "MissionButton" || path == "RegularsButton" || path == "GraphicsButton" || path == "RecipeBookMenuButton";
             return TutorialTarget.Ui(() => FindUi(path) ?? (inMenu ? FindUi("MenuButton") : null));
         }
 

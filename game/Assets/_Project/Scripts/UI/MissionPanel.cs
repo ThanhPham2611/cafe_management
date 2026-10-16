@@ -45,6 +45,7 @@ namespace Cafe
                 new Vector2(-24f, -558f), new Vector2(230f, 86f)); // cột phải, dưới nút Nhân viên
 
             Image dotImg = HudBuilder.Img(button.transform, "Dot", HudBuilder.T.disc, HudBuilder.Red, false, false);
+            dotImg.color = HudBuilder.Red; // Img() ép trắng khi có sprite
             HudBuilder.SetFixed(dotImg.rectTransform, new Vector2(1f, 1f), new Vector2(0.5f, 0.5f), new Vector2(-6f, -6f), new Vector2(32f, 32f));
             dot = dotImg.gameObject;
 

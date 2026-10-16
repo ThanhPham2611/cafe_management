@@ -68,6 +68,12 @@ namespace Cafe
             return fast.ToArray();
         }
 
+        /// Số lần mỗi giây cập nhật ánh sáng sáng/tối (DayNightController).
+        public static int DayNightHz(GraphicsLevel level)
+        {
+            return level == GraphicsLevel.Low ? 4 : level == GraphicsLevel.Medium ? 10 : 20;
+        }
+
         /// Viền chữ UI (Outline) nhân bốn số đỉnh của mọi chữ: tắt ở mức Thấp.
         public static bool UiOutlines(GraphicsLevel level)
         {

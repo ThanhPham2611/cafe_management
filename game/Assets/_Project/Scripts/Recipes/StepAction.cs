@@ -14,6 +14,10 @@ namespace Cafe
         public const float SpinRequiredDegrees = 360f * SpinTurns - 30f;
         /// Bấm giữ ngắn hơn mức này coi là chạm nhầm/cuộn (không bị tính sai bước).
         public const float AccidentalHoldSeconds = 0.12f;
+        /// Nhả khi đã đạt tỉ lệ này của thời gian giữ thì vẫn tính thành công.
+        public const float HoldReleaseForgiveness = 0.8f;
+        /// Ngón trượt ra khỏi nút ngắn hơn mức này (giây) thì chỉ tạm dừng, không hủy.
+        public const float HoldSlipGraceSeconds = 0.15f;
 
         public static StepAction For(BrewStep s)
         {
@@ -41,12 +45,12 @@ namespace Cafe
         {
             switch (s)
             {
-                case BrewStep.Phin: return 0.8f;
+                case BrewStep.Phin: return 0.5f;
+                case BrewStep.CotDua: return 0.45f;
                 case BrewStep.SuaDac:
                 case BrewStep.SuaTuoi:
                 case BrewStep.Tra:
-                case BrewStep.CotDua:
-                    return 0.6f;
+                    return 0.4f;
                 default:
                     return 0f;
             }

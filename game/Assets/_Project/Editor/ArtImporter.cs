@@ -33,6 +33,10 @@ namespace Cafe.EditorTools
             public int minTier;          // 0 hoặc 1 = có từ vỉa hè; 2 thuê mặt bằng; 3 nhà hàng
             public bool overhead;        // treo trên cao
             public float hangY;          // độ cao đáy model khi treo (m)
+            // Đặt trên mặt quầy pha
+            public bool counterMount;    // đồ đặt trên mặt quầy (bóng đèn, đèn bàn)
+            public float counterTopY;    // (trên quầy) độ cao mặt quầy; 0 = không nhận đồ
+            public Rect counterArea;     // (trên quầy) vùng XZ cục bộ cho tâm đồ, tránh tủ bánh
         }
 
         static readonly Item[] Catalog =
@@ -51,7 +55,7 @@ namespace Cafe.EditorTools
             new Item { fbx = "SM_Jar_Tea_Big", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Bình trà đá to", price = 800, comfort = 1, style = 1, attract = 3, footprint = new Vector2Int(1, 1) },
             new Item { fbx = "SM_Fan_Stand", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Quạt đứng", price = 600, comfort = 3, style = 0, footprint = new Vector2Int(1, 1) },
             // ---- Cấp 2: thuê mặt bằng (docs/phase2_spec.md). Kích thước/chiều cao theo báo cáo Tech Artist.
-            new Item { fbx = "SM_Counter_Bar_4x2", folder = "Counters", kind = FurnitureKind.BrewStation, displayName = "Quầy bar", hidden = true, minTier = 2, price = 0, style = 4, footprint = new Vector2Int(4, 2) },
+            new Item { fbx = "SM_Counter_Bar_4x2", folder = "Counters", kind = FurnitureKind.BrewStation, displayName = "Quầy bar", hidden = true, minTier = 2, price = 0, style = 4, footprint = new Vector2Int(4, 2), counterTopY = 1.05f, counterArea = new Rect(-0.1f, -0.3f, 1.0f, 0.6f) },
             new Item { fbx = "SM_Sink_Counter", folder = "Counters", kind = FurnitureKind.Decor, displayName = "Bồn rửa", hidden = true, minTier = 2, price = 0, footprint = new Vector2Int(2, 1) },
             new Item { fbx = "SM_Shelf_Cups", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Kệ ly", minTier = 2, price = 800, style = 3, footprint = new Vector2Int(2, 1) },
             new Item { fbx = "SM_Table_Wood_2Seat", folder = "Furniture", kind = FurnitureKind.Table, displayName = "Bàn gỗ", minTier = 2, price = 700, priceStep = 120, comfort = 2, style = 3, footprint = new Vector2Int(2, 2) },
@@ -65,6 +69,8 @@ namespace Cafe.EditorTools
             new Item { fbx = "SM_Chair_Rattan", folder = "Furniture", kind = FurnitureKind.Seat, displayName = "Ghế mây", minTier = 2, price = 450, comfort = 4, style = 4, footprint = new Vector2Int(1, 1), seatHeight = 0.45f },
             new Item { fbx = "SM_Table_Round_Tile", folder = "Furniture", kind = FurnitureKind.Table, displayName = "Bàn tròn gạch bông", minTier = 2, price = 900, comfort = 2, style = 5, footprint = new Vector2Int(2, 2) },
             new Item { fbx = "SM_Plant_Monstera", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Cây trầu bà lá xẻ", minTier = 2, price = 550, style = 4, attract = 5, footprint = new Vector2Int(1, 1) },
+            new Item { fbx = "SM_Lamp_Bulb", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Bóng đèn dây tóc", minTier = 2, price = 350, style = 2, maxCount = 3, footprint = new Vector2Int(1, 1), counterMount = true },
+            new Item { fbx = "SM_Lamp_Desk", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Đèn bàn quầy", minTier = 2, price = 600, style = 3, maxCount = 3, footprint = new Vector2Int(1, 1), counterMount = true },
             new Item { fbx = "SM_Lamp_Floor", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Đèn cây", minTier = 2, price = 650, comfort = 1, style = 4, footprint = new Vector2Int(1, 1) },
             new Item { fbx = "SM_Bookshelf_Low", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Kệ sách thấp", minTier = 2, price = 1200, style = 5, footprint = new Vector2Int(2, 1) },
             new Item { fbx = "SM_Radio_Stand", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Radio cổ", minTier = 2, price = 700, style = 4, attract = 3, footprint = new Vector2Int(1, 1) },
@@ -202,6 +208,9 @@ namespace Cafe.EditorTools
             def.minTier = it.minTier > 0 ? it.minTier : 1;
             def.overhead = it.overhead;
             def.hangY = it.hangY;
+            def.counterMount = it.counterMount;
+            def.counterTopY = it.counterTopY;
+            def.counterMountArea = it.counterArea;
             def.priceStep = it.priceStep;
             def.maxCount = it.maxCount;
             def.attract = it.attract;

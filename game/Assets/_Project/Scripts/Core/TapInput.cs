@@ -64,8 +64,13 @@ namespace Cafe
             return false;
         }
 
+        /// Gán bởi GameBootstrap: nguồn danh sách ly để hỗ trợ chạm gần ly.
+        public GameBootstrap Game;
+
         private Camera cam;
         private readonly RaycastHit[] hits = new RaycastHit[24];
+        private readonly List<LeftoverCup> assistCups = new List<LeftoverCup>(8);
+        private readonly List<Vector2> assistPoints = new List<Vector2>(8);
 
         private bool tracking;
         private bool overUI;
@@ -161,7 +166,33 @@ namespace Cafe
                 // Dung sai cho ngón tay: quét cầu nhỏ
                 best = Pick(Physics.SphereCastNonAlloc(ray, 0.25f, hits, 200f, ~0, QueryTriggerInteraction.Ignore));
             }
+            // Khách không nhận chạm thì không được che ly; ly nằm trong bán kính ngón tay thì ưu tiên ly
+            if (!(best is LeftoverCup) && !(best is Customer))
+            {
+                LeftoverCup cup = NearestCup(screenPos);
+                if (cup != null) best = cup;
+            }
             if (best != null) best.OnTap();
+        }
+
+        private LeftoverCup NearestCup(Vector2 screenPos)
+        {
+            if (Game == null) return null;
+            assistCups.Clear();
+            assistPoints.Clear();
+            for (int i = 0; i < Game.LeftoverCups.Count; i++)
+            {
+                LeftoverCup c = Game.LeftoverCups[i];
+                if (c == null || !c.IsCollectable) continue;
+                // Điểm gần hơn trong hai: thân ly và bong bóng phía trên
+                Vector3 p = c.transform.position;
+                Vector2 a = cam.WorldToScreenPoint(p + Vector3.up * 0.15f);
+                Vector2 b = cam.WorldToScreenPoint(p + Vector3.up * 0.55f);
+                assistCups.Add(c);
+                assistPoints.Add((a - screenPos).sqrMagnitude <= (b - screenPos).sqrMagnitude ? a : b);
+            }
+            int idx = TapAssistRules.Nearest(screenPos, assistPoints, TapAssistRules.RadiusPx(Screen.height));
+            return idx < 0 ? null : assistCups[idx];
         }
 
         private ITappable Pick(int count)
@@ -174,6 +205,8 @@ namespace Cafe
                 if (h.collider == null || h.distance >= bestDist) continue;
                 ITappable t = h.collider.GetComponentInParent<ITappable>();
                 if (t == null) continue;
+                Customer cu = t as Customer;
+                if (cu != null && !cu.IsWaitingForDrink) continue; // khách không nhận chạm không che ly phía sau
                 best = t;
                 bestDist = h.distance;
             }

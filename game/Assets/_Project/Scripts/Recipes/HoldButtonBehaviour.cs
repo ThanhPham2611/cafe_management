@@ -7,7 +7,7 @@ namespace Cafe
 {
     /// Bước kiểu GIỮ (rót): giữ nút đủ `seconds` thì thành công (gọi onSuccess ngay lúc đầy), nhả sớm = thất bại.
     /// Gắn lên ClayButton (nút không gắn onClick). Kéo ra khỏi nút / kéo cuộn khay = hủy lặng lẽ, không phạt.
-    public class HoldButtonBehaviour : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler
+    public class HoldButtonBehaviour : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler, IPointerEnterHandler
     {
         private ClayButton clay;
         private BrewStep step;
@@ -19,6 +19,8 @@ namespace Cafe
         private bool holding;
         private bool done;
         private float held;
+        private bool outside;
+        private float outsideFor;
         private PointerEventData ptr;
         private Vector2 downPos;
         private float cancelDistPx;
@@ -43,6 +45,8 @@ namespace Cafe
             holding = true;
             done = false;
             held = 0f;
+            outside = false;
+            outsideFor = 0f;
             ptr = eventData;
             downPos = eventData.position;
             SetFill(0f);
@@ -53,16 +57,28 @@ namespace Cafe
             if (!holding) return;
             bool wasDone = done;
             float h = held;
+            bool wasOutside = outside;
             bool moved = (eventData.position - downPos).sqrMagnitude > cancelDistPx * cancelDistPx;
             ResetHold();
-            if (!wasDone && !moved && onEarlyRelease != null)
+            if (wasDone || wasOutside || moved) return;
+            if (h >= required * StepActions.HoldReleaseForgiveness)
+            {
+                if (onSuccess != null) onSuccess(step); // gần đủ: coi như xong
+                return;
+            }
+            if (onEarlyRelease != null)
                 onEarlyRelease(step, h < StepActions.AccidentalHoldSeconds);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            // Trượt ngón ra khỏi nút: hủy lặng lẽ
-            if (holding && !done) ResetHold();
+            // Trượt ngón ra khỏi nút: tạm dừng, quá HoldSlipGraceSeconds thì hủy lặng lẽ (Update)
+            if (holding && !done) { outside = true; outsideFor = 0f; }
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (holding && !done) outside = false;
         }
 
         private void Update()
@@ -76,6 +92,12 @@ namespace Cafe
             if (ptr != null && (ptr.position - downPos).sqrMagnitude > cancelDistPx * cancelDistPx)
             {
                 ResetHold(); // đang cuộn khay, không phải giữ
+                return;
+            }
+            if (outside)
+            {
+                outsideFor += Time.unscaledDeltaTime;
+                if (outsideFor > StepActions.HoldSlipGraceSeconds) ResetHold();
                 return;
             }
             held += Time.unscaledDeltaTime;
@@ -100,6 +122,8 @@ namespace Cafe
             holding = false;
             done = false;
             held = 0f;
+            outside = false;
+            outsideFor = 0f;
             ptr = null;
             StepGestureUtil.SetFill(fill, 0f, HudBuilder.Accent);
         }

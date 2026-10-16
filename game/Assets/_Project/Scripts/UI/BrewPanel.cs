@@ -83,6 +83,9 @@ namespace Cafe
         /// Mép trên của bàn pha (px canvas tham chiếu, tính từ đáy màn hình): nút Sổ công thức cưỡi lên trên.
         public float TopY { get { return slideY + PanelH; } }
 
+        /// Bàn pha đang mở rộng (có đơn được chọn, đang pha, hoặc thử pha tự do).
+        public bool Expanded { get; private set; }
+
         public BrewPanel(GameBootstrap game, Transform parent)
         {
             this.game = game;
@@ -455,6 +458,7 @@ namespace Cafe
             actionButton.gameObject.SetActive(showAction);
             if (doneButton.gameObject.activeSelf != showDone) doneButton.gameObject.SetActive(showDone);
 
+            Expanded = expanded;
             targetY = expanded ? RestY : RestY - (PanelH - StripVisible);
 
             // Tự cuộn khay tới nguyên liệu kế (chỉ khi pha theo đơn, không phải thử pha)

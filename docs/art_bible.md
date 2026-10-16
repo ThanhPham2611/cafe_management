@@ -225,7 +225,7 @@ Quy tắc:
 - **Ambient:** Gradient — Sky `#BFD3E6`, Equator `#E8C9A0`, Ground `#7A5A4A`. Intensity 1.0.
 - **Shadow:** Soft, **1 cascade**, distance 18 m, resolution 1024 (512 trên máy yếu), depth bias 0.05, normal bias 0.4.
 - **Baked:** không dùng lightmap. Đèn trong quán dùng *emission + quad glow* (fake), không realtime point light (tối đa 1 additional light có shadow tắt).
-- Ban ngày/đêm: lerp màu directional + ambient theo giờ; đêm → bật emission đèn lồng/đèn neon.
+- Ban ngày/đêm (đã làm, chỉ hình ảnh): `DayNightController` đọc `DayCycle.ClockHours` (06→22) và nội suy bảng `DayNightRules` (nắng, 3 màu ambient, nền camera). Nắng 09:30–15:00 = giá trị dựng sẵn ở trên; góc nắng kẹp 12°–45° để toon band không vỡ; đêm sáng ≥ ~35% giữa trưa. Pha Chuẩn bị luôn sáng ban ngày. Đèn phát sáng qua global shader `_CafeNight`: ô palette 57 ("Vàng sao") của `Toon_Palette` bỏ qua bậc sáng/tối khi trời tối, không dùng light thật. Chụp ảnh theo giờ: cờ `-dayhour N`.
 
 ### 6.2 Perf rules
 - **SRP Batcher: ON**, **GPU Instancing: ON** cho prop lặp lại (ghế, bàn, ly).

@@ -188,18 +188,23 @@ namespace Cafe
             {
                 // Save nhà hàng cũ (lưới 20 x 24): sảnh nay bắt đầu ở ô x = 12 của lưới 44 x 24
                 int shiftX = hasSave ? TierManager.LayoutShiftCells(save) : 0;
-                for (int i = 0; i < layout.Length; i++)
+                // Hai lượt: đồ đặt trên quầy (counterMount) sau cùng, khi quầy pha đã có trên lưới
+                for (int pass = 0; pass < 2; pass++)
                 {
-                    LayoutEntry e = layout[i];
-                    FurnitureDef d = GetDef(e.furnitureId);
-                    if (d == null)
+                    for (int i = 0; i < layout.Length; i++)
                     {
-                        Debug.LogWarning("[GameBootstrap] Không có FurnitureDef id=" + e.furnitureId);
-                        continue;
+                        LayoutEntry e = layout[i];
+                        FurnitureDef d = GetDef(e.furnitureId);
+                        if (d == null)
+                        {
+                            if (pass == 0) Debug.LogWarning("[GameBootstrap] Không có FurnitureDef id=" + e.furnitureId);
+                            continue;
+                        }
+                        if (GridSystem.IsMount(d) != (pass == 1)) continue;
+                        Vector2Int cell = new Vector2Int(e.cell.x + shiftX, e.cell.y);
+                        if (Grid.Place(d, cell, e.rotation) == null)
+                            Debug.LogWarning("[GameBootstrap] Không đặt được " + e.furnitureId + " tại " + cell);
                     }
-                    Vector2Int cell = new Vector2Int(e.cell.x + shiftX, e.cell.y);
-                    if (Grid.Place(d, cell, e.rotation) == null)
-                        Debug.LogWarning("[GameBootstrap] Không đặt được " + e.furnitureId + " tại " + cell);
                 }
             }
 
@@ -254,7 +259,8 @@ namespace Cafe
             }
             CameraRig = CafeCameraController.Create(cam, Grid.WorldBounds);
             Tier.OnCameraReady(); // cấp 2: khung nhìn rộng hơn cho phòng thuê
-            gameObject.AddComponent<TapInput>();
+            gameObject.AddComponent<TapInput>().Game = this;
+            DayNightController.Create(this, cam);
 
             // Build mode (UI dựng lười khi mở lần đầu) - phải có trước HUD vì ShopPanel dùng
             Builder = new GameObject("BuildMode").AddComponent<BuildModeController>();
@@ -433,6 +439,11 @@ namespace Cafe
             int queued = 0;
             for (int i = 0; i < waiting.Count; i++)
             {
+                if (!Owner.CanQueueCollect())
+                {
+                    if (queued == 0) Owner.QueueCollect(waiting[i]); // báo lý do đúng một lần
+                    break;
+                }
                 if (!Owner.QueueCollect(waiting[i])) break;
                 queued++;
             }

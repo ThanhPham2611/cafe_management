@@ -23,6 +23,14 @@ MonoBehaviour:
   seatHeight: 0
   overhead: 0
   hangY: 0
+  counterMount: 0
+  counterTopY: 1.05
+  counterMountArea:
+    serializedVersion: 2
+    x: -0.1
+    y: -0.3
+    width: 1
+    height: 0.6
   minTier: 2
   onlyTier: 0
   shopVisible: 0

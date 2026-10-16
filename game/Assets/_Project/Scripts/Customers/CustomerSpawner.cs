@@ -14,6 +14,11 @@ namespace Cafe
         private int curDay;
         private int curStars;
         private RegularDefinition scheduledRegular;
+        private float delay;          // thời gian lịch đã bị dời vì nghẽn
+        private float lastSpawnClock = -100f;
+
+        /// Bot tắt để so sánh A/B nhịp khách.
+        public static bool ThrottleEnabled = true;
 
         public int ActiveCount { get { return active.Count; } }
         public int PlannedCount { get { return schedule.Length; } }
@@ -50,10 +55,16 @@ namespace Cafe
             int n = schedule.Length - from;
             if (n <= 0) return;
             float span = end - start;
+            float len = game.Day.Length;
+            float w0 = GameBalance.SpawnStartFraction * len;
+            float w1 = GameBalance.SpawnEndFraction * len;
+            float xs = (start - w0) / (w1 - w0);
+            float xe = (end - w0) / (w1 - w0);
             for (int i = 0; i < n; i++)
             {
                 float jitter = Random.Range(-0.4f, 0.4f);
-                schedule[from + i] = start + (i + 0.5f + jitter) / n * span;
+                float u = Mathf.Clamp01((i + 0.5f + jitter) / n);
+                schedule[from + i] = w0 + ArrivalCurve.Map(u, xs, xe) * (w1 - w0);
             }
             System.Array.Sort(schedule, from, n);
         }
@@ -71,6 +82,8 @@ namespace Cafe
             if (count > 0 && day == 1) schedule[0] = Mathf.Min(schedule[0], 2f); // FTUE: khách đầu tiên đến sớm
 
             next = 0;
+            delay = 0f;
+            lastSpawnClock = -100f;
             forceTimer = 0f;
             active.Clear();
             scheduledRegular = null;
@@ -121,9 +134,21 @@ namespace Cafe
             if (game.Day.CurrentPhase == DayCycle.Phase.Open)
             {
                 float t = game.Day.Elapsed;
-                while (next < schedule.Length && TutorialGate.SpawnIsDue(next, schedule[next], t))
+                bool throttled = ThrottleEnabled && !TutorialGate.Active;
+                if (throttled && next < schedule.Length && schedule[next] <= t - delay)
                 {
+                    // Quán nghẽn: khách tiếp theo chờ ngoài cửa (dời lịch, tối đa ThrottleMaxDelay)
+                    if (delay < GameBalance.ThrottleMaxDelay && IsCongested())
+                    {
+                        delay = Mathf.Min(GameBalance.ThrottleMaxDelay, delay + Time.deltaTime);
+                        return;
+                    }
+                }
+                while (next < schedule.Length && TutorialGate.SpawnIsDue(next, schedule[next], t - (throttled ? delay : 0f)))
+                {
+                    if (throttled && t - lastSpawnClock < GameBalance.MinSpawnGapSeconds) break;
                     Spawn();
+                    lastSpawnClock = t;
                     next++;
                 }
             }
@@ -136,6 +161,19 @@ namespace Cafe
                     ForceAllLeave();
                 }
             }
+        }
+
+        private bool IsCongested()
+        {
+            int seatWait = 0, service = 0;
+            for (int i = 0; i < active.Count; i++)
+            {
+                Customer c = active[i];
+                if (c == null) continue;
+                if (c.State == CustomerState.FindSeat) seatWait++;
+                else if (c.IsWaitingForDrink) service++;
+            }
+            return SpawnThrottle.ShouldHold(seatWait, service, game.Grid != null ? game.Grid.Seats.Count : 0);
         }
 
         private void Spawn()
