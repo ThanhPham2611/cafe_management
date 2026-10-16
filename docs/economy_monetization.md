@@ -1038,6 +1038,25 @@ Bật đủ 6 nhân vật × 4 chương (`docs/story/README.md`): Bà Sáu, Minh
 ### 23.6 Đơn đặc biệt (`SpecialOrders`, từ Nhà hàng)
 10% đơn (tối đa 2 cùng lúc) là đơn đặc biệt: **chỉ chủ quán pha**, tiền ly và tip **x2**, khách chờ lâu hơn 1,5 lần. Nhân viên Pha chế bỏ qua; nhân viên Phục vụ ưu tiên mang ly cho đơn đặc biệt cùng món. Tác động kinh tế ước tính: +10% doanh thu nếu chủ quán pha kịp, nhưng chiếm thời gian chủ quán; **cần đo bằng bot**.
 
-### 23.7 Việc cần đo tiếp
-Bot 100 ngày trên bản có các hệ trên: ngày lên Mặt bằng / Nhà hàng (kỳ vọng sớm hơn ~7–14 ngày), tổng thưởng level + tuần + quỹ nhận được, số đơn đặc biệt hoàn thành so với bỏ lỡ, RP và lãi cấp 3. Playtest người thật: cảm giác thẻ nhận thưởng, mức hiểu "sao / Lv / tên cấp quán", sự kiện ngày có gây khó chịu không.
+### 23.7 Số đo bot 100 ngày (2026-10-16, cờ `-autoplay -autoprep -autobuy -autohidden -upgradestaff -autostaff -autoupgrade3`, ngày cấp 3 = 300 s)
 
+So bản `main` + sửa RP (chưa có các hệ §22–23.6) với bản đầy đủ. Mỗi cấu hình chạy **một lần**; bot thuê nhân viên rất dè dặt (cần dư 8.500 Xu mới thuê Pha chế) nên không đại diện người chơi giỏi.
+
+| | Chưa có hệ mới | Có hệ mới |
+|---|---|---|
+| Lên Mặt bằng / Nhà hàng sau ngày | 8 / 55 | **7 / 44** (sớm hơn 11 ngày) |
+| ★2 / ★3 vào ngày | 4 / 30 | 4 / 26 |
+| Thưởng nhận được trong 100 ngày | — | level 38.280 Xu + 150 Hạt (21 lần); dự án tuần 36.600 Xu + 195 Hạt (12 lần); quỹ 90 Hạt (6 lần) |
+| Thưởng Xu trước khi mua nhà | — | **41.880 Xu = 34% giá thực trả 122.000** (level 32.280 + tuần 9.600) |
+| Ngày 60–80: lãi / RP mỗi ngày | 2.087 / −26 | 3.721 / +26 |
+| Ngày 81–100: phục vụ / lãi / RP | 63,7 / 2.469 / +15 | 72,7 / 4.545 / +48 |
+| Exception / kiểm tra Chuẩn bị | 0 / 99 OK | 0 / 99 OK |
+
+Nhận xét:
+- Mục tiêu "cấp 3 sớm hơn 7–14 ngày" đạt (11 ngày). Phần lớn do thưởng level (Lv20 ≈ 29.000 Xu) và dự án tuần; quỹ chỉ thêm Hạt.
+- Thưởng dồn vào đoạn trước khi mua nhà (34% giá nhà): đúng ý "đoạn gom tiền bớt dài", nhưng gần gấp rưỡi ước tính §22 (21%). Nếu thấy cấp 3 đến quá nhanh khi chơi thật: giảm `LevelRules` hệ số 40 → 30, hoặc thưởng tuần Mặt bằng 2.000 → 1.500.
+- Sau khi mua nhà, thưởng tuần (5.000 Xu/tuần ≈ 1,2 ngày lãi) lớn hơn thưởng level; đoạn này bot vẫn kẹt vì hết kiên nhẫn (~80 khách/ngày): thưởng giúp bot có Xu thuê nhân viên sớm hơn nên lãi và RP khá hơn, nhưng chưa đạt mục tiêu §21 (RP ≥ +100/ngày).
+- Bot không khám phá món ẩn nên Chị Lan và Ken không ghé; bot không đo được hết tác động của đơn đặc biệt (không có log riêng).
+
+### 23.8 Việc cần đo tiếp
+Chạy `-fullstaff` (thuê đủ nhân viên ngay) để thấy người chơi giỏi; thêm log số đơn đặc biệt hoàn thành / bỏ lỡ; playtest người thật: cảm giác thẻ nhận thưởng, mức hiểu "sao / Lv / tên cấp quán", sự kiện ngày có gây khó chịu không, cấp 3 có đến quá nhanh không.
