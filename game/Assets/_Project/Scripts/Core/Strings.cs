@@ -29,6 +29,13 @@ namespace Cafe
                 default: return TierShort4;
             }
         }
+        public const string StoryGiftXuFmt = "Quà: +{0} Xu";
+        public const string StoryGiftItemFmt = "Quà: {0} (đã vào kho)";
+        public const string StoryGiftRecipeFmt = "Quà: công thức {0}";
+        public const string StoryGiftHatFmt = "Quà kỷ niệm: +{0} Xu";
+        public const string RegularLockedTierFmt = "Xuất hiện khi lên {0}";
+        public const string RegularNeedRecipeFmt = "Cần công thức: {0}";
+        public const string RegularFavoriteFmt = "Món ruột: {0}";
         public const string UnlockAtLevelFmt = "Mở ở Lv {0}";
         public const string UnlockedItemFmt = "Mở khóa trong Cửa hàng: {0}";
         public const string NewTitleFmt = "Danh hiệu mới: {0}";

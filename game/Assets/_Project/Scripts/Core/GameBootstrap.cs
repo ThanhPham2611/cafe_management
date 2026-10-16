@@ -61,6 +61,8 @@ namespace Cafe
         public OwnerController Owner { get; private set; }
         public StaffRoster Staff { get; private set; }
         public RegularsManager Regulars { get; private set; }
+        /// Lời thoại nền của khách (barks.json); xem Regulars/BarkBook.cs.
+        public BarkBook Barks { get; } = new BarkBook();
         /// Nhiệm vụ ngày + rương (đổi lúc 04:00 giờ VN). Luôn khác null sau Build().
         public MissionBook Missions { get; private set; }
         public ShopSign Sign { get; private set; }
@@ -225,6 +227,7 @@ namespace Cafe
             Staff.Attach(this);
             Regulars = new RegularsManager();
             Regulars.Init(this, hasSave ? save : null);
+            Barks.Load(barksJson);
 
             // Nhiệm vụ ngày: thưởng đi thẳng vào ví; mốc đầu ngày dời theo để thoát-vào không làm mất thưởng
             Missions = new MissionBook(

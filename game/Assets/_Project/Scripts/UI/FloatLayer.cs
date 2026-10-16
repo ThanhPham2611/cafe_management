@@ -20,6 +20,13 @@ namespace Cafe
             public Color color;
         }
 
+        // Câu thoại nền của khách (barks): chữ nhỏ, bay chậm, tồn tại lâu hơn chữ Xu; có hồ chứa riêng để không đè "+43 Xu"
+        private const int BarkPool = 6;
+        private const float BarkLife = 2.6f;
+        private const float BarkRise = 34f;
+        private readonly Item[] barks = new Item[BarkPool];
+        private int nextBark;
+
         private readonly Item[] items = new Item[PoolSize];
         private Canvas canvas;
         private RectTransform layerRect;
@@ -55,7 +62,39 @@ namespace Cafe
                 t.gameObject.SetActive(false);
                 items[i] = it;
             }
+            for (int i = 0; i < BarkPool; i++)
+            {
+                Text t = HudBuilder.AddText(layerRect, "Bark" + i, "", 30, TextAnchor.MiddleCenter, HudBuilder.Cream, true, true);
+                t.rectTransform.anchorMin = Vector2.zero;
+                t.rectTransform.anchorMax = Vector2.zero;
+                t.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+                t.rectTransform.sizeDelta = new Vector2(520f, 50f);
+                var it = new Item();
+                it.rt = t.rectTransform;
+                it.text = t;
+                it.outline = t.GetComponent<Outline>();
+                if (it.outline != null) it.outline.effectDistance = new Vector2(2f, -2f);
+                t.gameObject.SetActive(false);
+                barks[i] = it;
+            }
             UiFx.Register(this);
+        }
+
+        /// Lời thoại của khách (barks) tại vị trí màn hình (pixel). Chữ nhỏ, nổi lên chậm rồi mờ.
+        public void SpawnBark(Vector2 screenPos, string msg, Color color)
+        {
+            float k = canvas != null && canvas.scaleFactor > 0.01f ? 1f / canvas.scaleFactor : 1f;
+            Item it = barks[nextBark];
+            nextBark = (nextBark + 1) % BarkPool;
+            it.age = 0f;
+            it.start = screenPos * k;
+            it.color = color;
+            it.text.text = msg;
+            it.text.color = color;
+            it.rt.anchoredPosition = it.start;
+            it.rt.localScale = Vector3.one;
+            it.rt.SetAsLastSibling();
+            it.text.gameObject.SetActive(true);
         }
 
         private void OnDestroy()
@@ -125,9 +164,38 @@ namespace Cafe
             return pos;
         }
 
+        private void UpdateBarks(float dt)
+        {
+            for (int i = 0; i < BarkPool; i++)
+            {
+                Item it = barks[i];
+                if (it.age < 0f) continue;
+                it.age += dt;
+                if (it.age >= BarkLife)
+                {
+                    it.age = -1f;
+                    it.text.gameObject.SetActive(false);
+                    continue;
+                }
+                float t = it.age / BarkLife;
+                it.rt.anchoredPosition = it.start + new Vector2(0f, BarkRise * (1f - (1f - t) * (1f - t)));
+                float a = it.age < 1.8f ? Mathf.Min(1f, it.age / 0.2f) : 1f - (it.age - 1.8f) / (BarkLife - 1.8f);
+                Color c = it.color;
+                c.a = a;
+                it.text.color = c;
+                if (it.outline != null)
+                {
+                    Color oc = HudBuilder.OutlineColor;
+                    oc.a = a;
+                    it.outline.effectColor = oc;
+                }
+            }
+        }
+
         private void Update()
         {
             float dt = Time.unscaledDeltaTime;
+            UpdateBarks(dt);
             for (int i = 0; i < PoolSize; i++)
             {
                 Item it = items[i];

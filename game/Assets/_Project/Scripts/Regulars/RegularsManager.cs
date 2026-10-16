@@ -7,8 +7,10 @@ namespace Cafe
     /// Nội dung, lịch ghé, độ thân và hàng đợi chương truyện của khách quen.
     public sealed class RegularsManager
     {
-        private static readonly string[] InitialIds = { "ba_sau", "minh", "chu_tu" };
-        public const int ShippedChaptersPerRegular = 3;
+        private static readonly string[] InitialIds = { "ba_sau", "minh", "chu_tu", "chi_lan", "ken", "mai" };
+        public const int ShippedChaptersPerRegular = 4;
+        /// Chưa có hệ mũ / trang phục (không có model hay icon): phần thưởng "mũ" quy ra Xu để người chơi vẫn nhận được gì đó.
+        public const int HatKeepsakeXu = 300;
 
         private readonly List<RegularDefinition> definitions = new List<RegularDefinition>(3);
         private readonly Dictionary<string, RegularProgress> progress = new Dictionary<string, RegularProgress>();
@@ -86,6 +88,7 @@ namespace Cafe
                 RegularDefinition candidate = definitions[(start + n) % definitions.Count];
                 RegularProgress item = GetProgress(candidate.id);
                 if (candidate.unlockTier > tier || item == null || item.LastVisitDay >= day) continue;
+                if (!CanServeFavorite(candidate)) continue;
                 if (UnityEngine.Random.value > Mathf.Clamp01(candidate.visitChancePerDay)) continue;
                 item.MarkVisited(day);
                 regular = candidate;
@@ -93,6 +96,15 @@ namespace Cafe
                 return true;
             }
             return false;
+        }
+
+        /// Quán có thể pha món ruột của khách quen không (đã biết công thức, máy đã đặt). Chưa thì khách chưa ghé: ghé mà không có món
+        /// ruột thì không cộng thân thiết, mất lượt ghé của ngày. Chỉ xét khi đã có sổ công thức (test thuần logic thì bỏ qua).
+        private bool CanServeFavorite(RegularDefinition def)
+        {
+            if (game == null || game.Recipes == null) return true;
+            RecipeDef favorite = game.Recipes.Get(def.favoriteRecipe);
+            return favorite != null && game.Recipes.IsKnown(favorite) && game.Recipes.MachineReady(favorite);
         }
 
         /// Khách quen regularId có đang nhận đúng món ruột recipeId không.
@@ -137,6 +149,8 @@ namespace Cafe
             if (item == null || !item.TryCompleteChapter(view.ChapterIndex)) return false;
             queued.Remove(view.Chapter.id);
             GrantReward(view.Chapter.reward);
+            string gift = RewardText(view.Chapter.reward);
+            if (gift != null) GameEvents.RaiseToast(gift);
             if (game != null)
             {
                 // Truyện khách quen cũng là đường lên sao: RP cố định theo chương (economy §20)
@@ -155,8 +169,30 @@ namespace Cafe
             if (reward.type == "xu") game.Wallet.Earn(reward.amount);
             else if (reward.type == "furniture" && game.GetDef(reward.id) != null) game.Tier.AddToInventory(reward.id, reward.amount);
             else if (reward.type == "recipe" && game.Recipes.Get(reward.id) != null) game.Recipes.Discover(reward.id);
-            else if (reward.type == "hat") game.Tier.AddToInventory(reward.id, reward.amount);
+            else if (reward.type == "hat")
+            {
+                game.Tier.AddToInventory(reward.id, reward.amount);   // giữ id cho hệ mũ sau này
+                game.Wallet.Earn(HatKeepsakeXu * reward.amount);
+            }
             else Debug.LogWarning("[Regulars] Phần thưởng không hợp lệ: " + reward.type + "/" + reward.id);
+        }
+
+        /// Dòng báo phần thưởng chương ("Quà: +80 Xu"); null nếu không có gì để báo.
+        public string RewardText(StoryRewardDefinition reward)
+        {
+            if (reward == null || reward.amount <= 0 || game == null) return null;
+            switch (reward.type)
+            {
+                case "xu": return string.Format(Strings.StoryGiftXuFmt, Strings.FormatInt(reward.amount));
+                case "furniture":
+                    FurnitureDef d = game.GetDef(reward.id);
+                    return d == null ? null : string.Format(Strings.StoryGiftItemFmt, string.IsNullOrEmpty(d.displayName) ? d.id : d.displayName);
+                case "recipe":
+                    RecipeDef r = game.Recipes != null ? game.Recipes.Get(reward.id) : null;
+                    return r == null ? null : string.Format(Strings.StoryGiftRecipeFmt, string.IsNullOrEmpty(r.displayName) ? r.id : r.displayName);
+                case "hat": return string.Format(Strings.StoryGiftHatFmt, Strings.FormatInt(HatKeepsakeXu * reward.amount));
+            }
+            return null;
         }
 
         public void WriteToSave(SaveData data)

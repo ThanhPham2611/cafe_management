@@ -338,6 +338,74 @@
           "reward": { "type": "hat", "id": "Hat_Bucket", "amount": 1 }
         }
       ]
+    },
+    {
+      "id": "mai",
+      "displayName": "Chị Mai",
+      "age": 29,
+      "role": "người viết blog ẩm thực",
+      "favoriteRecipe": "bac_xiu_kem_muoi",
+      "unlockTier": 3,
+      "preferredStyle": "modern",
+      "visitChancePerDay": 0.4,
+      "personality": "Thẳng tính, hay chụp ảnh trước khi uống. Câu cửa miệng 'Chờ chị chụp cái đã' và 'ngon thì chị tự khoe'. Từ người đi tìm quán để viết, dần thành người thiệt lòng mê quán.",
+      "look": { "customerPrefab": "OfficeF", "hint": "váy suông, máy ảnh mirrorless đeo cổ, sổ tay chấm bi" },
+      "chapters": [
+        {
+          "id": "mai_1",
+          "requiresBond": 2,
+          "title": "Chụp một tấm thôi",
+          "lines": [
+            { "speaker": "narrator", "text": "Chị Mai đặt điện thoại lên bàn, xoay ly bạc xỉu kem muối đủ ba góc." },
+            { "speaker": "mai", "text": "Chờ chị chụp cái đã, kẻo kem muối tan mất nghen." },
+            { "speaker": "mai", "text": "Chị viết blog ẩm thực. Quán {shop} vừa lên bản đồ của chị." },
+            { "speaker": "owner", "text": "Dạ, chị cứ tự nhiên ạ." },
+            { "speaker": "mai", "text": "Hông cần mời chào gì hết. Ngon thì chị tự khoe." }
+          ],
+          "reward": { "type": "xu", "id": "xu", "amount": 300 }
+        },
+        {
+          "id": "mai_2",
+          "requiresBond": 4,
+          "title": "Bài viết nháp",
+          "lines": [
+            { "speaker": "narrator", "text": "Mai gõ lia lịa, thỉnh thoảng nhìn ly rồi lại xóa một đoạn." },
+            { "speaker": "mai", "text": "Viết món ngon thì dễ. Viết vì sao người ta quay lại mới khó." },
+            { "speaker": "mai", "text": "Chị hỏi thiệt, sao {shop} có nhiều cây xanh vậy?" },
+            { "speaker": "owner", "text": "Dạ, mình muốn ai ngồi xuống cũng thấy dễ chịu." },
+            { "speaker": "mai", "text": "Câu đó chị lấy làm tựa bài nghen. Hay ghê." }
+          ],
+          "reward": { "type": "xu", "id": "xu", "amount": 400 }
+        },
+        {
+          "id": "mai_3",
+          "requiresBond": 6,
+          "title": "Bình luận đầu tiên",
+          "lines": [
+            { "speaker": "narrator", "text": "Hôm nay Mai không chụp ảnh. Chị đưa điện thoại cho chủ quán xem." },
+            { "speaker": "mai", "text": "Bài tối qua, hơn hai ngàn người chia sẻ rồi đó." },
+            { "speaker": "mai", "text": "Có bạn bình luận: 'Nhìn là muốn ghé liền.' Chị mừng dữ." },
+            { "speaker": "owner", "text": "Dạ, cảm ơn chị nhiều lắm." },
+            { "speaker": "mai", "text": "Cảm ơn gì, ly bạc xỉu kem muối này giúp chị viết cả buổi." },
+            { "speaker": "mai", "text": "Mai mốt đông khách, nhớ chừa chị cái bàn gần cửa sổ nghen." }
+          ],
+          "reward": { "type": "xu", "id": "xu", "amount": 500 }
+        },
+        {
+          "id": "mai_4",
+          "requiresBond": 8,
+          "title": "Trang đầu",
+          "lines": [
+            { "speaker": "narrator", "text": "Cuốn tạp chí ẩm thực nằm trên bàn, gấp góc ở trang giữa." },
+            { "speaker": "mai", "text": "Chị mới được mời viết chuyên mục. Bài đầu là về quán {shop}." },
+            { "speaker": "mai", "text": "Biên tập hỏi: quán đó có gì mà chị mê dữ vậy?" },
+            { "speaker": "mai", "text": "Chị trả lời hông cần nghĩ: có người pha chế tử tế." },
+            { "speaker": "owner", "text": "Dạ, chị nói vậy mình vui cả ngày." },
+            { "speaker": "mai", "text": "Vui thì pha chị ly nữa đi. Lần này chị trả tiền... thiệt." }
+          ],
+          "reward": { "type": "xu", "id": "xu", "amount": 800 }
+        }
+      ]
     }
   ]
 }

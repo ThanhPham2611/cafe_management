@@ -32,6 +32,19 @@ namespace Cafe
             layer.Spawn(new Vector2(sp.x, sp.y), text, color);
         }
 
+        /// Câu thoại nền của khách (barks) trên đầu khách: chữ nhỏ, bay chậm.
+        public static void Bark(Vector3 worldPos, string text, Color color)
+        {
+            if (layer == null) return;
+            Camera cam = Camera.main;
+            if (cam == null) return;
+            Vector3 sp = cam.WorldToScreenPoint(worldPos);
+            if (sp.z <= 0.1f) return;
+            GameBootstrap g = GameBootstrap.Instance;
+            if (g != null && g.Hud != null) sp.x = g.Hud.PushRightOfOrderCards(new Vector2(sp.x, sp.y));
+            layer.SpawnBark(new Vector2(sp.x, sp.y), text, color);
+        }
+
         /// Chữ nổi tại toạ độ màn hình (pixel).
         public static void FloatTextScreen(Vector2 screenPos, string text, Color color)
         {

@@ -9,11 +9,15 @@ namespace Cafe
         private readonly GameBootstrap game;
         private readonly ClayButton button;
         private readonly GameObject root;
-        private readonly Text[] rows = new Text[3];
+        private const float RowH = 108f;
+        private const float RowStep = 116f;
+        private readonly Text[] rows;
 
         public RegularsBookPanel(GameBootstrap game, Transform buttonParent, Transform overlayParent)
         {
             this.game = game;
+            int count = game.Regulars != null ? Mathf.Max(3, game.Regulars.Definitions.Count) : 3;
+            rows = new Text[count];
             Text label;
             button = HudBuilder.AddLabelButton(buttonParent, "RegularsButton", ClayStyle.Coffee,
                 "KHÁCH QUEN", 25, () => SetOpen(true), out label);
@@ -24,8 +28,10 @@ namespace Cafe
             HudBuilder.Stretch(dim.rectTransform);
             root = dim.gameObject;
             Image card = HudBuilder.Panel(dim.transform, "Card", true);
+            // đầu 125 + số hàng x 116 + chân (nút ĐÓNG) 130; nhiều người thì thẻ cao hơn, FitInCanvas thu nhỏ vừa màn hình
             HudBuilder.SetFixed(card.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(920f, 700f));
+                Vector2.zero, new Vector2(920f, 255f + count * RowStep));
+            card.gameObject.AddComponent<FitInCanvas>();
             Text title = HudBuilder.AddText(card.transform, "Title", "SỔ KHÁCH QUEN", 48,
                 TextAnchor.MiddleCenter, HudBuilder.Ink, true, false);
             HudBuilder.SetFixed(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
@@ -35,11 +41,12 @@ namespace Cafe
             {
                 Image row = HudBuilder.Chip(card.transform, "Regular" + i, false);
                 HudBuilder.SetFixed(row.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                    new Vector2(0f, -(145f + i * 145f)), new Vector2(760f, 120f));
-                rows[i] = HudBuilder.AddText(row.transform, "Text", "", 30, TextAnchor.MiddleLeft,
+                    new Vector2(0f, -(125f + i * RowStep)), new Vector2(760f, RowH));
+                rows[i] = HudBuilder.AddText(row.transform, "Text", "", 28, TextAnchor.MiddleLeft,
                     HudBuilder.Ink, false, false);
-                rows[i].rectTransform.offsetMin = new Vector2(32f, 10f);
-                rows[i].rectTransform.offsetMax = new Vector2(-32f, -10f);
+                rows[i].rectTransform.offsetMin = new Vector2(28f, 6f);
+                rows[i].rectTransform.offsetMax = new Vector2(-28f, -6f);
+                HudBuilder.Fit(rows[i], 18);
             }
 
             Text closeText;
@@ -68,9 +75,20 @@ namespace Cafe
                 if (!enabled || i >= game.Regulars.Definitions.Count) { rows[i].text = ""; continue; }
                 RegularDefinition def = game.Regulars.Definitions[i];
                 RegularProgress p = game.Regulars.GetProgress(def.id);
-                rows[i].text = def.displayName.ToUpperInvariant() + "  •  " + def.role + "\n" +
-                    "Thân thiết: " + p.Bond + "/10    Chuyện: " + p.ChaptersDone + "/" + RegularsManager.ChapterCount(def);
+                rows[i].text = def.displayName.ToUpperInvariant() + "  •  " + def.role + "\n" + DetailLine(def, p);
             }
+        }
+
+        /// Dòng 2 của hàng: chưa tới cấp quán thì ghi khi nào xuất hiện; thiếu công thức món ruột thì ghi cần gì; còn lại là tiến độ + món ruột.
+        private string DetailLine(RegularDefinition def, RegularProgress p)
+        {
+            int tier = game.Tier != null ? game.Tier.Current : 1;
+            if (def.unlockTier > tier) return string.Format(Strings.RegularLockedTierFmt, Strings.TierShortName(def.unlockTier));
+            RecipeDef fav = game.Recipes != null ? game.Recipes.Get(def.favoriteRecipe) : null;
+            string favName = fav != null && !string.IsNullOrEmpty(fav.displayName) ? fav.displayName : def.favoriteRecipe;
+            if (fav != null && !game.Recipes.IsKnown(fav)) return string.Format(Strings.RegularNeedRecipeFmt, favName);
+            return "Thân thiết " + p.Bond + "/10  •  Chuyện " + p.ChaptersDone + "/" + RegularsManager.ChapterCount(def)
+                + "  •  " + string.Format(Strings.RegularFavoriteFmt, favName);
         }
 
         public void Dispose()

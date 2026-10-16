@@ -42,10 +42,14 @@ namespace Cafe.Tests
         }
 
         [Test]
-        public void InitialMilestone_ShipsOnlyThreeChaptersPerRegular()
+        public void Shipped_FourChaptersPerRegular_AndNeverMoreThanTheDataHas()
         {
-            var definition = new RegularDefinition { chapters = new StoryChapterDefinition[4] };
-            Assert.That(RegularsManager.ChapterCount(definition), Is.EqualTo(3));
+            var four = new RegularDefinition { chapters = new StoryChapterDefinition[4] };
+            var five = new RegularDefinition { chapters = new StoryChapterDefinition[5] };
+            var two = new RegularDefinition { chapters = new StoryChapterDefinition[2] };
+            Assert.That(RegularsManager.ChapterCount(four), Is.EqualTo(4));
+            Assert.That(RegularsManager.ChapterCount(five), Is.EqualTo(4));
+            Assert.That(RegularsManager.ChapterCount(two), Is.EqualTo(2));
         }
     }
 }
