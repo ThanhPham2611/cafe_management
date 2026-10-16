@@ -1002,7 +1002,7 @@ Kết luận: **không hạ sức chứa cấp 3**. Số khách đến cao hơn 
 
 Tổng 41 level (`LevelRules`). Với số đo bot (§21): cấp 1–2 lên khoảng 1 level mỗi ngày đến vài ngày; cấp 3 khoảng 1 level mỗi ~5 ngày (+120 RP/ngày, 600 RP/level).
 
-**Thưởng mỗi level** (`LevelRules.RewardXu` / `RewardGems`): **Xu = 100 + 40 × level**; level mốc sao thưởng **x3 Xu** và thêm **Hạt** 50 / 100 / 200 / 400 cho ★2 / ★3 / ★4 / ★5 (đúng bảng §4.2). Ví dụ: Lv2 +180 Xu, Lv10 +500, Lv6 (★2) +1.020 Xu +50 Hạt. Ước tính tổng thưởng đến lúc lên cấp 3 (~Lv26) khoảng 18.000 Xu ≈ 13% giá mua nhà 140.000; **chưa đo bằng bot**, cần chạy lại để xác nhận không làm lệch nhịp §21.
+**Thưởng mỗi level** (`LevelRules.RewardXu` / `RewardGems`): **Xu = 100 + 40 × level**; level mốc sao thưởng **x3 Xu** và thêm **Hạt** 50 / 100 / 200 / 400 cho ★2 / ★3 / ★4 / ★5 (đúng bảng §4.2). Ví dụ: Lv2 +180 Xu, Lv10 +500, Lv6 (★2) +1.020 Xu +50 Hạt. Tổng thưởng tính từ công thức: đến mốc ★3 (Lv16) = **9.060 Xu + 150 Hạt ≈ 6,5%** giá mua nhà 140.000; đến Lv41 = 46.720 Xu + 750 Hạt. Lúc thực sự mua nhà (~ngày 56, khoảng Lv20) khoảng 12.000 Xu ≈ 9% (ước tính; bot 100 ngày trên bản đã merge sẽ cho số đo thật). Bản trước ghi nhầm "~Lv26 ≈ 18.000 Xu ≈ 13%".
 
 **Cơ chế.**
 - `Reputation.Level` tính từ RP; mỗi lần RP làm tăng level thì `GameEvents.LevelUp(level)` báo đúng một lần (kể cả khi một khoản RP lớn, vd. chương truyện, nhảy nhiều level cùng lúc).

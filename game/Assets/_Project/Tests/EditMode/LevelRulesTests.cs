@@ -117,6 +117,55 @@ namespace Cafe.Tests
         }
 
         [Test]
+        public void RewardBudget_UpToTheTierThreeStarIsAboutSixPercentOfTheHousePrice()
+        {
+            int xu = 0, gems = 0;
+            for (int lv = 2; lv <= 16; lv++) xu += LevelRules.RewardXu(lv);
+            for (int lv = 2; lv <= LevelRules.MaxLevel; lv++) gems += LevelRules.RewardGems(lv);
+            Assert.That(xu, Is.EqualTo(9060));
+            Assert.That(xu, Is.LessThanOrEqualTo(GameBalance.Tier3Price / 10), "thưởng level không được làm lệch nhịp mua nhà (economy §22)");
+            Assert.That(gems, Is.EqualTo(750), "50 + 100 + 200 + 400 Hạt");
+        }
+
+        [Test]
+        public void Reputation_RpNeverGoesNegative_AndAddReportsTheClampedChange()
+        {
+            var rep = new Reputation();
+            rep.Init(0f);
+            Assert.That(rep.Add(-50f), Is.Zero);
+            Assert.That(rep.RP, Is.Zero);
+            rep.Init(130f);                       // sàn 120
+            Assert.That(rep.Add(-500f), Is.EqualTo(-10f));
+        }
+
+        [Test]
+        public void OldSaveJson_WithoutLevelRewarded_ReadsAsZero()
+        {
+            SaveData d = UnityEngine.JsonUtility.FromJson<SaveData>("{\"xu\":500,\"rp\":2500}");
+            Assert.That(d.levelRewarded, Is.Zero);
+        }
+
+        [Test]
+        public void ThrowingLevelUpHandler_DoesNotBreakAddOrOtherHandlers()
+        {
+            var rep = new Reputation();
+            rep.Init(0f);
+            var got = new List<int>();
+            System.Action<int> bad = lv => { throw new System.InvalidOperationException("boom"); };
+            System.Action<int> good = lv => got.Add(lv);
+            GameEvents.LevelUp += bad;
+            GameEvents.LevelUp += good;
+            try
+            {
+                UnityEngine.TestTools.LogAssert.Expect(UnityEngine.LogType.Exception, new System.Text.RegularExpressions.Regex("boom"));
+                Assert.DoesNotThrow(() => rep.Add(70f));
+            }
+            finally { GameEvents.LevelUp -= bad; GameEvents.LevelUp -= good; }
+            Assert.That(got, Is.EqualTo(new[] { 2 }));
+            Assert.That(rep.RewardedLevel, Is.EqualTo(2));
+        }
+
+        [Test]
         public void Reputation_OldSaveWithoutRewardedLevelGetsNoBackPay()
         {
             var rep = new Reputation();

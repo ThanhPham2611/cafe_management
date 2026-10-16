@@ -32,7 +32,16 @@ namespace Cafe
         public static void RaiseDayClosing() { if (DayClosing != null) DayClosing(); }
         public static void RaiseDayEnded(DaySummary s) { if (DayEnded != null) DayEnded(s); }
         public static void RaisePrepStarted() { if (PrepStarted != null) PrepStarted(); }
-        public static void RaiseLevelUp(int level) { if (LevelUp != null) LevelUp(level); }
+        /// Gọi từng handler riêng: một handler lỗi không được làm đứt chuỗi Reputation.Add -> Customer.Pay đang gọi nó.
+        public static void RaiseLevelUp(int level)
+        {
+            if (LevelUp == null) return;
+            foreach (Delegate h in LevelUp.GetInvocationList())
+            {
+                try { ((Action<int>)h)(level); }
+                catch (Exception e) { Debug.LogException(e); }
+            }
+        }
         public static void RaiseCustomerServed(Customer c) { if (CustomerServed != null) CustomerServed(c); }
         public static void RaiseCustomerLeft(Customer c) { if (CustomerLeft != null) CustomerLeft(c); }
         public static void RaiseToast(string msg) { if (Toast != null) Toast(msg); }

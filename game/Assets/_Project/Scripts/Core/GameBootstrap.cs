@@ -459,7 +459,8 @@ namespace Cafe
             {
                 data.day = Day.Day > 0 ? Day.Day : Mathf.Max(1, Mathf.Max(pendingStartDay, loadedStartDay));
                 data.xu = Mathf.RoundToInt(dayStartXu);
-                data.rp = dayStartRp;
+                // Không lưu RP thấp hơn mốc level đã thưởng: vào lại giữa ngày thì HUD không hiện level thấp hơn level đã nhận
+                data.rp = Mathf.Max(dayStartRp, LevelRules.RpFor(Reputation.RewardedLevel));
             }
             using (PerfNote.Measure("lưu game")) SaveSystem.Save(data);
         }

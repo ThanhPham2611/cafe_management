@@ -132,7 +132,7 @@ namespace Cafe
         public const string TierName4 = "Chuỗi cửa hàng";
         public const string TierCardTitle = "Thuê mặt bằng";
         public const string TierXuFmt = "Xu {0}/{1}";
-        public const string TierRpFmt = "RP {0}/{1}";
+        public const string TierRpFmt = "RP {0}/{1} (Lv {2})";   // mẫu số là mốc sao của cấp kế, khác mẫu số level ở thanh HUD
         public const string TierCtaTitle = "Thuê mặt bằng!";
         public const string TierCtaSubFmt = "Đặt cọc {0} Xu";
         public const string TierNeedFmt = "Cần đủ {0} Xu và {1} RP để thuê mặt bằng";

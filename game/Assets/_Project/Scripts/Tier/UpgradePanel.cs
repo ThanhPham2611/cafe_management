@@ -168,6 +168,7 @@ namespace Cafe
             if (o != null) o.effectDistance = new Vector2(5f, -5f);
             banner.gameObject.SetActive(false);
 
+            EnsureConfetti(); // dựng sẵn 72 mảnh lúc tải game: lần lên level đầu tiên không bị khựng giữa ca chơi
             fade = HudBuilder.Img(overlay.transform, "Fade", null, Color.black, false, false);
             fade.color = new Color(0f, 0f, 0f, 0f);
             HudBuilder.Stretch(fade.rectTransform);
@@ -306,7 +307,7 @@ namespace Cafe
             int needXu = tier.NextTierXu;
             int needRp = tier.NextTierRp;
             xuText.text = string.Format(Strings.TierXuFmt, Strings.FormatInt(xu), Strings.FormatInt(needXu));
-            rpText.text = string.Format(Strings.TierRpFmt, Strings.FormatInt(rp), Strings.FormatInt(needRp));
+            rpText.text = string.Format(Strings.TierRpFmt, Strings.FormatInt(rp), Strings.FormatInt(needRp), LevelRules.LevelFor(needRp));
             xuBar.Set(xu / (float)needXu, xu >= needXu ? HudBuilder.Good : HudBuilder.Accent);
             rpBar.Set(rp / (float)needRp, rp >= needRp ? HudBuilder.Good : HudBuilder.Accent);
         }

@@ -251,6 +251,7 @@ namespace Cafe
             HudBuilder.SetFixed(starCountText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(68f, -4f), new Vector2(54f, 70f));
             rpText = HudBuilder.AddText(starChip.transform, "Rp", "", 28, TextAnchor.MiddleLeft, HudBuilder.InkSoft, false, false);
             HudBuilder.SetFixed(rpText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(128f, -8f), new Vector2(290f, 32f));
+            HudBuilder.Fit(rpText, 22); // "Lv 30  11.250/11.800" rộng ~278 / 290 px: co chữ nếu số lớn hơn
             rpBar = HudBuilder.CreateBar(starChip.transform, "RpBar");
             HudBuilder.SetFixed(rpBar.root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(128f, -42f), new Vector2(286f, 28f));
 
