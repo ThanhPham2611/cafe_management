@@ -29,6 +29,8 @@ namespace Cafe
                 default: return TierShort4;
             }
         }
+        public const string SpecialOrderToast = "Đơn đặc biệt: chỉ chủ quán pha, thưởng x2!";
+        public const string SpecialPriceFmt = "x2 {0} Xu";
         public const string StoryGiftXuFmt = "Quà: +{0} Xu";
         public const string StoryGiftItemFmt = "Quà: {0} (đã vào kho)";
         public const string StoryGiftRecipeFmt = "Quà: công thức {0}";

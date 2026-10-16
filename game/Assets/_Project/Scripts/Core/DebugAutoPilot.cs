@@ -1125,7 +1125,9 @@ namespace Cafe
                 if (!g.Owner.IsAtCart) continue;
                 if (g.Station.State != BrewStation.Phase.Idle || g.Orders.Count == 0) continue;
 
-                Order o = null; // đơn cũ nhất mà nhân viên Pha chế chưa nhận
+                Order o = null; // đơn đặc biệt (chỉ chủ quán pha, x2) trước, rồi đơn cũ nhất mà nhân viên Pha chế chưa nhận
+                for (int k = 0; k < g.Orders.Items.Count && o == null; k++)
+                    if (!g.Orders.Items[k].IsClaimed && g.Orders.Items[k].ownerOnly) o = g.Orders.Items[k];
                 for (int k = 0; k < g.Orders.Items.Count && o == null; k++)
                     if (!g.Orders.Items[k].IsClaimed) o = g.Orders.Items[k];
                 if (o == null || !g.Station.Select(o)) continue;

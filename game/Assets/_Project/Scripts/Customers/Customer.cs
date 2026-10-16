@@ -46,7 +46,16 @@ namespace Cafe
         public string RegularName { get { return regular != null ? regular.displayName : null; } }
 
         /// Thời gian kiên nhẫn chờ món (giây): mặc định 60, nhân theo sự kiện của ngày (trời mưa ngồi lâu, giờ cao điểm sốt ruột).
-        private float PatienceLimit { get { return GameBalance.PatienceSeconds * (game != null ? game.TodayEvent.patience : 1f); } }
+        private float PatienceLimit
+        {
+            get
+            {
+                float limit = GameBalance.PatienceSeconds * (game != null ? game.TodayEvent.patience : 1f);
+                return specialMult > 1f ? limit * SpecialOrders.PatienceMult : limit;   // đơn đặc biệt: chờ lâu hơn vì chỉ chủ quán pha
+            }
+        }
+
+        private float specialMult = 1f;   // thưởng x2 của đơn đặc biệt; giữ lại vì order = null sau Serve mà Pay chạy sau đó
 
         /// 1 = vừa gọi món, 0 = hết kiên nhẫn.
         public float PatienceNormalized
@@ -250,8 +259,11 @@ namespace Cafe
                 return;
             }
             orderedRecipe = recipe;
-            order = game.Orders.Add(this, recipe);
-            if (bubble != null) bubble.Show(regular != null);
+            int tier = game.Tier != null ? game.Tier.Current : 1;
+            bool special = SpecialOrders.ShouldBeSpecial(tier, SpecialOrders.Count(game.Orders.Items), Random.value);
+            specialMult = special ? SpecialOrders.RewardMult : 1f;
+            order = game.Orders.Add(this, recipe, special);
+            if (bubble != null) bubble.Show(regular != null, special);
             Bark("order", 0.12f);
             State = CustomerState.WaitOrder;
             stateTime = 0f;
@@ -331,6 +343,7 @@ namespace Cafe
             float f = game.Grid.FurnitureScoreAt(seat);
             float zoneMult = seat != null ? ZoneInfo.PriceMult(game.Grid.ZoneOf(seat.Furniture)) : 1f;
 
+            zoneMult *= specialMult;
             int pay = Mathf.RoundToInt(r.price * qMult * zoneMult);
             int tip = 0;
             float chance = GameBalance.TipChance(quality) + 0.2f * f;

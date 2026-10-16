@@ -11,6 +11,7 @@ namespace Cafe
         private RectTransform rect;
         private GameObject content;
         private Image heart;
+        private Image star;
         private Image ringFill;
         private Image drinkIcon;
         private Customer customer;
@@ -65,13 +66,18 @@ namespace Cafe
             HudBuilder.SetFixed(heart.rectTransform, new Vector2(1f, 1f), new Vector2(0.5f, 0.5f), new Vector2(-6f, -6f), new Vector2(44f, 44f));
             heart.enabled = false;
 
+            star = HudBuilder.Icon(body.transform, "Special", HudBuilder.T.iconStar, 44f);
+            HudBuilder.SetFixed(star.rectTransform, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f), new Vector2(6f, -6f), new Vector2(44f, 44f));
+            star.enabled = false;
+
             content.SetActive(false);
         }
 
-        public void Show(bool regular)
+        public void Show(bool regular, bool special = false)
         {
             shown = true;
             heart.enabled = regular && HudBuilder.T.iconHeart != null;
+            star.enabled = special && HudBuilder.T.iconStar != null;   // đơn đặc biệt: sao ở góc trái-trên
             Sprite icon = customer != null && customer.CurrentOrder != null
                 ? HudBuilder.T.IconFor(customer.CurrentOrder.recipe)
                 : HudBuilder.T.iconCup;

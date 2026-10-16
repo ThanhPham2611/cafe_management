@@ -11,9 +11,14 @@ namespace Cafe
         public IReadOnlyList<Order> Items { get { return orders; } }
         public int Count { get { return orders.Count; } }
 
-        public Order Add(Customer customer, RecipeDef recipe)
+        public Order Add(Customer customer, RecipeDef recipe, bool special = false)
         {
             var o = new Order { id = nextId++, customer = customer, recipe = recipe, timeOrdered = Time.time };
+            if (special)
+            {
+                o.ownerOnly = true;
+                o.rewardMult = SpecialOrders.RewardMult;
+            }
             orders.Add(o);
             GameEvents.RaiseOrderAdded(o);
             return o;

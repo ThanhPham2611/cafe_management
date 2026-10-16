@@ -570,9 +570,17 @@ namespace Cafe
             if (cupText != null) cupText.text = string.Format(Strings.CupsFmt, game.Stock.Count);
         }
 
+        private int specialToastDay = -1;
+
         private void OnOrderChanged(Order o)
         {
             RebuildCards();
+            // Đơn đặc biệt đầu tiên của ngày: báo một lần (chỉ chủ quán pha, thưởng x2)
+            if (o != null && o.ownerOnly && game.Day != null && specialToastDay != game.Day.Day)
+            {
+                specialToastDay = game.Day.Day;
+                ShowToast(Strings.SpecialOrderToast);
+            }
         }
 
         /// Pha chuẩn bị: ẩn tổng kết, giữ nút Cửa hàng, hiện MỞ CỬA; đồng hồ đứng ở 06:00 của ngày kế tiếp.
@@ -650,6 +658,7 @@ namespace Cafe
             Color normal = HudBuilder.T.card != null ? Color.white : HudBuilder.Cream;
             Color sel = HudBuilder.T.card != null ? new Color(1f, 0.82f, 0.42f, 1f) : HudBuilder.Accent;
             Color brewing = HudBuilder.T.card != null ? new Color(0.72f, 0.95f, 0.78f, 1f) : HudBuilder.Mint; // nhân viên Pha chế đang làm
+            Color special = HudBuilder.T.card != null ? new Color(1f, 0.74f, 0.86f, 1f) : HudBuilder.Red;     // đơn đặc biệt: chỉ chủ quán
 
             for (int i = 0; i < MaxCards; i++)
             {
@@ -661,8 +670,10 @@ namespace Cafe
                     cv.button.gameObject.SetActive(true);
                     HudBuilder.SetIcon(cv.icon, HudBuilder.T.IconFor(o.recipe));
                     cv.nameText.text = Strings.ShortName(o.recipe);
-                    cv.priceText.text = string.Format(Strings.XuFmt, o.recipe.price);
-                    cv.button.SetTint(o == selected ? sel : (o.IsClaimed ? brewing : normal));
+                    cv.priceText.text = o.ownerOnly
+                        ? string.Format(Strings.SpecialPriceFmt, Strings.FormatInt(o.recipe.price * 2))
+                        : string.Format(Strings.XuFmt, o.recipe.price);
+                    cv.button.SetTint(o == selected ? sel : (o.IsClaimed ? brewing : (o.ownerOnly ? special : normal)));
                     if (o.customer != null) HudBuilder.SetRing(cv.ringFill, o.customer.PatienceNormalized);
                 }
                 else

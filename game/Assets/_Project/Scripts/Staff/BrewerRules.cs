@@ -39,7 +39,7 @@ namespace Cafe
             for (int i = 0; i < orders.Count; i++)
             {
                 Order o = orders[i];
-                if (o == null || o.IsClaimed || ReferenceEquals(o, ownerSelected)) continue;
+                if (o == null || o.IsClaimed || o.ownerOnly || ReferenceEquals(o, ownerSelected)) continue; // đơn đặc biệt: chỉ chủ quán
                 if (!ReferenceEquals(ownerReadyRecipe, null) && ReferenceEquals(o.recipe, ownerReadyRecipe)) continue;
                 if (isWaiting != null && !isWaiting(o)) continue;
                 return o;
@@ -47,16 +47,21 @@ namespace Cafe
             return null;
         }
 
-        /// Đơn cũ nhất khớp ly chủ quán đã pha xong để nhân viên Phục vụ mang đi.
+        /// Đơn khớp ly chủ quán đã pha xong để nhân viên Phục vụ mang đi: đơn đặc biệt (x2) trước, rồi đơn cũ nhất. Ly khớp theo MÓN,
+        /// nên nếu ưu tiên đơn cũ thì ly chủ quán pha cho đơn đặc biệt có thể bị mang cho đơn thường cùng món.
         public static Order NextForServer(IReadOnlyList<Order> orders, RecipeDef readyRecipe, Func<Order, bool> isWaiting)
         {
             if (orders == null || ReferenceEquals(readyRecipe, null)) return null;
-            for (int i = 0; i < orders.Count; i++)
+            for (int pass = 0; pass < 2; pass++)
             {
-                Order o = orders[i];
-                if (o == null || o.IsClaimed || !ReferenceEquals(o.recipe, readyRecipe)) continue;
-                if (isWaiting != null && !isWaiting(o)) continue;
-                return o;
+                for (int i = 0; i < orders.Count; i++)
+                {
+                    Order o = orders[i];
+                    if (o == null || o.IsClaimed || !ReferenceEquals(o.recipe, readyRecipe)) continue;
+                    if (pass == 0 && !o.ownerOnly) continue;
+                    if (isWaiting != null && !isWaiting(o)) continue;
+                    return o;
+                }
             }
             return null;
         }
