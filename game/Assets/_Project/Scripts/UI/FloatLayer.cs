@@ -64,7 +64,7 @@ namespace Cafe
             }
             for (int i = 0; i < BarkPool; i++)
             {
-                Text t = HudBuilder.AddText(layerRect, "Bark" + i, "", 30, TextAnchor.MiddleCenter, HudBuilder.Cream, true, true);
+                Text t = HudBuilder.AddText(layerRect, "Bark" + i, "", 36, TextAnchor.MiddleCenter, HudBuilder.Cream, true, true);
                 t.rectTransform.anchorMin = Vector2.zero;
                 t.rectTransform.anchorMax = Vector2.zero;
                 t.rectTransform.pivot = new Vector2(0.5f, 0.5f);

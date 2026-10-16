@@ -44,9 +44,9 @@ namespace Cafe
         public const string TitleLineFmt = "Danh hiệu: {0}";
         public const string LockedByLevelToast = "Cần đạt Lv {0} để mua món này";
         public const string FundStageFmt = "Quỹ {0} đạt {1}%!  +{2} Hạt";
-        public const string WeeklyServeFmt = "Tuần {0}/7: khách";
-        public const string WeeklyTipsFmt = "Tuần {0}/7: tip";
-        public const string WeeklyProfitFmt = "Tuần {0}/7: lãi";
+        public const string WeeklyLabel = "Dự án tuần";
+        public const string WeeklyServeValueFmt = "{0}/{1} khách";
+        public const string WeeklyMoneyValueFmt = "{0}/{1} Xu";
         public const string WeeklyDone = "XONG!";
         public const string WeeklyDoneFmt = "DỰ ÁN TUẦN XONG!  +{0} Xu  +{1} Hạt";
         public const string EventTodayFmt = "Hôm nay: {0} - {1}";
@@ -58,8 +58,8 @@ namespace Cafe
         public const string LevelRangeFmt = "LEVEL {0}-{1}!  +{2} Xu";
         public const string LevelReachedFmt = "LÊN LEVEL {0}!";
         public const string LevelGiftToast = "Quà tri ân người chơi cũ: đã nhận thưởng các level bạn đã đạt!";
-        public const string SumLevelFmt = "  ·  Lv {0}";
-        public const string SumLevelUpFmt = "  ·  Lv {0}→{1}";
+        public const string SumTitleLineFmt = "Lv {0}  ·  Danh hiệu: {1}";
+        public const string SumTitleLineUpFmt = "Lv {0}→{1}  ·  Danh hiệu: {2}";
 
         public const string OrdersTitle = "Đơn chờ";
         public const string NoOrders = "Chờ khách ghé quán...";

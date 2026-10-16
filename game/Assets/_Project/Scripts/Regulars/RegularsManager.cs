@@ -153,9 +153,10 @@ namespace Cafe
             if (gift != null) GameEvents.RaiseToast(gift);
             if (game != null)
             {
-                // Truyện khách quen cũng là đường lên sao: RP cố định theo chương (economy §20)
+                // Truyện khách quen cũng là đường lên sao: RP cố định theo chương (economy §20).
+                // Dời mốc Xu đầu ngày theo thưởng Xu của chương, không thì thoát-vào giữa ngày làm mất thưởng
                 float rp = game.Reputation.Add(GameBalance.StoryChapterRp(view.ChapterIndex));
-                game.NotifyRewardGranted(0, rp);
+                game.NotifyRewardGranted(RewardXu(view.Chapter.reward), rp);
                 GameEvents.RaiseToast(string.Format(Strings.StoryRpFmt, Mathf.RoundToInt(rp)));
             }
             RaiseChanged();
@@ -175,6 +176,15 @@ namespace Cafe
                 game.Wallet.Earn(HatKeepsakeXu * reward.amount);
             }
             else Debug.LogWarning("[Regulars] Phần thưởng không hợp lệ: " + reward.type + "/" + reward.id);
+        }
+
+        /// Số Xu mà một phần thưởng chương cộng vào ví ("xu" = amount; "mũ" quy ra HatKeepsakeXu; loại khác = 0).
+        public static int RewardXu(StoryRewardDefinition reward)
+        {
+            if (reward == null || reward.amount <= 0) return 0;
+            if (reward.type == "xu") return reward.amount;
+            if (reward.type == "hat") return HatKeepsakeXu * reward.amount;
+            return 0;
         }
 
         /// Dòng báo phần thưởng chương ("Quà: +80 Xu"); null nếu không có gì để báo.

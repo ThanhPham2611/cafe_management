@@ -161,6 +161,10 @@ namespace Cafe
             builder.Close();
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public void DebugSetTab(bool decor) { SetTab(decor); }
+#endif
+
         private void OnTabSeats()
         {
             SetTab(false);

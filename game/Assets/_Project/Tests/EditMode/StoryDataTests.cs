@@ -102,6 +102,32 @@ namespace Cafe.Tests
         }
 
         [Test]
+        public void ChapterXuReward_CountsXuAndHatKeepsakes_SoTheDayBaselineCanBeShifted()
+        {
+            Assert.That(RegularsManager.RewardXu(new StoryRewardDefinition { type = "xu", id = "xu", amount = 250 }), Is.EqualTo(250));
+            Assert.That(RegularsManager.RewardXu(new StoryRewardDefinition { type = "hat", id = "Hat_Cap", amount = 1 }), Is.EqualTo(RegularsManager.HatKeepsakeXu));
+            Assert.That(RegularsManager.RewardXu(new StoryRewardDefinition { type = "furniture", id = "Plant_Pot_Small", amount = 1 }), Is.Zero);
+            Assert.That(RegularsManager.RewardXu(new StoryRewardDefinition { type = "recipe", id = "tra_chanh", amount = 1 }), Is.Zero);
+            Assert.That(RegularsManager.RewardXu(null), Is.Zero);
+            Assert.That(RegularsManager.RewardXu(new StoryRewardDefinition { type = "xu", id = "xu", amount = 0 }), Is.Zero);
+        }
+
+        [Test]
+        public void FavoriteRecipes_AreNotHigherTierThanTheirRegular_UnlessHiddenAndDiscoverable()
+        {
+            foreach (RegularDefinition r in Load())
+            {
+                string asset = File.ReadAllText(Path.Combine(DataPath("Recipes"), "SO_Recipe_" + r.favoriteRecipe + ".asset"));
+                var tier = System.Text.RegularExpressions.Regex.Match(asset, @"^  unlockTier: (\d+)", System.Text.RegularExpressions.RegexOptions.Multiline);
+                var hidden = System.Text.RegularExpressions.Regex.Match(asset, @"^  hidden: (\d+)", System.Text.RegularExpressions.RegexOptions.Multiline);
+                Assert.That(tier.Success, Is.True, r.id);
+                bool isHidden = hidden.Success && hidden.Groups[1].Value == "1";
+                if (!isHidden)
+                    Assert.That(int.Parse(tier.Groups[1].Value), Is.LessThanOrEqualTo(r.unlockTier), r.id + ": món ruột mở ở cấp cao hơn cấp của chính khách");
+            }
+        }
+
+        [Test]
         public void DocsAndDataCopiesAreIdentical()
         {
             string docs = Path.GetFullPath(Path.Combine(Application.dataPath, "../../docs/story/regulars.json"));

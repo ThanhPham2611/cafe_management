@@ -335,6 +335,19 @@ namespace Cafe
             g.Builder.Open();   // như bấm nút Cửa hàng
             yield return new WaitForSecondsRealtime(1f);
             if (shotDir != null) Shot("prep_shop_day" + day);
+            if (shotDir != null && g.Hud != null && day == 2)
+            {
+                g.Hud.DebugShopTab(true);   // tab Trang trí: đồ khóa theo level hiện "Mở ở Lv N"
+                yield return new WaitForSecondsRealtime(0.6f);
+                Shot("prep_shop_decor_day" + day);
+                yield return new WaitForSecondsRealtime(0.6f);   // chụp xong (cuối khung) rồi mới đổi màn hình
+                g.Hud.DebugShopTab(false);
+                g.Hud.DebugOpenRegulars(true);
+                yield return new WaitForSecondsRealtime(0.6f);
+                Shot("regulars_day" + day);
+                yield return new WaitForSecondsRealtime(0.6f);
+                g.Hud.DebugOpenRegulars(false);
+            }
             g.Builder.Close();
 
             if (shotMissions && shotDir != null && !missionsShot && g.Hud != null && g.Missions != null)
@@ -1027,8 +1040,13 @@ namespace Cafe
 
         IEnumerator LevelUpShot(int level)
         {
-            yield return new WaitForSecondsRealtime(0.8f);   // để chữ nổi + pháo giấy bay xuống rồi mới chụp
-            Shot("levelup_" + level);
+            yield return new WaitForSecondsRealtime(0.8f);   // thẻ "NHẬN +X Xu" đã hiện
+            Shot("levelcard_" + level);
+            yield return new WaitForSecondsRealtime(0.6f);
+            GameBootstrap g = GameBootstrap.Instance;
+            if (g != null) g.ClaimNextLevel();               // như chạm vào thẻ
+            yield return new WaitForSecondsRealtime(0.8f);   // chữ nổi + pháo giấy bay xuống rồi mới chụp
+            Shot("levelclaim_" + level);
         }
 
         /// -shotsettings: mở bảng Cài đặt đồ họa và chụp màn hình (cần -autoshot).

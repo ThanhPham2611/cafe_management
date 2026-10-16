@@ -189,6 +189,21 @@ namespace Cafe.Tests
         }
 
         [Test]
+        public void SaveData_RoundTripsEveryRetentionField()
+        {
+            var d = new SaveData
+            {
+                levelRewarded = 9, levelClaimed = 7, fundTier = 3, fundStage = 2,
+                weekIndex = 5, weekProgress = 1234, weekDone = true, weekTier = 2,
+            };
+            SaveData back = UnityEngine.JsonUtility.FromJson<SaveData>(UnityEngine.JsonUtility.ToJson(d));
+            Assert.That((back.levelRewarded, back.levelClaimed, back.fundTier, back.fundStage), Is.EqualTo((9, 7, 3, 2)));
+            Assert.That((back.weekIndex, back.weekProgress, back.weekDone, back.weekTier), Is.EqualTo((5, 1234, true, 2)));
+            SaveData old = UnityEngine.JsonUtility.FromJson<SaveData>("{\"xu\":500}");
+            Assert.That((old.fundTier, old.weekTier, old.weekDone), Is.EqualTo((0, 1, false)), "save cũ: quỹ chưa có, tuần chốt cấp 1");
+        }
+
+        [Test]
         public void Reputation_OldSaveWithoutRewardedLevelGetsNoBackPay()
         {
             var rep = new Reputation();

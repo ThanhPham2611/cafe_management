@@ -29,14 +29,20 @@ namespace Cafe
             int t = Math.Max(1, Math.Min(tier, 3)) - 1;
             switch (kind)
             {
-                case WeeklyKind.Serve: return new[] { 110, 180, 350 }[t];
-                case WeeklyKind.Tips: return new[] { 1500, 2500, 6000 }[t];
-                default: return new[] { 7000, 16000, 24000 }[t];
+                case WeeklyKind.Serve: return ServeTargets[t];
+                case WeeklyKind.Tips: return TipTargets[t];
+                default: return ProfitTargets[t];
             }
         }
 
-        public static int RewardXu(int tier) { return new[] { 800, 2000, 5000 }[Math.Max(1, Math.Min(tier, 3)) - 1]; }
-        public static int RewardGems(int tier) { return new[] { 10, 15, 20 }[Math.Max(1, Math.Min(tier, 3)) - 1]; }
+        private static readonly int[] ServeTargets = { 110, 180, 350 };
+        private static readonly int[] TipTargets = { 1500, 2500, 6000 };
+        private static readonly int[] ProfitTargets = { 7000, 16000, 24000 };
+        private static readonly int[] RewardXus = { 800, 2000, 5000 };
+        private static readonly int[] RewardGemsByTier = { 10, 15, 20 };
+
+        public static int RewardXu(int tier) { return RewardXus[Math.Max(1, Math.Min(tier, 3)) - 1]; }
+        public static int RewardGems(int tier) { return RewardGemsByTier[Math.Max(1, Math.Min(tier, 3)) - 1]; }
 
         public void Load(int week, int progress, bool done, int tier)
         {

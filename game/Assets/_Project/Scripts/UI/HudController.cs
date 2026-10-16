@@ -90,6 +90,8 @@ namespace Cafe
         public void DebugScrollStaff(float normalized) { if (staffPanel != null) staffPanel.DebugScroll(normalized); }
         public void DebugOpenSettings(bool open) { if (settingsPanel != null) settingsPanel.DebugOpen(open); }
         public void DebugOpenMissions(bool open) { if (missionPanel != null) missionPanel.DebugOpen(open); }
+        public void DebugOpenRegulars(bool open) { if (regularsBook != null) regularsBook.DebugOpen(open); }
+        public void DebugShopTab(bool decor) { if (shopPanel != null) shopPanel.DebugSetTab(decor); }
         public void DebugOpenZones(bool open) { if (zonePanel != null) zonePanel.DebugOpen(open); }
 #endif
 
@@ -459,6 +461,18 @@ namespace Cafe
                 new Vector2(0f, -(Margin + ChipH + 56f)), new Vector2(600f, 92f));
             HudBuilder.Fit(levelCardText, 22);
             levelCard.gameObject.SetActive(false);
+            SendBelowPanels(safe, levelCard.transform);
+        }
+
+        /// Xếp `t` xuống dưới Cửa hàng và popup MENU (cùng cách với nút MỞ CỬA): thẻ nhận thưởng / dòng sự kiện nằm giữa-trên màn hình
+        /// không được che hay chặn chạm các bảng này ở màn 16:9.
+        private static void SendBelowPanels(RectTransform safe, Transform t)
+        {
+            Transform shop = safe.Find("ShopPanel");
+            Transform menu = safe.Find("MenuRoot");
+            int idx = shop != null ? shop.GetSiblingIndex() : t.GetSiblingIndex();
+            if (menu != null) idx = Mathf.Min(idx, menu.GetSiblingIndex());
+            t.SetSiblingIndex(idx);
         }
 
         /// Gọi sau khi dựng HUD để hiện thẻ cho thưởng đang chờ từ lần chơi trước.
@@ -472,6 +486,7 @@ namespace Cafe
                 new Vector2(0f, -(Margin + ChipH + 8f)), new Vector2(720f, 40f));
             HudBuilder.Fit(eventText, 18);
             eventText.gameObject.SetActive(false);
+            SendBelowPanels(safe, eventText.transform);
         }
 
         /// today = true: "Hôm nay: ...", false: "Ngày mai: ..." (báo trước ở pha Chuẩn bị). Ngày thường thì ẩn dòng.
@@ -509,8 +524,7 @@ namespace Cafe
         /// Đạt level mới (chưa nhận): chữ nổi ngắn + hiện thẻ nhận thưởng.
         private void OnLevelUp(int level)
         {
-            UiFx.FloatTextTop(string.Format(Strings.LevelReachedFmt, level), HudBuilder.Accent);
-            RefreshLevelCard();
+            RefreshLevelCard();   // thẻ "NHẬN +X Xu" tự báo; không thêm chữ nổi đè lên thẻ
         }
 
         /// Quỹ lên cấp quán đạt chặng mới: chữ nổi kèm Hạt (không pháo giấy: chặng nhỏ, tránh nhiễu với lên level).
@@ -541,6 +555,16 @@ namespace Cafe
             if (gems > 0) msg += string.Format(Strings.LevelGemsFmt, gems);
             UiFx.FloatTextTop(msg, HudBuilder.Accent);
             if (game.Tier != null) game.Tier.PlayConfetti(star > 0, star > 0 ? string.Format(Strings.StarUpFmt, star) : null);
+            // Mở khóa trong Cửa hàng + danh hiệu mới của các level vừa nhận (báo lúc nhận, thẻ đã biến mất nên không đè chữ)
+            for (int lv = from; lv <= to; lv++)
+            {
+                foreach (string id in ShopUnlocks.UnlockedAt(lv))
+                {
+                    FurnitureDef d = game.GetDef(id);
+                    ShowToast(string.Format(Strings.UnlockedItemFmt, d != null && !string.IsNullOrEmpty(d.displayName) ? d.displayName : id));
+                }
+                if (LevelTitles.IsTitleLevel(lv)) ShowToast(string.Format(Strings.NewTitleFmt, LevelTitles.TitleFor(lv)));
+            }
             RefreshLevelCard();
         }
 
@@ -701,8 +725,10 @@ namespace Cafe
             // Thẻ thưởng level nhún nhẹ để dễ thấy (tắt khi Giảm chuyển động)
             if (levelCard != null && levelCard.gameObject.activeSelf)
             {
-                float k = GraphicsQuality.ReduceMotion ? 1f : 1f + 0.035f * Mathf.Sin((Time.unscaledTime - levelCardShownAt) * 6f);
-                levelCard.transform.localScale = new Vector3(k, k, 1f);
+                // Chỉ nhún ~3 giây đầu: nhún mãi làm cả HudCanvas dựng lại mỗi khung suốt ngày (thẻ có thể nằm đó tới cuối ngày)
+                float shown = Time.unscaledTime - levelCardShownAt;
+                float k = GraphicsQuality.ReduceMotion || shown > 3f ? 1f : 1f + 0.035f * Mathf.Sin(shown * 6f);
+                if (!Mathf.Approximately(levelCard.transform.localScale.x, k)) levelCard.transform.localScale = new Vector3(k, k, 1f);
             }
 
             // Vòng kiên nhẫn trên thẻ order

@@ -60,6 +60,10 @@ namespace Cafe
             Refresh();
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public void DebugOpen(bool value) { SetOpen(value); }
+#endif
+
         private void SetOpen(bool open)
         {
             root.SetActive(open);

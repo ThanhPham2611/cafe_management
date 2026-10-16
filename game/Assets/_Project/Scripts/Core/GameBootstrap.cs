@@ -514,9 +514,16 @@ namespace Cafe
         /// Thưởng nhận giữa ngày (nhiệm vụ, rương): dời cả mốc Xu và RP đầu ngày để không bị mất khi thoát-vào; rồi lưu.
         public void NotifyRewardGranted(int xu, float rp)
         {
+            ShiftDayBaseline(xu, rp);
+            SaveSnapshot();
+        }
+
+        /// Dời mốc Xu / RP đầu ngày mà chưa lưu. Gọi TRƯỚC Wallet.Earn / Gems.Add: Earn bắn MoneyChanged (quỹ, HUD...) và một handler
+        /// lỗi giữa chừng không được để thưởng đã tính mà mốc chưa dời (thoát-vào sẽ mất thưởng).
+        private void ShiftDayBaseline(int xu, float rp)
+        {
             dayStartXu = Mathf.Max(0f, dayStartXu + xu);
             dayStartRp = Mathf.Max(0f, dayStartRp + rp);
-            SaveSnapshot();
         }
 
         /// Gợi ý đã hiện ở bảng tổng kết gần nhất (không lưu): để không lặp lại cùng một gợi ý hai ngày liền.
@@ -595,13 +602,6 @@ namespace Cafe
         private void OnLevelReached(int level)
         {
             Debug.Log($"[Level] đạt Lv {level} (RP {Reputation.RP:0}), chờ nhận +{LevelRules.RewardXu(level)} Xu");
-            // Cửa hàng mở thêm món ở level này: báo ngay lúc đạt (không đợi nhận thưởng)
-            foreach (string id in ShopUnlocks.UnlockedAt(level))
-            {
-                FurnitureDef d = GetDef(id);
-                GameEvents.RaiseToast(string.Format(Strings.UnlockedItemFmt, d != null && !string.IsNullOrEmpty(d.displayName) ? d.displayName : id));
-            }
-            if (LevelTitles.IsTitleLevel(level)) GameEvents.RaiseToast(string.Format(Strings.NewTitleFmt, LevelTitles.TitleFor(level)));
         }
 
         private void OnDayEndedClaimLevels(DaySummary s)
@@ -628,10 +628,11 @@ namespace Cafe
                 gems += LevelRules.RewardGems(ClaimedLevel);
             }
             if (count == 0) return false;
-            Wallet.Earn(xu);
+            ShiftDayBaseline(xu, 0f);
             if (gems > 0 && Gems != null) Gems.Add(gems);
+            Wallet.Earn(xu);
             Debug.Log($"[Level] nhận Lv {from}" + (ClaimedLevel > from ? "-" + ClaimedLevel : "") + $" (RP {Reputation.RP:0}): +{xu} Xu" + (gems > 0 ? $", +{gems} Hạt" : ""));
-            NotifyRewardGranted(xu, 0f);
+            SaveSnapshot();
             GameEvents.RaiseLevelsClaimed(from, ClaimedLevel, xu, gems);
             return true;
         }
@@ -644,10 +645,10 @@ namespace Cafe
             if (Weekly.RecordDay(s.day, s.tier, s.served, s.tips, s.NetProfit))
             {
                 int xu = WeeklyProject.RewardXu(Weekly.Tier), gems = WeeklyProject.RewardGems(Weekly.Tier);
-                Wallet.Earn(xu);
+                ShiftDayBaseline(xu, 0f);
                 if (Gems != null) Gems.Add(gems);
+                Wallet.Earn(xu);
                 Debug.Log($"[Weekly] xong dự án tuần {Weekly.Week + 1} ({Weekly.Kind}, {Weekly.Progress}/{Weekly.Target}): +{xu} Xu, +{gems} Hạt");
-                NotifyRewardGranted(xu, 0f);
                 GameEvents.RaiseWeeklyDone(xu, gems);
             }
             SaveSnapshot();
@@ -657,6 +658,12 @@ namespace Cafe
         private void OnMoneyForFund(int xu)
         {
             if (Tier == null || Wallet == null || Tier.Transitioning || Day == null || Day.CurrentPhase == DayCycle.Phase.Idle) return;
+            try { AdvanceFund(); }
+            catch (System.Exception e) { Debug.LogException(e); } // MoneyChanged nằm trong Customer.Pay: lỗi ở đây không được làm đứt tính tiền
+        }
+
+        private void AdvanceFund()
+        {
             int from, to;
             if (!Fund.Advance(Tier.NextTier, Wallet.Xu, Tier.NextTierXu, out from, out to)) return;
             int gemsTotal = 0;

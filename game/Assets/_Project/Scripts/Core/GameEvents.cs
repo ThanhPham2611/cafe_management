@@ -36,7 +36,17 @@ namespace Cafe
         public static void RaiseOrderClaimChanged(Order o) { if (OrderClaimChanged != null) OrderClaimChanged(o); }
         public static void RaiseDayStarted(int day) { if (DayStarted != null) DayStarted(day); }
         public static void RaiseDayClosing() { if (DayClosing != null) DayClosing(); }
-        public static void RaiseDayEnded(DaySummary s) { if (DayEnded != null) DayEnded(s); }
+        /// Gọi từng handler riêng: chuỗi cuối ngày dài (nhiệm vụ, dự án tuần, nhận level, tổng kết); một handler lỗi không được làm
+        /// game kẹt không có bảng tổng kết.
+        public static void RaiseDayEnded(DaySummary s)
+        {
+            if (DayEnded == null) return;
+            foreach (Delegate h in DayEnded.GetInvocationList())
+            {
+                try { ((Action<DaySummary>)h)(s); }
+                catch (Exception e) { Debug.LogException(e); }
+            }
+        }
         public static void RaisePrepStarted() { if (PrepStarted != null) PrepStarted(); }
         public static void RaiseLevelsClaimed(int from, int to, int xu, int gems) { if (LevelsClaimed != null) LevelsClaimed(from, to, xu, gems); }
         public static void RaiseFundStage(int toTier, int stage, int gems) { if (FundStage != null) FundStage(toTier, stage, gems); }

@@ -42,6 +42,9 @@ namespace Cafe
             if (sp.z <= 0.1f) return;
             GameBootstrap g = GameBootstrap.Instance;
             if (g != null && g.Hud != null) sp.x = g.Hud.PushRightOfOrderCards(new Vector2(sp.x, sp.y));
+            // Hộp chữ rộng ~520 đơn vị: giữ nó trong màn hình (khách sát mép không bị cắt chữ), không chạm hàng chip trên cùng
+            sp.x = Mathf.Clamp(sp.x, Screen.width * 0.2f, Screen.width * 0.8f);
+            sp.y = Mathf.Min(sp.y, Screen.height * 0.82f);
             layer.SpawnBark(new Vector2(sp.x, sp.y), text, color);
         }
 

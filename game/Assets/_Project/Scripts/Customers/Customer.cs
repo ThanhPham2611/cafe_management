@@ -261,8 +261,8 @@ namespace Cafe
             orderedRecipe = recipe;
             int tier = game.Tier != null ? game.Tier.Current : 1;
             bool special = SpecialOrders.ShouldBeSpecial(tier, SpecialOrders.Count(game.Orders.Items), Random.value);
-            specialMult = special ? SpecialOrders.RewardMult : 1f;
             order = game.Orders.Add(this, recipe, special);
+            specialMult = order.rewardMult;
             if (bubble != null) bubble.Show(regular != null, special);
             Bark("order", 0.12f);
             State = CustomerState.WaitOrder;
@@ -418,7 +418,6 @@ namespace Cafe
                 else if (reason == LostReason.Dirty) sum.lostDirty++;
             }
             if (reason == LostReason.Patience) Bark("leaving_angry", 0.7f);
-            else if (reason == LostReason.Dirty) Bark("dirty_table", 0.7f);
             else if (reason == LostReason.NoSeat) Bark("leaving_angry", 0.3f);
             if (penalty)
             {
