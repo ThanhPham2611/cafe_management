@@ -64,6 +64,7 @@ namespace Cafe
         }
         private Image cupChipImg;
         private Text cupWaitText;
+        private GameObject cupWaitButton;
         private int cupWaitShown = -1;
         private Text emptyText;
         private Text moreText;
@@ -296,10 +297,11 @@ namespace Cafe
             cupChipImg = cupChip;
             cupChip.raycastTarget = true;
             cupChip.gameObject.AddComponent<Button>().onClick.AddListener(OnCupChipClicked);
-            cupWaitText = HudBuilder.AddText(safe, "CupsWaiting", "", 34, TextAnchor.MiddleRight, HudBuilder.Cream, true, true);
-            HudBuilder.SetFixed(cupWaitText.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-Margin - 6f, Margin + ChipH + 6f), new Vector2(300f, 44f));
+            ClayButton collectAll = HudBuilder.AddLabelButton(safe, "CollectAllButton", ClayStyle.Gold, "", 30, OnCupChipClicked, out cupWaitText);
+            HudBuilder.SetFixed((RectTransform)collectAll.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-Margin, Margin + ChipH + 8f), new Vector2(300f, 84f));
             HudBuilder.Fit(cupWaitText, 20);
-            cupWaitText.gameObject.SetActive(false);
+            cupWaitButton = collectAll.gameObject;
+            cupWaitButton.SetActive(false);
         }
 
         /// Nút phụ (Khách quen, Nhân viên, Mở rộng khu, Nhiệm vụ, Đồ họa) gom vào popup MENU: HUD gọn, nút đủ to để chạm.
@@ -324,7 +326,7 @@ namespace Cafe
             layout.childForceExpandHeight = false;
             column.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            foreach (string name in new[] { "RegularsButton", "StaffButton", "ZonesButton", "MissionButton", "GraphicsButton" })
+            foreach (string name in new[] { "RegularsButton", "StaffButton", "ZonesButton", "MissionButton", "RecipeBookMenuButton", "GraphicsButton" })
             {
                 Transform t = safe.Find(name);
                 if (t == null) continue;
@@ -343,6 +345,7 @@ namespace Cafe
             HudBuilder.SetFixed((RectTransform)menuBtn.transform, new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-MenuRight, -Margin), new Vector2(MenuBtnW, MenuBtnH));
             Image dot = HudBuilder.Img(menuBtn.transform, "Dot", HudBuilder.T.disc, HudBuilder.Red, false, false);
+            dot.color = HudBuilder.Red; // Img() ép trắng khi có sprite
             HudBuilder.SetFixed(dot.rectTransform, new Vector2(1f, 1f), new Vector2(0.5f, 0.5f), new Vector2(-6f, -6f), new Vector2(32f, 32f));
             menuDot = dot.gameObject;
             menuRoot.gameObject.SetActive(false);
@@ -581,7 +584,7 @@ namespace Cafe
             if (waiting != cupWaitShown)
             {
                 cupWaitShown = waiting;
-                cupWaitText.gameObject.SetActive(waiting > 0);
+                cupWaitButton.SetActive(waiting > 0);
                 if (waiting > 0) cupWaitText.text = string.Format(Strings.CupsWaitingFmt, waiting);
             }
             bool urgent = waiting > 0 && game.Stock.Count <= 1;

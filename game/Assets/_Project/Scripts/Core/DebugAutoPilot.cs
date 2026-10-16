@@ -57,6 +57,11 @@ namespace Cafe
         static void Boot()
         {
             string[] args = Environment.GetCommandLineArgs();
+            string dh = Arg(args, "-dayhour");
+            float dhv;
+            if (dh != null && float.TryParse(dh, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out dhv))
+                DayNightController.ForcedHour = dhv; // chụp ảnh theo giờ
+            if (Has(args, "-nothrottle")) CustomerSpawner.ThrottleEnabled = false; // so sánh A/B nhịp khách
             if (Has(args, "-forceclean"))
             {
                 CleaningRules.ForceEnabled = true;

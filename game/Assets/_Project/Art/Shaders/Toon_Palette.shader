@@ -37,6 +37,9 @@ Shader "Cafe/Toon_Palette"
             half _RimPower;
             half _RimIntensity;
         CBUFFER_END
+
+        // Toàn cục (DayNightController): 0 = ban ngày, 1 = đêm. Để ngoài UnityPerMaterial để giữ SRP Batcher.
+        float _CafeNight;
         ENDHLSL
 
         Pass
@@ -121,6 +124,11 @@ Shader "Cafe/Toon_Palette"
                 // Rim ấm chỉ ở phía ngược sáng
                 half rim = pow(1.0 - saturate(dot(n, v)), _RimPower) * (1.0 - t2);
                 col += _RimColor.rgb * rim * _RimIntensity;
+
+                // Đèn tự phát sáng về đêm: ô palette 57 ("Vàng sao", art_bible §4) bỏ qua bậc sáng/tối
+                float2 cell = floor(float2(uv.x * 8.0, (1.0 - uv.y) * 8.0));
+                half glow = abs(cell.y * 8.0 + cell.x - 57.0) < 0.5 ? 1.0 : 0.0;
+                col = lerp(col, albedo * 1.35, glow * saturate(_CafeNight));
 
                 col = MixFog(col, i.fogFactor);
                 return half4(col, 1);

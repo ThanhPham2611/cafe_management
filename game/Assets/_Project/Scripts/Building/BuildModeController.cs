@@ -209,7 +209,7 @@ namespace Cafe
             Vector2Int start = Vector2Int.zero;
             Vector3 p;
             int rot = FacingCameraRotation();
-            if (GroundPoint(new Vector2(Screen.width * 0.5f, Screen.height * 0.5f), out p)) start = SnapCell(def, rot, p);
+            if (GroundPoint(new Vector2(Screen.width * 0.5f, Screen.height * 0.5f), out p, def)) start = SnapCell(def, rot, p);
             StartGhost(def, start, rot);
         }
 
@@ -245,7 +245,7 @@ namespace Cafe
             gcell = cell;
             grot = GridSystem.NormalizeRotation(rot);
 
-            ghost = Instantiate(def.prefab, grid.FootprintCenter(def, gcell, grot), Quaternion.Euler(0f, 90f * grot, 0f));
+            ghost = Instantiate(def.prefab, grid.PlacePos(def, gcell, grot), Quaternion.Euler(0f, 90f * grot, 0f));
             ghost.name = "Ghost_" + def.id;
             Collider[] cols = ghost.GetComponentsInChildren<Collider>();
             for (int i = 0; i < cols.Length; i++) cols[i].enabled = false;
@@ -337,7 +337,7 @@ namespace Cafe
                 }
             }
 
-            PlacedFurniture pf = TryCommit(gdef, gcell, grot, isMove || !GridSystem.IsOverhead(gdef));
+            PlacedFurniture pf = TryCommit(gdef, gcell, grot, isMove || !(GridSystem.IsOverhead(gdef) || GridSystem.IsMount(gdef)));
             if (pf == null) return;
 
             if (price > 0)
@@ -686,13 +686,16 @@ namespace Cafe
             return cam;
         }
 
-        private bool GroundPoint(Vector2 screenPos, out Vector3 p)
+        /// Điểm chạm trên mặt phẳng sàn; đồ đặt trên quầy (def, hoặc ghost đang kéo) dùng mặt phẳng ngang mặt quầy cho ngón tay khớp hình.
+        private bool GroundPoint(Vector2 screenPos, out Vector3 p, FurnitureDef forDef = null)
         {
             p = Vector3.zero;
             Camera c = Cam();
             if (c == null) return false;
             Ray r = c.ScreenPointToRay(screenPos);
-            var plane = new Plane(Vector3.up, new Vector3(0f, grid.Origin.y, 0f));
+            FurnitureDef pointDef = forDef != null ? forDef : (ghost != null ? gdef : null);
+            float y = grid.Origin.y + (GridSystem.IsMount(pointDef) ? grid.CounterTopY : 0f);
+            var plane = new Plane(Vector3.up, new Vector3(0f, y, 0f));
             float d;
             if (!plane.Raycast(r, out d)) return false;
             p = r.GetPoint(d);
@@ -740,7 +743,7 @@ namespace Cafe
         {
             if (ghost == null || cell == gcell) return;
             gcell = cell;
-            ghost.transform.position = grid.FootprintCenter(gdef, gcell, grot);
+            ghost.transform.position = grid.PlacePos(gdef, gcell, grot);
             Revalidate();
         }
 
@@ -750,7 +753,7 @@ namespace Cafe
             Vector3 center = grid.FootprintCenter(gdef, gcell, grot);
             grot = GridSystem.NormalizeRotation(grot + 1);
             gcell = SnapCell(gdef, grot, center);
-            ghost.transform.position = grid.FootprintCenter(gdef, gcell, grot);
+            ghost.transform.position = grid.PlacePos(gdef, gcell, grot);
             ghost.transform.rotation = Quaternion.Euler(0f, 90f * grot, 0f);
             Revalidate();
         }
@@ -774,7 +777,7 @@ namespace Cafe
         /// Có khách đang đứng / ngồi trong footprint (cộng lề nhỏ).
         private bool CustomersBlock(FurnitureDef def, Vector2Int cell, int rot)
         {
-            if (GridSystem.IsOverhead(def) || game.Spawner == null) return false;
+            if (GridSystem.IsOverhead(def) || GridSystem.IsMount(def) || game.Spawner == null) return false;
             Vector2Int fp = GridSystem.RotatedFootprint(def.footprint, rot);
             Vector3 c = grid.FootprintCenter(def, cell, rot);
             float hx = fp.x * GridSystem.Cell * 0.5f + 0.15f;

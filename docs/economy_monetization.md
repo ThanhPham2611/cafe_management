@@ -1060,3 +1060,30 @@ Nhận xét:
 
 ### 23.8 Việc cần đo tiếp
 Chạy `-fullstaff` (thuê đủ nhân viên ngay) để thấy người chơi giỏi; thêm log số đơn đặc biệt hoàn thành / bỏ lỡ; playtest người thật: cảm giác thẻ nhận thưởng, mức hiểu "sao / Lv / tên cấp quán", sự kiện ngày có gây khó chịu không, cấp 3 có đến quá nhanh không.
+
+## 24. Nhịp độ khách, giữ nút pha ngắn hơn, dọn cốc dễ hơn — 2026-10-16
+
+Từ phản hồi người chơi: "chơi hơi gấp, khách vào liên tục, làm đồ không kịp", giữ nút pha lâu, thu cốc phải bấm trúng. Thay đổi (test đơn vị xanh; số đo bot ở 24.3):
+
+### 24.1 Thay đổi
+- **Khách đến theo đường cong** (`ArrivalCurve`, `GameBalance.ArrivalDensity`): vào chậm đầu ngày, hai đỉnh cao điểm (~40% và ~80% cửa sổ sinh khách). Tổng số khách/ngày (`TargetCount`) và độ dài ngày **không đổi**.
+- **Chặn sinh thêm khi nghẽn** (`SpawnThrottle`): hoãn khách kế khi ≥ 3 người đang tìm chỗ hoặc số khách chờ món ≥ max(3, ghế/2). Tổng thời gian dời tối đa 45 giây/ngày, hai khách liền nhau cách ≥ 1 giây, không áp dụng khi hướng dẫn. Bot tắt bằng `-nothrottle`.
+- `NoSeatSeconds` 10 → 20.
+- **Giữ nút pha:** Phin 0,8 → 0,5 s; Sữa đặc / Sữa tươi / Trà 0,6 → 0,4 s; Cột dừa 0,6 → 0,45 s. Nhả khi đã được ≥ 80% vẫn tính xong; ngón trượt ra khỏi nút ≤ 0,15 s chỉ tạm dừng. Thời gian giữ nằm trong hạn 3 sao nên **3 sao dễ hơn** ~5–8 điểm (chưa chỉnh `brewSeconds`).
+- **Thu cốc (cấp 1):** vùng chạm cốc 0,35 → 0,6 m; khách không nhận chạm không còn che cốc; chạm trong bán kính max(56 px, 6% chiều cao màn hình) quanh cốc thì chọn cốc; nút "Thu hết (N)" rõ hơn.
+- Sổ công thức chỉ hiện nổi khi đang pha (vẫn mở được từ MENU), chấm thông báo đỏ, sáng/tối theo giờ (chỉ hình ảnh), bóng đèn + đèn bàn đặt trên mặt quầy (Lv7 / Lv13, cần xuất model từ Blender).
+
+### 24.2 Tiêu chí kiểm
+Tương tự §23.7, 100 ngày, cờ `-autoplay -autoprep -autobuy -autohidden -upgradestaff -autostaff -autoupgrade3 -freshsave -days 100 -timescale 8`: lên Mặt bằng / Nhà hàng ≈ ngày 7 / 44 (±2); ngày 81–100 phục vụ ≥ 69, lãi ≥ 4.320, RP ≥ +48.
+
+### 24.3 Số đo bot (một lần chạy, chưa có A/B cùng máy)
+| | §23.7 (trước) | Có thay đổi §24 |
+|---|---|---|
+| Lên Mặt bằng / Nhà hàng sau ngày | 7 / 44 | **7 / 46** |
+| ★2 / ★3 vào ngày | 4 / 26 | 5 / 27 |
+| Ngày 60–80: lãi / RP mỗi ngày | 3.721 / +26 | 3.183 / +13 |
+| Ngày 81–100: phục vụ / lãi / RP | 72,7 / 4.545 / +48 | **61,0 / 2.867 / +35** |
+| Ngày 81–100: mất khách / ngày | — | 176 |
+| Exception | 0 | 0 |
+
+**Chưa đạt ở cấp 3** (phục vụ −16%, lãi −37%); cấp 1–2 giữ nhịp tiến độ (ngày 7, 46). Chưa tách được nguyên nhân giữa đường cong đến, chặn sinh khách (ngưỡng "chờ món ≥ ghế/2" dễ chạm liên tục khi bot có 20–36 đơn chờ) và `NoSeatSeconds` 20. Việc cần làm: chạy lại với `-nothrottle`, hoặc chỉ áp chặn sinh khách ở cấp 1–2 (nơi chủ quán là người pha duy nhất và người chơi thấy "gấp"). Số đo một lần có nhiễu theo ngày ±2.000 Xu; so trung bình, không so ngày chính xác.

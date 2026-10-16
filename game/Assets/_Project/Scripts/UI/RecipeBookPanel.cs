@@ -61,6 +61,7 @@ namespace Cafe
         private readonly RectTransform footer;
         private float lastButtonY = float.NaN;
         private bool visible = true;
+        private readonly GameObject menuButton;
 
         public bool IsOpen { get { return overlay.gameObject.activeSelf; } }
 
@@ -74,6 +75,13 @@ namespace Cafe
             openButton = HudBuilder.AddLabelButton(parent, "RecipeBookButton", ClayStyle.Cream, RecipeStrings.Book, 36, Open, out lbl);
             openRt = (RectTransform)openButton.transform;
             HudBuilder.SetFixed(openRt, new Vector2(0.5f, 0f), new Vector2(0f, 0f), new Vector2(ButtonX, 160f), new Vector2(340f, 112f));
+
+            // Lối vào thường trực trong MENU (HudController gom nút này vào cột MENU theo tên)
+            Text menuLbl;
+            ClayButton menuBtn = HudBuilder.AddLabelButton(parent, "RecipeBookMenuButton", ClayStyle.Cream, RecipeStrings.Book, 24, Open, out menuLbl);
+            HudBuilder.SetFixed((RectTransform)menuBtn.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -650f), new Vector2(230f, 86f));
+            menuButton = menuBtn.gameObject;
+            openButton.gameObject.SetActive(false); // chỉ hiện khi đang pha (Tick)
 
             // --- Lớp phủ: nền mờ (chạm để đóng) + bảng
             RectTransform dim = HudBuilder.Panel(parent, "RecipeBookOverlay", new Color(0.1f, 0.06f, 0.04f, 0.55f), true);
@@ -175,8 +183,12 @@ namespace Cafe
         public void SetVisible(bool v)
         {
             visible = v;
-            openButton.gameObject.SetActive(v);
-            if (!v) Close();
+            menuButton.SetActive(v);
+            if (!v)
+            {
+                openButton.gameObject.SetActive(false);
+                Close();
+            }
         }
 
         public void Open()
@@ -196,12 +208,23 @@ namespace Cafe
         public void Tick()
         {
             if (!visible || brew == null) return;
+            bool show = RecipeBookRules.ShowFloating(brew.Expanded, TipPinned(), IsOpen);
+            if (openButton.gameObject.activeSelf != show) openButton.gameObject.SetActive(show);
             float y = brew.TopY + 14f;
             if (float.IsNaN(lastButtonY) || Mathf.Abs(y - lastButtonY) > 0.5f)
             {
                 lastButtonY = y;
                 openRt.anchoredPosition = new Vector2(ButtonX, y);
             }
+        }
+
+        /// Bước hướng dẫn đang trỏ vào nút Sổ: nút phải hiện để mũi tên có đích.
+        private bool TipPinned()
+        {
+            TutorialDirector t = game.Tutorial;
+            if (t == null) return false;
+            string id = t.ActiveTipId;
+            return id == TutorialTips.BacXiu || id == TutorialTips.T2Experiment;
         }
 
         // ---------------------------------------------------------------- sự kiện

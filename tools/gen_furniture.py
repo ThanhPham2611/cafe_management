@@ -953,6 +953,33 @@ def floor_lamp(name):
                               "ref_height": 1.5})
 
 
+def bulb_lamp(name):
+    """Bóng đèn dây tóc để mặt quầy 1×1 (cao ~0.30 m): đế gỗ tròn, đui đồng, bóng thủy tinh phát sáng ấm.
+    counterMount (Unity): chỉ đặt được lên mặt quầy pha."""
+    b = Builder()
+    b.cylinder(0.10, 0.09, 0.0, 0.035, C["wood_dark"], segs=12, round_r=0.01)                   # đế
+    b.cylinder(0.045, 0.040, 0.035, 0.095, C["caramel"], segs=10, round_r=0.008)               # đui đèn
+    b.cylinder(0.050, 0.050, 0.092, 0.104, C["wood_honey"], segs=10)                            # vòng nối
+    b.blob((0, 0, 0.19), (0.072, 0.072, 0.09), C["star"], u=10, v=6)                            # bóng (phát sáng)
+    b.cylinder(0.026, 0.040, 0.095, 0.125, C["star"], segs=8)                                   # cổ bóng
+    return b.to_object(name, {"category": "furniture", "footprint_x": 1, "footprint_z": 1,
+                              "ref_height": 0.3})
+
+
+def desk_lamp(name):
+    """Đèn bàn để mặt quầy 1×1 (cao ~0.40 m): đế tròn đen, cần gập hai đoạn bằng đồng, chụp nón phát sáng ấm."""
+    b = Builder()
+    b.cylinder(0.11, 0.10, 0.0, 0.03, C["charcoal"], segs=12, round_r=0.01)                      # đế
+    b.cylinder(0.025, 0.025, 0.03, 0.05, C["caramel"], segs=8)                                   # chân cần
+    b.rod((0.0, 0.0, 0.04), (-0.05, 0.0, 0.24), 0.011, C["caramel"], segs=6)                     # cần 1
+    b.blob((-0.05, 0.0, 0.24), (0.022, 0.022, 0.022), C["caramel"], u=6, v=4)                    # khớp
+    b.rod((-0.05, 0.0, 0.24), (0.05, 0.0, 0.31), 0.010, C["caramel"], segs=6)                    # cần 2
+    b.cylinder(0.105, 0.045, 0.255, 0.355, C["star"], segs=14, center=(0.075, 0.0), round_r=0.01)  # chụp nón (phát sáng)
+    b.cylinder(0.110, 0.110, 0.250, 0.262, C["caramel"], segs=14, center=(0.075, 0.0))           # viền chụp
+    return b.to_object(name, {"category": "furniture", "footprint_x": 1, "footprint_z": 1,
+                              "ref_height": 0.36})
+
+
 def bookshelf_low(name):
     """Kệ sách thấp 2×1 (0.96×0.30×1.06 m): khung gỗ, 3 tầng kệ đầy sách nhiều màu, chậu cây nhỏ trên nắp.
     Lưng kệ ở +Y (tựa tường), gáy sách quay -Y."""
@@ -1313,6 +1340,8 @@ ASSETS_T2B = {
     "SM_Table_Round_Tile": round_tile_table,
     "SM_Plant_Monstera": monstera_large,
     "SM_Lamp_Floor": floor_lamp,
+    "SM_Lamp_Bulb": bulb_lamp,
+    "SM_Lamp_Desk": desk_lamp,
     "SM_Bookshelf_Low": bookshelf_low,
     "SM_Radio_Stand": radio_stand,
     "SM_Lantern_Hoian": hoian_lantern,

@@ -59,8 +59,9 @@ namespace Cafe
                     var m = new NavMeshBuildMarkup();
                     m.root = f.transform;
                     m.area = 1; // Not Walkable
-                    m.overrideArea = !f.Overhead;
-                    m.ignoreFromBuild = f.Overhead;
+                    bool skip = f.Overhead || f.IsMount;
+                    m.overrideArea = !skip;
+                    m.ignoreFromBuild = skip;
                     m.applyToChildren = true;
                     markups.Add(m);
                 }

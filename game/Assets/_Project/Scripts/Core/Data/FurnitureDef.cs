@@ -26,6 +26,14 @@ namespace Cafe
         [Tooltip("Độ cao (m) của đáy model khi treo")]
         public float hangY;
 
+        [Header("Đặt trên mặt quầy pha (bóng đèn, đèn bàn)")]
+        [Tooltip("Đồ đặt lên mặt quầy pha: chỉ đặt được trên quầy, không chiếm ô sàn, đặt đè được")]
+        public bool counterMount;
+        [Tooltip("(Trên def của quầy) độ cao mặt quầy (m); 0 = quầy không nhận đồ đặt trên mặt")]
+        public float counterTopY;
+        [Tooltip("(Trên def của quầy) vùng XZ cục bộ (m) mà tâm đồ đặt được, để tránh tủ bánh")]
+        public Rect counterMountArea;
+
         [Header("Cấp quán")]
         [Tooltip("Cấp quán tối thiểu để mua/đặt (1 = có từ vỉa hè)")]
         public int minTier = 1;
