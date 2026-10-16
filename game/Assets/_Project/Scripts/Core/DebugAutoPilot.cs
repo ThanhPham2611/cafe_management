@@ -186,6 +186,7 @@ namespace Cafe
             if (autoHidden) StartCoroutine(HiddenMenuLoop());
             if (perf) DebugPerfProbe.Attach();
             if (autoDecor) StartCoroutine(DecorTest());
+            if (shotDir != null) GameEvents.LevelUp += OnLevelUpShot;   // chụp hiệu ứng lên level (cần -autoshot)
             if (shotSettings) StartCoroutine(SettingsShot());
             if (shotZones) StartCoroutine(ZoneShots());
             if (bestMenu) StartCoroutine(BestMenuLoop());
@@ -1018,6 +1019,16 @@ namespace Cafe
                 yield return new WaitForSecondsRealtime(4f);
                 if (shotDir != null) Shot("gfx_" + level);
             }
+        }
+
+        void OnDestroy() { GameEvents.LevelUp -= OnLevelUpShot; }
+
+        void OnLevelUpShot(int level) { StartCoroutine(LevelUpShot(level)); }
+
+        IEnumerator LevelUpShot(int level)
+        {
+            yield return new WaitForSecondsRealtime(0.8f);   // để chữ nổi + pháo giấy bay xuống rồi mới chụp
+            Shot("levelup_" + level);
         }
 
         /// -shotsettings: mở bảng Cài đặt đồ họa và chụp màn hình (cần -autoshot).

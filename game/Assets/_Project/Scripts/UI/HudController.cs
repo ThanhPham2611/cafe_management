@@ -168,6 +168,7 @@ namespace Cafe
             GameEvents.DayStarted += OnDayStarted;
             GameEvents.DayEnded += OnDayEnded;
             GameEvents.PrepStarted += OnPrepStarted;
+            GameEvents.LevelUp += OnLevelUp;
             GameEvents.CustomerServed += OnServed;
             GameEvents.Toast += ShowToast;
             game.Station.Changed += RebuildCards;
@@ -203,6 +204,7 @@ namespace Cafe
             GameEvents.DayStarted -= OnDayStarted;
             GameEvents.DayEnded -= OnDayEnded;
             GameEvents.PrepStarted -= OnPrepStarted;
+            GameEvents.LevelUp -= OnLevelUp;
             GameEvents.CustomerServed -= OnServed;
             GameEvents.Toast -= ShowToast;
             if (game != null)
@@ -427,12 +429,25 @@ namespace Cafe
         {
             if (starCountText == null) return;
             starCountText.text = stars.ToString();
-            int next;
-            game.Reputation.GetRange(out _, out next);
+            // Thanh và chữ theo LEVEL (bậc nhỏ, đầy nhanh) thay vì cả hạng sao: người chơi thấy tiến bộ thường xuyên
+            int level = LevelRules.LevelFor(rp);
+            int next = LevelRules.NextRp(level);
             rpText.text = next < 0
-                ? string.Format(Strings.RpMaxFmt, Mathf.FloorToInt(rp))
-                : string.Format(Strings.RpFmt, Mathf.FloorToInt(rp), next);
-            rpBar.Set(game.Reputation.ProgressToNext, HudBuilder.Accent);
+                ? string.Format(Strings.LevelMaxFmt, level, Strings.FormatInt(Mathf.FloorToInt(rp)))
+                : string.Format(Strings.LevelRpFmt, level, Strings.FormatInt(Mathf.FloorToInt(rp)), Strings.FormatInt(next));
+            rpBar.Set(next < 0 ? 1f : Mathf.Clamp01((rp - LevelRules.RpFor(level)) / (float)(next - LevelRules.RpFor(level))), HudBuilder.Accent);
+        }
+
+        /// Lên level uy tín: chữ nổi giữa-trên (kèm thưởng), pháo giấy; level mốc sao thêm biểu ngữ "SAO N!".
+        private void OnLevelUp(int level)
+        {
+            int star;
+            bool isStar = LevelRules.IsStarLevel(level, out star);
+            int gems = LevelRules.RewardGems(level);
+            string msg = string.Format(Strings.LevelUpFmt, level, Strings.FormatInt(LevelRules.RewardXu(level)));
+            if (gems > 0) msg += string.Format(Strings.LevelGemsFmt, gems);
+            UiFx.FloatTextTop(msg, HudBuilder.Accent);
+            if (game.Tier != null) game.Tier.PlayConfetti(isStar, isStar ? string.Format(Strings.StarUpFmt, star) : null);
         }
 
         private void OnCupChipClicked()

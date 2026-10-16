@@ -358,7 +358,8 @@ namespace Cafe
             }
         }
 
-        public void PlayConfetti()
+        /// Pháo giấy; withBanner: kèm biểu ngữ lớn (mặc định "Khai trương!", hoặc bannerText).
+        public void PlayConfetti(bool withBanner = true, string bannerText = null)
         {
             EnsureConfetti();
             Vector2 size = confettiLayer.rect.size;
@@ -384,8 +385,12 @@ namespace Cafe
             confettiTime = 0f;
             confettiOn = true;
 
-            banner.gameObject.SetActive(true);
-            bannerTime = 0f;
+            if (withBanner)
+            {
+                banner.text = bannerText ?? Strings.GrandOpening;
+                banner.gameObject.SetActive(true);
+                bannerTime = 0f;
+            }
         }
 
         private void TickConfetti(float dt)

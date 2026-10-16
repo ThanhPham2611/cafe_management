@@ -395,6 +395,12 @@ namespace Cafe
             if (TierChanged != null) TierChanged();
         }
 
+        /// Pháo giấy ngoài lúc lên cấp quán (vd. lên level uy tín); withBanner: kèm biểu ngữ lớn bannerText.
+        public void PlayConfetti(bool withBanner, string bannerText)
+        {
+            if (panel != null) panel.PlayConfetti(withBanner, bannerText);
+        }
+
         private void Celebrate()
         {
             if (panel != null) panel.PlayConfetti();

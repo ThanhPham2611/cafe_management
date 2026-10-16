@@ -984,3 +984,32 @@ Kết luận: **không hạ sức chứa cấp 3**. Số khách đến cao hơn 
 **Không đổi (có chủ ý):** mục tiêu nhiệm vụ cấp 3 (`serve_30` 120, `tips_300` 2.400) vì nhiệm vụ cộng dồn **cả ngày thực** (nhiều ngày trong game), nên 94 khách/ngày không làm chúng bất khả thi; bộ nhiệm vụ trong log bot 100 ngày luôn là cấp 1 vì bot chơi 100 ngày game trong một ngày thực, không phải lỗi. Cũng chưa đổi: giá / nhu cầu cấp 3, luật chặn sinh khách khi hàng chờ dài (cảnh khách vào rồi quay ra ở cổng vẫn còn), tiền thuê theo ngày, cấp 2 (cùng tật hết chỗ ~50% nhưng không còn ảnh hưởng RP).
 
 **Mục tiêu đo lần sau (bot 100 ngày):** RP/ngày cấp 3 ≥ +100 (45 ngày: +127 ✓); ★4 vào khoảng ngày 120–130; lãi ròng cấp 3 không tụt (✓ so với A); chạy lại bot 100 ngày để xác nhận ở ngày 100, nơi bản cũ mất 199 khách.
+
+---
+
+## 22. Level uy tín — 2026-10-16
+
+**Vì sao.** Người chơi báo cảm giác "chơi mãi không lên được cấp". Sao ★ chỉ có 4 bước (300 / 3.000 / 12.000 / 40.000 RP) và khi lên sao game không thưởng, không hiệu ứng (§4.2 hứa 50 / 100 / 200 / 400 Hạt nhưng chưa có code). Thêm **level**: các bậc nhỏ chia đều giữa hai mốc sao, dựng trên RP có sẵn (không thêm loại điểm mới), lên thường xuyên và có thưởng.
+
+**Sao, level và cấp quán là ba thứ khác nhau.** ★ là hạng uy tín (điều kiện mở cấp quán và làm khách đông hơn); level là bậc nhỏ giữa các sao; cấp quán (vỉa hè → thuê mặt bằng → nhà hàng → chuỗi) là bước đổi cửa hàng, cần đủ sao **và** đủ tiền.
+
+| Hạng sao | RP | Số level trong hạng | Level mốc sao |
+|---|---|---|---|
+| ★1 → ★2 | 0 – 300 | 5 (mỗi 60 RP) | Lv6 = ★2 |
+| ★2 → ★3 | 300 – 3.000 | 10 (mỗi 270 RP) | Lv16 = ★3 |
+| ★3 → ★4 | 3.000 – 12.000 | 15 (mỗi 600 RP) | Lv31 = ★4 |
+| ★4 → ★5 | 12.000 – 40.000 | 10 (mỗi 2.800 RP) | Lv41 = ★5 (tối đa) |
+
+Tổng 41 level (`LevelRules`). Với số đo bot (§21): cấp 1–2 lên khoảng 1 level mỗi ngày đến vài ngày; cấp 3 khoảng 1 level mỗi ~5 ngày (+120 RP/ngày, 600 RP/level).
+
+**Thưởng mỗi level** (`LevelRules.RewardXu` / `RewardGems`): **Xu = 100 + 40 × level**; level mốc sao thưởng **x3 Xu** và thêm **Hạt** 50 / 100 / 200 / 400 cho ★2 / ★3 / ★4 / ★5 (đúng bảng §4.2). Ví dụ: Lv2 +180 Xu, Lv10 +500, Lv6 (★2) +1.020 Xu +50 Hạt. Ước tính tổng thưởng đến lúc lên cấp 3 (~Lv26) khoảng 18.000 Xu ≈ 13% giá mua nhà 140.000; **chưa đo bằng bot**, cần chạy lại để xác nhận không làm lệch nhịp §21.
+
+**Cơ chế.**
+- `Reputation.Level` tính từ RP; mỗi lần RP làm tăng level thì `GameEvents.LevelUp(level)` báo đúng một lần (kể cả khi một khoản RP lớn, vd. chương truyện, nhảy nhiều level cùng lúc).
+- Sàn mềm của RP chuyển từ mốc sao sang **mốc level**: RP không tụt dưới level đã đạt (khách bỏ về không làm mất level).
+- `GameBootstrap.OnLevelUpReward` cộng Xu / Hạt rồi dời mốc Xu đầu ngày (như thưởng nhiệm vụ). `SaveData.levelRewarded` lưu level cao nhất đã nhận thưởng: vào lại giữa ngày (RP về mốc đầu ngày) không bị thưởng hai lần; save cũ (chưa có trường này) không được thưởng bù.
+- HUD: thanh dưới số sao hiện **"Lv N  RP/RP kế"** và tiến độ tới level kế (trước đây tới sao kế).
+- Hiệu ứng: chữ nổi "LÊN LEVEL N! +X Xu" (kèm Hạt), pháo giấy; level mốc sao thêm biểu ngữ lớn "SAO N!".
+
+**Chưa làm / để sau.** Âm thanh lên level; thưởng khai trương cấp 2 (cấp 3 đã có quà 10.000 Xu); mở khóa nội dung theo level (món, đồ trang trí); ghi level vào màn tổng kết; đo ảnh hưởng của thưởng lên nhịp lên cấp bằng bot.
+
