@@ -592,6 +592,13 @@ namespace Cafe
         private void OnLevelReached(int level)
         {
             Debug.Log($"[Level] đạt Lv {level} (RP {Reputation.RP:0}), chờ nhận +{LevelRules.RewardXu(level)} Xu");
+            // Cửa hàng mở thêm món ở level này: báo ngay lúc đạt (không đợi nhận thưởng)
+            foreach (string id in ShopUnlocks.UnlockedAt(level))
+            {
+                FurnitureDef d = GetDef(id);
+                GameEvents.RaiseToast(string.Format(Strings.UnlockedItemFmt, d != null && !string.IsNullOrEmpty(d.displayName) ? d.displayName : id));
+            }
+            if (LevelTitles.IsTitleLevel(level)) GameEvents.RaiseToast(string.Format(Strings.NewTitleFmt, LevelTitles.TitleFor(level)));
         }
 
         private void OnDayEndedClaimLevels(DaySummary s)

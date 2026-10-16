@@ -23,6 +23,7 @@ namespace Cafe
         private readonly Row rowRevenue, rowTips, rowScrap, rowIngredients, rowFee, rowStaffWages;
         private readonly Row rowServed, rowLost, rowRp;
         private readonly Row rowMissions;    // tiến độ nhiệm vụ ngày
+        private Text titleLine;              // "Danh hiệu: Quán có tiếng" (LevelTitles)
         private readonly Row rowWeekly;      // dự án tuần (WeeklyProject)
         private const float WeeklyExtra = 64f; // cấp 1: thẻ cao thêm cho dòng dự án tuần (các cấp khác còn chỗ trống)
         private readonly GameObject adviceChip;  // gợi ý đầu ngày mới (DayAdvisor), chỉ hiện khi có
@@ -53,6 +54,10 @@ namespace Cafe
 
             title = HudBuilder.AddText(card, "Title", "", 58, TextAnchor.MiddleCenter, HudBuilder.Ink, true, false);
             HudBuilder.SetFixed(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -26f), new Vector2(900f, 84f));
+
+            titleLine = HudBuilder.AddText(card, "TitleLine", "", 24, TextAnchor.MiddleCenter, HudBuilder.InkSoft, false, false);
+            HudBuilder.SetFixed(titleLine.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -96f), new Vector2(900f, 32f));
+            HudBuilder.Fit(titleLine, 18);
 
             // cột trái: tiền
             rowRevenue = MakeRow(card, 52f, -134f, 450f, HudBuilder.T.iconCoin, Strings.SumRevenue);
@@ -198,6 +203,7 @@ namespace Cafe
             // cấp 2: thêm dòng thuê nhà + nợ, chừa chỗ để nút không che; có gợi ý thì cao thêm một dải
             card.sizeDelta = new Vector2(1000f, (paysRent ? 960f : (rented ? 900f : 800f + WeeklyExtra)) + (hasAdvice ? AdviceExtra : 0f));
             ShowWeekly(s.day);
+            titleLine.text = string.Format(Strings.TitleLineFmt, LevelTitles.TitleFor(game.Reputation.Level));
             if (rented)
             {
                 SetMoney(rowRent, -s.rent, true);

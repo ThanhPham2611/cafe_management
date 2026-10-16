@@ -29,6 +29,11 @@ namespace Cafe
                 default: return TierShort4;
             }
         }
+        public const string UnlockAtLevelFmt = "Mở ở Lv {0}";
+        public const string UnlockedItemFmt = "Mở khóa trong Cửa hàng: {0}";
+        public const string NewTitleFmt = "Danh hiệu mới: {0}";
+        public const string TitleLineFmt = "Danh hiệu: {0}";
+        public const string LockedByLevelToast = "Cần đạt Lv {0} để mua món này";
         public const string FundStageFmt = "Quỹ {0} đạt {1}%!  +{2} Hạt";
         public const string WeeklyServeFmt = "Tuần {0}/7: khách";
         public const string WeeklyTipsFmt = "Tuần {0}/7: tip";

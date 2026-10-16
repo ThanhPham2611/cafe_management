@@ -175,6 +175,14 @@ namespace Cafe
 
         // ------------------------------------------------------------------ mua / đặt (ghost)
 
+        private bool bypassLevelLock;
+
+        /// Món mua mới còn khóa theo level uy tín (đồ trong kho và di chuyển không bị khóa).
+        private bool LevelLocked(FurnitureDef def)
+        {
+            return !bypassLevelLock && game.Reputation != null && !ShopUnlocks.IsUnlocked(def.id, game.Reputation.RewardedLevel);
+        }
+
         /// Bắt đầu đặt món mua mới (chưa trừ Xu). fromInv = true: đặt món có sẵn trong kho (miễn phí).
         public void BeginPlace(FurnitureDef def, bool fromInv = false)
         {
@@ -187,6 +195,11 @@ namespace Cafe
             }
             else if (ShopRules.AtMax(grid, def))
             {
+                return;
+            }
+            else if (LevelLocked(def))
+            {
+                GameEvents.RaiseToast(string.Format(Strings.LockedByLevelToast, ShopUnlocks.RequiredLevel(def.id)));
                 return;
             }
             TakeSnapshot();
@@ -306,6 +319,11 @@ namespace Cafe
             }
             else if (!isMove)
             {
+                if (LevelLocked(gdef))
+                {
+                    GameEvents.RaiseToast(string.Format(Strings.LockedByLevelToast, ShopUnlocks.RequiredLevel(gdef.id)));
+                    return;
+                }
                 if (ShopRules.AtMax(grid, gdef))
                 {
                     GameEvents.RaiseToast(string.Format(Strings.MaxReachedFmt, gdef.maxCount));
@@ -699,6 +717,13 @@ namespace Cafe
         public bool DebugPlace(FurnitureDef def, Vector2Int cell)
         {
             int before = grid.Placed.Count;
+            bypassLevelLock = true; // bot đo cân bằng bỏ qua khóa level để số đo kinh tế không đổi (xem ShopUnlocks)
+            try { return DebugPlaceInner(def, cell, before); }
+            finally { bypassLevelLock = false; }
+        }
+
+        private bool DebugPlaceInner(FurnitureDef def, Vector2Int cell, int before)
+        {
             if (!open) Open();
             BeginPlace(def);
             if (ghost == null) return false;
