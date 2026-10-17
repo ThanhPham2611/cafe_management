@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Cafe
 {
@@ -117,6 +118,28 @@ namespace Cafe
             Build();
         }
 
+        private SaveStatus loadStatus;
+        private bool saveFailToasted;
+
+        /// Save do phiên bản mới hơn tạo ra: chặn toàn màn hình (không có "Chơi mới" để không ghi đè), save được giữ nguyên.
+        private void ShowUpdateRequired()
+        {
+            HudBuilder.SetTheme(uiTheme);
+            Canvas canvas = HudBuilder.CreateCanvas("UpdateRequiredCanvas", 600, true, transform);
+            Image dim = HudBuilder.Dim(canvas.transform, "Dim", 0.94f);
+            HudBuilder.Stretch(dim.rectTransform);
+            Image card = HudBuilder.Panel(canvas.transform, "Card", true);
+            HudBuilder.SetFixed(card.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1000f, 460f));
+            Text title = HudBuilder.AddText(card.transform, "Title", Strings.SaveFutureTitle, 54, TextAnchor.MiddleCenter, HudBuilder.Ink, true, false);
+            HudBuilder.SetFixed(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -36f), new Vector2(900f, 80f));
+            HudBuilder.Fit(title, 30);
+            Text body = HudBuilder.AddText(card.transform, "Body", Strings.SaveFutureBody, 36, TextAnchor.MiddleCenter, HudBuilder.InkSoft, false, false);
+            HudBuilder.SetFixed(body.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -40f), new Vector2(880f, 260f));
+            HudBuilder.Fit(body, 22);
+            IsBuilt = true;
+            if (BuildFinished != null) BuildFinished();
+        }
+
         private void Build()
         {
             // Danh mục
@@ -132,8 +155,15 @@ namespace Cafe
             CupPrefab = cupDef != null ? cupDef.prefab : null;
 
             // Lưu
-            SaveData save;
-            bool hasSave = SaveSystem.TryLoad(out save);
+            SaveLoadResult load = SaveSystem.Load();
+            if (load.status == SaveStatus.FutureVersion)
+            {
+                ShowUpdateRequired(); // save của phiên bản mới hơn: không dựng game, không ghi đè
+                return;
+            }
+            loadStatus = load.status;
+            SaveData save = load.data;
+            bool hasSave = save != null;
 
             Wallet = new Wallet();
             Reputation = new Reputation();
@@ -297,6 +327,9 @@ namespace Cafe
         /// Sau màn tiêu đề: chưa tạo chủ quán thì mở màn tạo, ngược lại bắt đầu ngày.
         private void AfterTitle(int startDay)
         {
+            if (loadStatus == SaveStatus.RestoredFromBackup) GameEvents.RaiseToast(Strings.SaveRestoredToast);
+            else if (loadStatus == SaveStatus.Corrupt) GameEvents.RaiseToast(Strings.SaveCorruptToast);
+            loadStatus = SaveStatus.Ok;
             if (CreatorDone)
             {
                 StartDay(startDay);
@@ -467,9 +500,9 @@ namespace Cafe
         // ---- Lưu ----
 
         /// Cuối ngày: lưu ngày kế tiếp. Giữa ngày: lưu mốc đầu ngày (không lợi dụng thoát-vào để giữ tiền).
-        public void SaveSnapshot()
+        public bool SaveSnapshot()
         {
-            if (!started) return;
+            if (!started) return false;
             var data = new SaveData();
             data.layout = Grid.ExportLayout().ToArray();
             data.purchases = Grid.ExportPurchases();
@@ -505,7 +538,15 @@ namespace Cafe
                 // Không lưu RP thấp hơn mốc level đã thưởng: vào lại giữa ngày thì HUD không hiện level thấp hơn level đã nhận
                 data.rp = Mathf.Max(dayStartRp, LevelRules.RpFor(Reputation.RewardedLevel));
             }
-            using (PerfNote.Measure("lưu game")) SaveSystem.Save(data);
+            bool ok;
+            using (PerfNote.Measure("lưu game")) ok = SaveSystem.Save(data);
+            if (ok) saveFailToasted = false;
+            else if (!SaveSystem.IsLocked && !saveFailToasted)
+            {
+                saveFailToasted = true;
+                GameEvents.RaiseToast(Strings.SaveFailedToast);
+            }
+            return ok;
         }
 
         /// Chốt Xu / RP hiện tại làm mốc đầu ngày (chuyển cấp quán: mốc quan trọng, không quay lại trạng thái trước cọc khi thoát-vào).

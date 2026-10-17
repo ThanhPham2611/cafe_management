@@ -3,8 +3,8 @@ using UnityEngine.UI;
 
 namespace Cafe
 {
-    /// Cài đặt đồ họa: nút "ĐỒ HỌA" ở cột phải HUD và bảng chọn 3 mức Thấp / Vừa / Cao (GraphicsQuality).
-    /// Đổi mức có hiệu lực ngay (bóng đổ, độ nét, khung hình/giây, viền chữ) và được nhớ cho lần chơi sau.
+    /// Cài đặt: nút "ĐỒ HỌA" ở cột phải HUD và bảng chọn 3 mức Thấp / Vừa / Cao (GraphicsQuality), giảm chuyển động,
+    /// nhạc nền / âm thanh / rung (AudioPrefs). Đổi có hiệu lực ngay và được nhớ cho lần chơi sau.
     public sealed class SettingsPanel
     {
         private const float CardW = 1000f;
@@ -24,6 +24,8 @@ namespace Cafe
         private const float RowTop = -130f - OptionH - 30f;   // hàng đầu nằm ngay dưới 3 mức đồ họa
         private const float FpsButtonW = 170f;
         private const float MotionButtonW = 220f;
+        private const float VolButtonW = 130f;
+        private const float VolGap = 12f;
         private const float FpsLabelW = 380f;
         private const float RowLeft = -(FpsLabelW + 3 * (FpsButtonW + OptionGap)) * 0.5f;   // hai hàng thẳng cột nhau
 
@@ -33,6 +35,10 @@ namespace Cafe
         private ClayButton motionButton;
         private Text motionText;
         private ClayButton[] fpsButtons = new ClayButton[0];
+        private readonly ClayButton[] musicButtons = new ClayButton[AudioRules.MaxStep + 1];
+        private readonly ClayButton[] sfxButtons = new ClayButton[AudioRules.MaxStep + 1];
+        private ClayButton hapticsButton;
+        private Text hapticsText;
         private int[] fpsChoices = new int[0];
         private bool open;
 
@@ -49,11 +55,13 @@ namespace Cafe
             root = dim.gameObject;
             Image card = HudBuilder.Panel(dim.transform, "Card", true);
             bool fpsRow = GraphicsQuality.FpsSelectable;
+            bool hapticsRow = Haptics.Supported;
+            int rows = (fpsRow ? 2 : 1) + 2 + (hapticsRow ? 1 : 0); // [FPS] + giảm chuyển động + nhạc + âm thanh + [rung]
             HudBuilder.SetFixed(card.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero,
-                new Vector2(CardW, CardH + RowH * (fpsRow ? 2 : 1)));
+                new Vector2(CardW, CardH + RowH * rows));
             card.gameObject.AddComponent<FitInCanvas>(); // máy có thêm hàng chọn FPS: thẻ cao hơn màn hình thì tự thu nhỏ
 
-            Text title = HudBuilder.AddText(card.transform, "Title", "Cài đặt đồ họa", 46, TextAnchor.MiddleCenter, HudBuilder.Ink, true, false);
+            Text title = HudBuilder.AddText(card.transform, "Title", Strings.SettingsTitle, 46, TextAnchor.MiddleCenter, HudBuilder.Ink, true, false);
             HudBuilder.SetFixed(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(800f, 60f));
 
             float total = GraphicsPresets.Count * OptionW + (GraphicsPresets.Count - 1) * OptionGap;
@@ -64,7 +72,11 @@ namespace Cafe
             }
 
             if (fpsRow) BuildFpsRow(card.transform);
-            BuildMotionRow(card.transform, RowTop - (fpsRow ? RowH : 0f));
+            float rowTop = RowTop - (fpsRow ? RowH : 0f);
+            BuildMotionRow(card.transform, rowTop);
+            BuildVolumeRow(card.transform, "Music", Strings.MusicLabel, rowTop - RowH, musicButtons, step => AudioPrefs.SetMusic(step));
+            BuildVolumeRow(card.transform, "Sfx", Strings.SfxLabel, rowTop - 2 * RowH, sfxButtons, step => { AudioPrefs.SetSfx(step); Audio.Play(Sfx.UiTap, 1f, false); });
+            if (hapticsRow) BuildHapticsRow(card.transform, rowTop - 3 * RowH);
 
             recommend = HudBuilder.AddText(card.transform, "Recommend", "", 28, TextAnchor.MiddleCenter, HudBuilder.InkSoft, false, false);
             HudBuilder.SetFixed(recommend.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 150f), new Vector2(900f, 44f));
@@ -84,6 +96,7 @@ namespace Cafe
             HudBuilder.SetFixed((RectTransform)tutorial.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-40f, 28f), new Vector2(300f, 88f));
 
             GraphicsQuality.Changed += Refresh;
+            AudioPrefs.Changed += Refresh;
             SetOpen(false);
         }
 
@@ -142,6 +155,38 @@ namespace Cafe
                 new Vector2(RowLeft + FpsLabelW + OptionGap, top), new Vector2(MotionButtonW, 84f));
         }
 
+        /// Hàng "Nhạc nền / Âm thanh: Tắt | Nhỏ | Vừa | To" (4 bậc, AudioPrefs).
+        private void BuildVolumeRow(Transform card, string key, string labelText, float top, ClayButton[] buttons, System.Action<int> onPick)
+        {
+            Text label = HudBuilder.AddText(card, key + "Label", labelText, 30, TextAnchor.MiddleLeft, HudBuilder.Ink, true, false);
+            HudBuilder.SetFixed(label.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, 1f), new Vector2(RowLeft, top), new Vector2(FpsLabelW, 84f));
+            label.horizontalOverflow = HorizontalWrapMode.Wrap;
+            HudBuilder.Fit(label, 20);
+
+            string[] names = { Strings.VolOff, Strings.VolLow, Strings.VolMed, Strings.VolHigh };
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                int step = i;
+                Text text;
+                buttons[i] = HudBuilder.AddLabelButton(card, key + "_" + i, ClayStyle.Green, names[i], 32, () => onPick(step), out text);
+                HudBuilder.SetFixed((RectTransform)buttons[i].transform, new Vector2(0.5f, 1f), new Vector2(0f, 1f),
+                    new Vector2(RowLeft + FpsLabelW + OptionGap + i * (VolButtonW + VolGap), top), new Vector2(VolButtonW, 84f));
+            }
+        }
+
+        /// Hàng "Rung: BẬT / TẮT" (chỉ điện thoại).
+        private void BuildHapticsRow(Transform card, float top)
+        {
+            Text label = HudBuilder.AddText(card, "HapticsLabel", Strings.HapticsLabel, 30, TextAnchor.MiddleLeft, HudBuilder.Ink, true, false);
+            HudBuilder.SetFixed(label.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, 1f), new Vector2(RowLeft, top), new Vector2(FpsLabelW, 84f));
+            label.horizontalOverflow = HorizontalWrapMode.Wrap;
+            HudBuilder.Fit(label, 20);
+            hapticsButton = HudBuilder.AddLabelButton(card, "HapticsToggle", ClayStyle.Green, Strings.VolOff, 40,
+                () => AudioPrefs.SetHaptics(!AudioPrefs.Haptics), out hapticsText);
+            HudBuilder.SetFixed((RectTransform)hapticsButton.transform, new Vector2(0.5f, 1f), new Vector2(0f, 1f),
+                new Vector2(RowLeft + FpsLabelW + OptionGap, top), new Vector2(MotionButtonW, 84f));
+        }
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public void DebugOpen(bool value) { SetOpen(value); }
 #endif
@@ -173,12 +218,23 @@ namespace Cafe
             bool calm = GraphicsQuality.ReduceMotion;
             motionText.text = calm ? "BẬT" : "TẮT";
             motionButton.SetTint(calm ? Color.white : new Color(0.62f, 0.6f, 0.55f, 1f));
+            for (int i = 0; i < musicButtons.Length; i++)
+            {
+                musicButtons[i].SetTint(i == AudioPrefs.MusicStep ? Color.white : new Color(0.62f, 0.6f, 0.55f, 1f));
+                sfxButtons[i].SetTint(i == AudioPrefs.SfxStep ? Color.white : new Color(0.62f, 0.6f, 0.55f, 1f));
+            }
+            if (hapticsButton != null)
+            {
+                hapticsText.text = AudioPrefs.Haptics ? Strings.On : Strings.Off;
+                hapticsButton.SetTint(AudioPrefs.Haptics ? Color.white : new Color(0.62f, 0.6f, 0.55f, 1f));
+            }
             recommend.text = "Đổi mức có hiệu lực ngay. Máy giật thì chọn THẤP; máy mạnh chọn CAO.";
         }
 
         public void Dispose()
         {
             GraphicsQuality.Changed -= Refresh;
+            AudioPrefs.Changed -= Refresh;
         }
     }
 }

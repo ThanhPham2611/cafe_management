@@ -343,7 +343,11 @@ namespace Cafe
             var nav = new Navigation();
             nav.mode = Navigation.Mode.None;
             btn.navigation = nav;
-            if (onClick != null) btn.onClick.AddListener(onClick);
+            if (onClick != null)
+            {
+                btn.onClick.AddListener(Audio.UiTap); // chỉ nút có onClick: nút giữ / vuốt / xoay tự có tiếng bước pha
+                btn.onClick.AddListener(onClick);
+            }
 
             RectTransform content = NewRect("Content", rt);
             SetRect(content, Vector2.zero, Vector2.one, new Vector2(0f, 20f), Vector2.zero);

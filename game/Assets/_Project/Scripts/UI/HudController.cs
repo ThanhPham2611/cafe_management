@@ -372,7 +372,7 @@ namespace Cafe
         }
 
         private void ToggleMenu() { menuRoot.gameObject.SetActive(!menuRoot.gameObject.activeSelf); }
-        private void CloseMenu() { menuRoot.gameObject.SetActive(false); }
+        private void CloseMenu() { menuRoot.gameObject.SetActive(false); Audio.UiBack(); }
 
         private void BuildOrderColumn(RectTransform parent)
         {
@@ -573,6 +573,7 @@ namespace Cafe
 
         private void OnCupChipClicked()
         {
+            Audio.UiTap();
             if (game.WaitingCupCount() > 0) game.QueueCollectAll();
         }
 
@@ -665,6 +666,7 @@ namespace Cafe
         {
             CardView cv = cards[index];
             if (cv.order == null) return;
+            Audio.Play(Sfx.OrderSelect);
             game.Station.Select(cv.order);
         }
 

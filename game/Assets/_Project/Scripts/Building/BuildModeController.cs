@@ -346,6 +346,7 @@ namespace Cafe
                 if (game.Missions != null) game.Missions.RecordPurchase();
             }
             if (fromInventory && !isMove && game.Tier != null) game.Tier.TakeFromInventory(gdef.id);
+            Audio.Play(Sfx.BuildPlace);
             Vector3 fx = pf.WorldBounds.center + Vector3.up * 0.8f;
             DestroyGhost();
             StopDrag();
@@ -431,6 +432,7 @@ namespace Cafe
             grid.Remove(pf);
             RebuildNav();
             game.Wallet.Earn(value);
+            Audio.Play(Sfx.Sell);
             UiFx.FloatText(fx, "+" + Strings.FormatInt(value), HudBuilder.Accent);
             AfterChange(value);
         }

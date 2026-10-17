@@ -84,6 +84,25 @@ namespace Cafe
         public const string NoCup = "Hết ly sạch! Thu ly khách để lại";
         public const string NoCupWaitingFmt = "Hết ly sạch! Có {0} ly cần thu, chạm ly trên bàn";
         public const string CupReady = "Thu ly!";
+        // ---- Cài đặt âm thanh ----
+        public const string SettingsTitle = "Cài đặt";
+        public const string MusicLabel = "Nhạc nền";
+        public const string SfxLabel = "Âm thanh";
+        public const string HapticsLabel = "Rung";
+        public const string VolOff = "TẮT";
+        public const string VolLow = "NHỎ";
+        public const string VolMed = "VỪA";
+        public const string VolHigh = "TO";
+        public const string On = "BẬT";
+        public const string Off = "TẮT";
+
+        // ---- Lưu game ----
+        public const string SaveRestoredToast = "Dữ liệu bị lỗi, đã khôi phục bản lưu trước đó. Có thể mất vài phút chơi gần nhất.";
+        public const string SaveCorruptToast = "Không đọc được dữ liệu chơi. Tệp cũ vẫn được giữ lại trong máy để hỗ trợ khôi phục.";
+        public const string SaveFailedToast = "Không lưu được game. Hãy kiểm tra dung lượng trống.";
+        public const string SaveFutureTitle = "Cần cập nhật trò chơi";
+        public const string SaveFutureBody = "Dữ liệu của bạn được lưu bằng phiên bản mới hơn. Hãy cập nhật ứng dụng để tiếp tục chơi. Tiến trình của bạn vẫn an toàn.";
+
         public const string CupsWaitingFmt = "Thu hết ({0})";
         public const string NoOrderSelected = "Hãy chọn một đơn trước";
         public const string HoldingDrink = "Đang cầm ly - hãy phục vụ khách trước";
