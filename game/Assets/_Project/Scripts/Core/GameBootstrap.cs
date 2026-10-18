@@ -291,6 +291,7 @@ namespace Cafe
             Tier.OnCameraReady(); // cấp 2: khung nhìn rộng hơn cho phòng thuê
             gameObject.AddComponent<TapInput>().Game = this;
             DayNightController.Create(this, cam);
+            gameObject.AddComponent<OverheadVisibility>().Init(this);
 
             // Build mode (UI dựng lười khi mở lần đầu) - phải có trước HUD vì ShopPanel dùng
             Builder = new GameObject("BuildMode").AddComponent<BuildModeController>();

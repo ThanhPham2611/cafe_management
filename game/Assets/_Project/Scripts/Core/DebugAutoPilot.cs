@@ -41,7 +41,7 @@ namespace Cafe
         bool autoplay;
         bool autoshop;
         bool autorecipes;
-        bool cheatXu, cheatRp, autoUpgrade, autoUpgrade3, cheatT3, fullStaff, noMachines, autoZones, shotZones, bestMenu, gfxCycle, shotSettings, autoDecor3, autoStaff, noBrewer, autoBuy, autoHidden, upgradeStaff, perf, autoDecor, autoPrep, shotMissions;
+        bool cheatXu, cheatRp, autoUpgrade, autoUpgrade3, cheatT3, fullStaff, noMachines, autoZones, shotZones, bestMenu, gfxCycle, shotSettings, shotAngles, autoDecor3, autoStaff, noBrewer, autoBuy, autoHidden, upgradeStaff, perf, autoDecor, autoPrep, shotMissions;
         bool prepBought, missionsShot;
         int cleanerLimit = 99;
         int t3ExtraXu;
@@ -101,6 +101,16 @@ namespace Cafe
             p.fullStaff = Has(args, "-fullstaff");
             p.noMachines = Has(args, "-nomachines");
             p.shotSettings = Has(args, "-shotsettings");
+            p.shotAngles = Has(args, "-shotangles");
+            string cp = Arg(args, "-campitch"), cy = Arg(args, "-camyaw"), cd = Arg(args, "-camdist");
+            float cv;
+            if (cp != null && float.TryParse(cp, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out cv))
+            {
+                CafeCameraController.DebugOn = true;
+                CafeCameraController.DebugPitch = cv;
+                if (cy != null && float.TryParse(cy, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out cv)) CafeCameraController.DebugYaw = cv;
+                if (cd != null && float.TryParse(cd, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out cv)) CafeCameraController.DebugDistance = cv;
+            }
             p.autoZones = Has(args, "-autozones");
             p.bestMenu = Has(args, "-bestmenu");
             string sp = Arg(args, "-staffprio");
@@ -193,6 +203,7 @@ namespace Cafe
             if (autoDecor) StartCoroutine(DecorTest());
             if (shotDir != null) GameEvents.LevelUp += OnLevelUpShot;   // chụp hiệu ứng lên level (cần -autoshot)
             if (shotSettings) StartCoroutine(SettingsShot());
+            if (shotAngles) StartCoroutine(AngleShots());
             if (shotZones) StartCoroutine(ZoneShots());
             if (bestMenu) StartCoroutine(BestMenuLoop());
             if (gfxCycle) StartCoroutine(GfxCycle());
@@ -1055,6 +1066,38 @@ namespace Cafe
         }
 
         /// -shotsettings: mở bảng Cài đặt đồ họa và chụp màn hình (cần -autoshot).
+        /// -shotangles (cần -autoshot): chụp quán ở nhiều góc nghiêng x hướng nhìn để kiểm tra nhìn ngang tầm mắt (tường, đồ treo, đường chân trời).
+        IEnumerator AngleShots()
+        {
+            GameBootstrap g = null;
+            while (g == null || g.Hud == null || g.Day == null || g.Day.CurrentPhase != DayCycle.Phase.Open)
+            {
+                yield return new WaitForSecondsRealtime(1f);
+                g = GameBootstrap.Instance;
+            }
+            // -angletier <n>: chờ tới khi quán đạt cấp n (dùng với -cheatxu -autoupgrade / -autoupgrade3 -cheatt3)
+            int wantTier;
+            string at = Arg(Environment.GetCommandLineArgs(), "-angletier");
+            if (at != null && int.TryParse(at, out wantTier))
+                while (g.Tier == null || g.Tier.Current < wantTier || g.Day.CurrentPhase != DayCycle.Phase.Open || g.Tier.Transitioning)
+                    yield return new WaitForSecondsRealtime(1f);
+            yield return new WaitForSecondsRealtime(4f);
+            float baseDist = g.CameraRig != null ? g.CameraRig.Distance : 10f;
+            foreach (float pitch in new[] { 6f, 12f, 20f, 35f, 48f })
+            {
+                foreach (float yaw in new[] { 0f, 90f, 180f, 270f })
+                {
+                    CafeCameraController.DebugOn = true;
+                    CafeCameraController.DebugPitch = pitch;
+                    CafeCameraController.DebugYaw = yaw;
+                    CafeCameraController.DebugDistance = baseDist;
+                    yield return new WaitForSecondsRealtime(0.7f);
+                    if (shotDir != null) Shot("ang_p" + (int)pitch + "_y" + (int)yaw);
+                }
+            }
+            CafeCameraController.DebugOn = false;
+        }
+
         IEnumerator SettingsShot()
         {
             GameBootstrap g = null;

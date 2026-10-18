@@ -84,6 +84,11 @@ namespace Cafe
         public const string NoCup = "Hết ly sạch! Thu ly khách để lại";
         public const string NoCupWaitingFmt = "Hết ly sạch! Có {0} ly cần thu, chạm ly trên bàn";
         public const string CupReady = "Thu ly!";
+        // ---- Góc nhìn camera ----
+        public const string ViewTop = "Góc: TRÊN";
+        public const string ViewMid = "Góc: CHÉO";
+        public const string ViewEye = "Góc: NGANG";
+
         // ---- Cài đặt âm thanh ----
         public const string SettingsTitle = "Cài đặt";
         public const string MusicLabel = "Nhạc nền";
