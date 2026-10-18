@@ -68,9 +68,10 @@ namespace Cafe
         public GameBootstrap Game;
 
         private Camera cam;
-        private readonly RaycastHit[] hits = new RaycastHit[24];
+        private readonly RaycastHit[] hits = new RaycastHit[64]; // nhìn ngang tầm mắt tia đi dọc sàn qua nhiều bàn ghế: bộ đệm to để không rớt hit gần nhất
         private readonly List<LeftoverCup> assistCups = new List<LeftoverCup>(8);
         private readonly List<Vector2> assistPoints = new List<Vector2>(8);
+        private readonly List<float> assistDepths = new List<float>(8);
 
         private bool tracking;
         private bool overUI;
@@ -180,18 +181,21 @@ namespace Cafe
             if (Game == null) return null;
             assistCups.Clear();
             assistPoints.Clear();
+            assistDepths.Clear();
             for (int i = 0; i < Game.LeftoverCups.Count; i++)
             {
                 LeftoverCup c = Game.LeftoverCups[i];
                 if (c == null || !c.IsCollectable) continue;
                 // Điểm gần hơn trong hai: thân ly và bong bóng phía trên
                 Vector3 p = c.transform.position;
-                Vector2 a = cam.WorldToScreenPoint(p + Vector3.up * 0.15f);
+                Vector3 sa = cam.WorldToScreenPoint(p + Vector3.up * 0.15f);
+                Vector2 a = sa;
                 Vector2 b = cam.WorldToScreenPoint(p + Vector3.up * 0.55f);
                 assistCups.Add(c);
                 assistPoints.Add((a - screenPos).sqrMagnitude <= (b - screenPos).sqrMagnitude ? a : b);
+                assistDepths.Add(sa.z);
             }
-            int idx = TapAssistRules.Nearest(screenPos, assistPoints, TapAssistRules.RadiusPx(Screen.height));
+            int idx = TapAssistRules.Nearest(screenPos, assistPoints, TapAssistRules.RadiusPx(Screen.height), assistDepths);
             return idx < 0 ? null : assistCups[idx];
         }
 

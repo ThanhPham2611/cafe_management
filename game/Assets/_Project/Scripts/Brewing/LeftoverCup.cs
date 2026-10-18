@@ -95,6 +95,7 @@ namespace Cafe
         /// Kho ly và tiền ve chai do chủ quán xử lý khi về tới xe đẩy.
         public void PickUp()
         {
+            Audio.Play(Sfx.CupPick);
             game.LeftoverCups.Remove(this);
             if (seat != null && seat.Cup == this) seat.Cup = null;
             Destroy(gameObject);
@@ -108,6 +109,7 @@ namespace Cafe
             {
                 game.Wallet.Earn(GameBalance.ScrapXu);
                 if (game.Day.Summary != null) game.Day.Summary.scrap += GameBalance.ScrapXu;
+                Audio.Play(Sfx.ScrapCoin);
             }
             game.LeftoverCups.Remove(this);
             if (seat != null && seat.Cup == this) seat.Cup = null;

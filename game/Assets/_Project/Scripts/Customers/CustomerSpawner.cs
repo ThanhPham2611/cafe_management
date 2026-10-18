@@ -134,7 +134,8 @@ namespace Cafe
             if (game.Day.CurrentPhase == DayCycle.Phase.Open)
             {
                 float t = game.Day.Elapsed;
-                bool throttled = ThrottleEnabled && !TutorialGate.Active;
+                // Chặn sinh khách chỉ ở cấp 1-2 (chủ quán pha một mình): ở cấp 3 bot đo kém đi (economy §24.3)
+                bool throttled = ThrottleEnabled && !TutorialGate.Active && game.Tier != null && game.Tier.Current < 3;
                 if (throttled && next < schedule.Length && schedule[next] <= t - delay)
                 {
                     // Quán nghẽn: khách tiếp theo chờ ngoài cửa (dời lịch, tối đa ThrottleMaxDelay)
@@ -185,6 +186,7 @@ namespace Cafe
             scheduledRegular = null;
             c.Init(game, regular);
             active.Add(c);
+            Audio.Play(Sfx.DoorChime, 0.6f, false);
         }
 
         /// Hướng dẫn: thả thêm một khách ngoài lịch (khách kịch bản đã bỏ về). Không đụng tới hạn mức của TutorialGate.

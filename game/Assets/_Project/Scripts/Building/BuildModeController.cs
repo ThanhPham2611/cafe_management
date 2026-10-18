@@ -38,7 +38,7 @@ namespace Cafe
         private Mode mode;
         private readonly Action<Vector2> tapHandler;
         private MaterialPropertyBlock mpb; // tạo trong Awake: Unity cấm tạo trong field initializer của MonoBehaviour
-        private readonly RaycastHit[] hits = new RaycastHit[24];
+        private readonly RaycastHit[] hits = new RaycastHit[64];
         private readonly List<Transform> ignore = new List<Transform>(2);
         private Camera cam;
         private Material fxMat;
@@ -152,6 +152,7 @@ namespace Cafe
             mode = Mode.Browse;
             gridVisual.SetActive(true);
             TapInput.TapOverride = tapHandler;
+            if (game.CameraRig != null) game.CameraRig.SetBuildFloor(true); // kéo thả theo lưới cần nhìn từ trên
             Raise();
         }
 
@@ -165,6 +166,7 @@ namespace Cafe
             open = false;
             if (gridVisual != null) gridVisual.SetActive(false);
             if (TapInput.TapOverride == tapHandler) TapInput.TapOverride = null;
+            if (game.CameraRig != null) game.CameraRig.SetBuildFloor(false);
             Raise();
         }
 
@@ -346,6 +348,7 @@ namespace Cafe
                 if (game.Missions != null) game.Missions.RecordPurchase();
             }
             if (fromInventory && !isMove && game.Tier != null) game.Tier.TakeFromInventory(gdef.id);
+            Audio.Play(Sfx.BuildPlace);
             Vector3 fx = pf.WorldBounds.center + Vector3.up * 0.8f;
             DestroyGhost();
             StopDrag();
@@ -431,6 +434,7 @@ namespace Cafe
             grid.Remove(pf);
             RebuildNav();
             game.Wallet.Earn(value);
+            Audio.Play(Sfx.Sell);
             UiFx.FloatText(fx, "+" + Strings.FormatInt(value), HudBuilder.Accent);
             AfterChange(value);
         }
@@ -697,7 +701,8 @@ namespace Cafe
             float y = grid.Origin.y + (GridSystem.IsMount(pointDef) ? grid.CounterTopY : 0f);
             var plane = new Plane(Vector3.up, new Vector3(0f, y, 0f));
             float d;
-            if (!plane.Raycast(r, out d)) return false;
+            if (r.direction.y > -0.15f) return false; // tia gần song song mặt sàn: giao điểm vô nghĩa (đã có sàn góc nghiêng, đây là chốt chặn)
+            if (!plane.Raycast(r, out d) || d > 80f) return false;
             p = r.GetPoint(d);
             return true;
         }

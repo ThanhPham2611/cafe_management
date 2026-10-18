@@ -136,13 +136,20 @@ namespace Cafe
         {
             if (index >= game.Missions.Items.Count) return;
             string reward = MissionStrings.Reward(game.Missions.Items[index]);
-            if (game.Missions.Claim(index)) UiFx.FloatTextTop(reward, HudBuilder.Accent);
+            if (game.Missions.Claim(index))
+            {
+                Audio.Play(Sfx.Claim);
+                UiFx.FloatTextTop(reward, HudBuilder.Accent);
+            }
         }
 
         private void OnChest()
         {
             if (game.Missions.ClaimChest())
+            {
+                Audio.Play(Sfx.Chest);
                 UiFx.FloatTextTop(string.Format(MissionStrings.ChestOpenedFmt, MissionBook.ChestGems, Mathf.RoundToInt(MissionBook.ChestRp)), HudBuilder.Accent);
+            }
         }
 
         private void OnCompleted(int index)

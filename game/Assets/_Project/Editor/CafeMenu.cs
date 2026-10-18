@@ -34,6 +34,7 @@ namespace Cafe.EditorTools
             BrandingSetup.Apply();
             BuildScene();
             BootSceneBuilder.Build();
+            AudioLibraryBuilder.Ensure();
             AssetDatabase.SaveAssets();
             Debug.Log("[Cafe] Setup All xong.");
         }

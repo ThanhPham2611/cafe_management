@@ -9,12 +9,12 @@ namespace Cafe
     /// Chạm nhanh không kéo vẫn thuộc về TapInput (cùng ngưỡng DragThresholdPx).
     public class CafeCameraController : MonoBehaviour
     {
-        public const float MinPitch = 30f;
-        public const float MaxPitch = 70f;
+        public const float MinPitch = CameraRules.HardMinPitch;   // 6°: nhìn ngang tầm mắt (nút Góc nhìn / kéo dọc)
+        public const float MaxPitch = CameraRules.MaxPitch;
         public const float MinDistance = 5f;
         public const float MaxDistance = 15f;       // mặc định (phòng nhỏ); SetBounds nới ra cho phòng lớn hơn
 
-        const float DefaultPitch = 48f;
+        const float DefaultPitch = CameraRules.DefaultPitch;
         const float DefaultDistance = 11f;
         const float DefaultYaw = 0f;
         // Chống chóng mặt (đánh giá 2026-10-15): xoay chậm hơn, quán tính ngắn, lọc tốc độ ngón theo thời gian thực
@@ -26,7 +26,7 @@ namespace Cafe
         const float TwistDeadzone = 10f;      // chụm 2 ngón chỉ xoay khi đã xoay hơn ngần này độ
         const float MaxDegPerFrame = 8f;      // trần xoay mỗi khung: 30 FPS không quá 240 độ/giây, khựng khung không làm nhảy góc
         const float SnapDeg = 45f;            // "Giảm chuyển động": thả tay thì dính góc
-        const float PivotHeight = 0.35f;      // nhìn vào ngang mặt bàn, không phải mặt đất
+        const float PivotHeight = CameraRules.PivotYTop;      // nhìn vào ngang mặt bàn, không phải mặt đất (góc thấp thì nâng lên: CameraRules.PivotY)
 
         private Camera cam;
         private Transform camTransform;
@@ -40,6 +40,10 @@ namespace Cafe
         private float insetVelocity;          // SmoothDamp của lens shift
         private float twistSum;               // góc 2 ngón đã xoay từ lúc chạm (để qua vùng chết)
         private bool twisting;
+
+        // Khoá trục kéo: quyết một lần cho cả cử chỉ (ngang = chỉ xoay, dọc = nghiêng)
+        private Vector2 dragTotal;
+        private CameraRules.DragAxis dragAxis;
 
         // Trạng thái 1 con trỏ (1 ngón hoặc chuột trái)
         private bool orbitTracking, orbiting;
@@ -59,6 +63,49 @@ namespace Cafe
 
         // Phần dưới màn hình bị UI che (0..1 chiều cao): dịch khung hình lên để quán không bị che
         private float bottomInset, bottomInsetTarget;
+
+        /// Góc nghiêng đang áp dụng (độ).
+        public float Pitch { get { return pitch; } }
+        /// Khoảng cách zoom đang áp dụng (m), chưa nhân hệ số rút gần khi nhìn ngang.
+        public float Distance { get { return distance; } }
+        /// Chế độ xây / hướng dẫn: không cho nghiêng thấp hơn ngưỡng (CameraRules.BuildMinPitch / TutorialMinPitch).
+        public bool TutorialFloor { get; set; }
+        private bool buildFloor;
+        private float pitchBeforeBuild;
+
+        /// Mở / đóng chế độ xây: nâng góc nhìn lên tối thiểu 38° (kéo thả theo lưới cần nhìn từ trên), đóng thì trả về góc cũ
+        /// nếu người chơi không tự đổi trong lúc xây.
+        public void SetBuildFloor(bool on)
+        {
+            if (on == buildFloor) return;
+            buildFloor = on;
+            if (on)
+            {
+                pitchBeforeBuild = pitchTarget;
+                return;
+            }
+            if (pitchTarget <= CameraRules.BuildMinPitch + 0.5f) pitchTarget = Mathf.Clamp(pitchBeforeBuild, MinPitchNow, MaxPitch);
+        }
+
+        private float MinPitchNow { get { return CameraRules.MinPitch(buildFloor, TutorialFloor); } }
+
+        /// Đặt góc nghiêng theo mức nhìn (Trên 62° / Chéo 48° / Ngang 8°). "Giảm chuyển động": nhảy thẳng, không lướt.
+        public void SetPitchPreset(float deg)
+        {
+            pitchTarget = Mathf.Clamp(deg, MinPitchNow, MaxPitch);
+            if (GraphicsQuality.ReduceMotion) pitch = pitchTarget;
+        }
+
+        /// Chuyển vòng Trên -> Chéo -> Ngang; trả về mức mới (độ).
+        public float CycleView()
+        {
+            float next = CameraRules.NextPreset(pitchTarget);
+            SetPitchPreset(next);
+            return next;
+        }
+
+        /// Chỉ mục mức nhìn gần nhất: 0 Trên, 1 Chéo, 2 Ngang.
+        public int ViewIndex { get { return CameraRules.PresetIndex(pitchTarget); } }
 
         /// Build mode đặt true khi đang kéo đồ: camera bỏ qua 1 ngón/chuột trái (vẫn zoom/pan 2 ngón).
         public bool InputBlocked { get; set; }
@@ -85,6 +132,7 @@ namespace Cafe
 
             transform.position = new Vector3(gridBounds.center.x, PivotHeight, gridBounds.center.z);
             camTransform.SetParent(transform, false);
+            camera.farClipPlane = Mathf.Max(camera.farClipPlane, 100f); // nhìn ngang thấy xa hơn
             Apply();
         }
 
@@ -103,8 +151,7 @@ namespace Cafe
             if (viewDistance > 0f)
             {
                 distance = distanceTarget = Mathf.Clamp(viewDistance, MinDistance, maxDistance);
-                yaw = yawTarget = DefaultYaw;
-                pitch = pitchTarget = DefaultPitch;
+                yaw = yawTarget = DefaultYaw;   // giữ nguyên góc nghiêng người chơi đang dùng (không tự đưa về 48° khi lên cấp)
                 yawVelocity = 0f;
             }
         }
@@ -137,7 +184,7 @@ namespace Cafe
                 float target = Mathf.Atan2(-viewFromDir.x, -viewFromDir.z) * Mathf.Rad2Deg;
                 yawTarget = yaw + Mathf.DeltaAngle(yaw, target);
             }
-            pitchTarget = Mathf.Clamp(pitchDeg, 5f, MaxPitch);
+            pitchTarget = Mathf.Clamp(pitchDeg, CameraRules.HardMinPitch, MaxPitch);
             distanceTarget = Mathf.Max(1.5f, distance);
             inertiaYaw = 0f;
             // nhân vật nằm bên phải tâm màn hình: dịch pivot sang trái (theo trục phải của camera)
@@ -186,12 +233,28 @@ namespace Cafe
                 inertiaYaw *= Mathf.Exp(-InertiaDamping * idt);
             }
             else if (!orbiting) inertiaYaw = 0f;
+            if (pitchTarget < MinPitchNow) pitchTarget = MinPitchNow;   // sàn góc nghiêng của chế độ xây / hướng dẫn nâng lên êm qua lerp
             ClampPivot();
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// Chỉ bản Development: ép góc camera (-campitch / -camyaw / -camdist, -shotangles của DebugAutoPilot) để chụp ảnh kiểm tra góc thấp.
+        public static bool DebugOn;
+        public static float DebugYaw, DebugPitch = 48f, DebugDistance = 9f;
+#endif
 
         private void LateUpdate()
         {
             if (cam == null) return;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (DebugOn)
+            {
+                yaw = yawTarget = DebugYaw;
+                pitch = pitchTarget = DebugPitch;
+                distance = distanceTarget = DebugDistance;
+                yawVelocity = 0f;
+            }
+#endif
             float dt = Time.unscaledDeltaTime;
             // Đang kéo / văng thì bám sát ngón (0,03 s); nhảy rời rạc (nút xoay, FocusOn) thì êm hơn (0,12 s)
             float smooth = (orbiting || inertiaYaw != 0f) ? 0.03f : 0.12f;
@@ -219,10 +282,14 @@ namespace Cafe
 
         private void Apply()
         {
+            // Tâm xoay nâng dần lên ngang đầu nhân vật khi nhìn ngang (CameraRules.PivotY)
+            Vector3 pos = transform.position;
+            pos.y = PivotYNow;
+            transform.position = pos;
             transform.rotation = Quaternion.Euler(0f, yaw, 0f);
             Quaternion tilt = Quaternion.Euler(pitch, 0f, 0f);
             camTransform.localRotation = tilt;
-            camTransform.localPosition = tilt * new Vector3(0f, 0f, -distance);
+            camTransform.localPosition = tilt * new Vector3(0f, 0f, -distance * CameraRules.DistanceFactor(pitch));
         }
 
         // ---------------------------------------------------------------- 1 con trỏ: xoay / nghiêng
@@ -248,6 +315,8 @@ namespace Cafe
         {
             orbitTracking = !overUI;
             orbiting = false;
+            dragTotal = Vector2.zero;
+            dragAxis = CameraRules.DragAxis.Undecided;
             startPos = lastPos = pos;
             lastYawSpeed = 0f;
             inertiaYaw = 0f;
@@ -267,11 +336,18 @@ namespace Cafe
             Vector2 d = (pos - lastPos) * PixelScale();
             lastPos = pos;
             if (calm) d *= 0.5f;
-            float dYaw = d.x * YawDegPerPixel;
+            // Trục của cả cử chỉ quyết một lần theo tổng quãng đường: vuốt ngang chỉ xoay (không bao giờ nghiêng), vuốt dọc mới nghiêng
+            if (dragAxis == CameraRules.DragAxis.Undecided)
+            {
+                dragTotal += d;
+                dragAxis = CameraRules.DecideAxis(dragTotal, TapInput.DragThresholdPx * 2f * PixelScale());
+            }
+            bool tilt = dragAxis == CameraRules.DragAxis.Pitch;
+            float dYaw = d.x * YawDegPerPixel * (tilt ? 0.3f : 1f);
             yawTarget += dYaw;
-            // Vuốt ngang không được làm nghiêng camera; "Giảm chuyển động" khóa hẳn độ nghiêng
-            if (!calm && Mathf.Abs(d.x) <= Mathf.Abs(d.y) * 1.5f)
-                pitchTarget = Mathf.Clamp(pitchTarget - d.y * PitchDegPerPixel, MinPitch, MaxPitch);
+            // "Giảm chuyển động" khóa hẳn độ nghiêng khi kéo (đổi góc bằng nút Góc nhìn)
+            if (!calm && tilt)
+                pitchTarget = Mathf.Clamp(pitchTarget - d.y * PitchDegPerPixel * CameraRules.DragPitchScale(pitchTarget), MinPitchNow, MaxPitch);
 
             // Tốc độ ngón lọc với hằng số 60 ms thật, không phụ thuộc FPS (cảm ứng lấy mẫu 60 Hz, màn hình có thể 120 Hz)
             float dt = Mathf.Clamp(Time.unscaledDeltaTime, 1f / 240f, 1f / 20f);
@@ -375,17 +451,19 @@ namespace Cafe
             Quaternion flat = Quaternion.Euler(0f, yaw, 0f);
             Vector3 right = flat * Vector3.right;
             Vector3 fwd = flat * Vector3.forward;
-            float sinPitch = Mathf.Max(0.3f, Mathf.Sin(pitch * Mathf.Deg2Rad));
-            Vector3 move = right * (deltaPixels.x * worldPerPixel) + fwd * (deltaPixels.y * worldPerPixel / sinPitch);
+            Vector3 move = right * (deltaPixels.x * worldPerPixel) + fwd * (deltaPixels.y * worldPerPixel * CameraRules.PanForwardScale(pitch));
             transform.position -= move;
         }
+
+        /// Đang tiêu điểm (màn tạo nhân vật) thì giữ 0,35 vì khung hình đã chỉnh theo đó.
+        private float PivotYNow { get { return focusSaved ? PivotHeight : CameraRules.PivotY(pitch); } }
 
         private void ClampPivot()
         {
             Vector3 p = transform.position;
             p.x = Mathf.Clamp(p.x, panRect.xMin, panRect.xMax);
             p.z = Mathf.Clamp(p.z, panRect.yMin, panRect.yMax);
-            p.y = PivotHeight;
+            p.y = PivotYNow;
             transform.position = p;
         }
     }

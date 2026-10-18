@@ -1086,4 +1086,16 @@ Tương tự §23.7, 100 ngày, cờ `-autoplay -autoprep -autobuy -autohidden -
 | Ngày 81–100: mất khách / ngày | — | 176 |
 | Exception | 0 | 0 |
 
-**Chưa đạt ở cấp 3** (phục vụ −16%, lãi −37%); cấp 1–2 giữ nhịp tiến độ (ngày 7, 46). Chưa tách được nguyên nhân giữa đường cong đến, chặn sinh khách (ngưỡng "chờ món ≥ ghế/2" dễ chạm liên tục khi bot có 20–36 đơn chờ) và `NoSeatSeconds` 20. Việc cần làm: chạy lại với `-nothrottle`, hoặc chỉ áp chặn sinh khách ở cấp 1–2 (nơi chủ quán là người pha duy nhất và người chơi thấy "gấp"). Số đo một lần có nhiễu theo ngày ±2.000 Xu; so trung bình, không so ngày chính xác.
+**Chưa đạt ở cấp 3** (phục vụ −16%, lãi −37%; xem 24.4 cho lần chạy `-nothrottle`); cấp 1–2 giữ nhịp tiến độ (ngày 7, 46). Chưa tách được nguyên nhân giữa đường cong đến, chặn sinh khách (ngưỡng "chờ món ≥ ghế/2" dễ chạm liên tục khi bot có 20–36 đơn chờ) và `NoSeatSeconds` 20. Việc cần làm: chạy lại với `-nothrottle`, hoặc chỉ áp chặn sinh khách ở cấp 1–2 (nơi chủ quán là người pha duy nhất và người chơi thấy "gấp"). Số đo một lần có nhiễu theo ngày ±2.000 Xu; so trung bình, không so ngày chính xác.
+
+### 24.4 Tách nguyên nhân: chạy lại với `-nothrottle` (2026-10-17)
+Cùng cấu hình 24.2, thêm `-nothrottle` (vẫn có đường cong khách đến, `NoSeatSeconds` 20, giữ nút ngắn hơn). Mỗi cấu hình một lần chạy.
+
+| | Mốc §23.7 | Có chặn sinh khách | `-nothrottle` |
+|---|---|---|---|
+| Lên Mặt bằng / Nhà hàng sau ngày | 7 / 44 | 7 / 46 | 7 / 47 |
+| Ngày 1–10: phục vụ / lãi | — | 24,7 / 2.145 | 25,1 / 2.071 |
+| Ngày 60–80: phục vụ / lãi / RP | — / 3.721 / +26 | 50,7 / 3.183 / +13 | 62,1 / 3.639 / +29 |
+| Ngày 81–100: phục vụ / lãi / RP | 72,7 / 4.545 / +48 | 61,0 / 2.867 / +35 | 66,2 / 3.387 / +27 |
+
+Kết luận: chặn sinh khách gây khoảng một nửa phần tụt ở cấp 3 (≈ −5 khách, −520 Xu/ngày); cấp 1–2 không khác biệt đáng kể. **Đã chỉnh:** chặn sinh khách chỉ áp ở cấp 1–2 (`CustomerSpawner`). Phần tụt còn lại (≈ −6,5 khách, −1.160 Xu/ngày so với mốc cũ) chưa tách được giữa đường cong khách đến, `NoSeatSeconds` 20 và nhiễu một lần chạy; nếu muốn khép lại thì chạy tiếp một lần với đường cong phẳng (`ArrivalDensity` toàn 1) hoặc `NoSeatSeconds` = 10.

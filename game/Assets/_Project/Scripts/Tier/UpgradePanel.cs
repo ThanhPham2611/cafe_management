@@ -379,6 +379,7 @@ namespace Cafe
         /// Pháo giấy; withBanner: kèm biểu ngữ lớn (mặc định "Khai trương!", hoặc bannerText).
         public void PlayConfetti(bool withBanner = true, string bannerText = null)
         {
+            Audio.Play(Sfx.Fanfare);
             EnsureConfetti();
             Vector2 size = confettiLayer.rect.size;
             if (size.x < 10f || size.y < 10f) size = new Vector2(1920f, 1080f);

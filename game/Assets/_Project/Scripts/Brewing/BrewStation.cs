@@ -142,6 +142,7 @@ namespace Cafe
                     Finish();
                     return TapResult.Done;
                 }
+                Audio.Play(Sfx.StepOk);
                 Raise();
                 return TapResult.Ok;
             }
@@ -165,6 +166,7 @@ namespace Cafe
             if (TutorialGate.NoPenalty) // hướng dẫn: sai bước chỉ nhắc, không tính lỗi
             {
                 GameEvents.RaiseToast(TutorialStrings.WrongHint);
+                Audio.Play(Sfx.StepWrong);
                 return TapResult.Wrong;
             }
             Wrong++;
@@ -174,6 +176,7 @@ namespace Cafe
                 return TapResult.Ruined;
             }
             GameEvents.RaiseToast(Strings.Wrong);
+            Audio.Play(Sfx.StepWrong);
             Raise();
             return TapResult.Wrong;
         }
@@ -195,6 +198,7 @@ namespace Cafe
             State = Phase.Ready;
             Selected = null;
             GameEvents.RaiseToast(Strings.BrewDone);
+            Audio.Play(Sfx.BrewDone);
             Raise();
         }
 
@@ -203,6 +207,7 @@ namespace Cafe
             // Mất nguyên liệu, ly sạch được giữ lại
             game.Stock.Return();
             GameEvents.RaiseToast(Strings.Ruined);
+            Audio.Play(Sfx.Ruin);
             State = Phase.Idle;
             NextIndex = 0;
             Wrong = 0;

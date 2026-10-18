@@ -302,6 +302,7 @@ namespace Cafe
         public bool Serve(int servedQuality)
         {
             if (State != CustomerState.WaitOrder || order == null) return false;
+            Audio.Play(Sfx.Serve, 1f, false);
             quality = Mathf.Clamp(servedQuality, 1, 3);
             game.Orders.Remove(order);
             order = null;
@@ -421,6 +422,7 @@ namespace Cafe
             else if (reason == LostReason.NoSeat) Bark("leaving_angry", 0.3f);
             if (penalty)
             {
+                Audio.Play(Sfx.CustomerAngry, 1f, false);
                 visual.SetPose(CustomerPose.Angry);
                 float delta = reason == LostReason.NoSeat ? GameBalance.WalkAwayRpNoSeat : GameBalance.WalkAwayRp;
                 if (delta != 0f)
@@ -489,6 +491,7 @@ namespace Cafe
         public void OnTap()
         {
             if (State != CustomerState.WaitOrder || order == null) return;
+            Audio.Play(Sfx.CustomerTap);
             if (order.IsClaimed)
             {
                 GameEvents.RaiseToast(Strings.OrderTakenByBrewer);
