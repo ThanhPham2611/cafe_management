@@ -57,6 +57,10 @@ namespace Cafe
         private const float HolePad = 14f;
         private const float CompactW = 420f;
         private const float CompactH = 340f;
+        private const float MinSideW = 300f;   // dải cạnh bảng hẹp hơn mức này thì đặt thẻ ở đáy màn hình
+        private const float BottomW = 600f;    // thẻ ở đáy màn hình khi bảng modal (tổng kết) đang mở
+        private const float BottomH = 220f;
+        private const float BottomMargin = 16f;
         private static readonly Color DimColor = new Color(0f, 0f, 0f, 0.62f);
 
         private static Sprite fallbackDot;
@@ -443,14 +447,29 @@ namespace Cafe
                 hasAvoid = ax1 - ax0 > 2f && ay1 - ay0 > 2f;
             }
 
+            // Bảng modal (tổng kết) đang mở: thẻ không bao giờ đè lên số liệu (hud_visual_polish §6).
+            // 1) dải trống cạnh bảng (co thẻ cho vừa, tối thiểu MinSideW); 2) đáy màn hình, né vùng chỉ.
             float sideX = 0f;
+            float sideW = CompactW;
             bool compact = hasAvoid && TutorialRules.PickSideCenterX(ax0, ax1, cw, CompactW, 10f, out sideX);
+            if (hasAvoid && !compact)
+            {
+                sideW = Mathf.Min(CompactW, TutorialRules.SideFreeWidth(ax0, ax1, cw, 10f));
+                compact = sideW >= MinSideW && TutorialRules.PickSideCenterX(ax0, ax1, cw, sideW, 10f, out sideX);
+            }
             if (compact)
             {
-                SetCardSize(CompactW, CompactH);
+                SetCardSize(sideW, CompactH);
                 float cy = hasHole ? (y0 + y1) * 0.5f : ch * 0.35f;
                 float yMaxC = Mathf.Clamp(cy + CompactH * 0.5f, CompactH + 24f, ch - TutorialRules.TopInset);
                 card.anchoredPosition = new Vector2(sideX - cw * 0.5f, -(ch - yMaxC));
+            }
+            else if (hasAvoid)
+            {
+                float w = Mathf.Min(BottomW, cw - 2f * BottomMargin);
+                SetCardSize(w, BottomH);
+                float cx = TutorialRules.PickBottomCenterX(hasHole, x0, x1, cw, w, BottomMargin);
+                card.anchoredPosition = new Vector2(cx - cw * 0.5f, -(ch - (BottomMargin + BottomH)));
             }
             else
             {

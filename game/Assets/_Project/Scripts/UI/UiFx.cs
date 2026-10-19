@@ -9,6 +9,9 @@ namespace Cafe
     {
         private static FloatLayer layer;
 
+        /// Độ cao (pixel màn hình) đặt toast chung: ngay trên mép bàn pha (HudController cập nhật mỗi khung). <= 0 = chỗ cũ giữa-trên.
+        public static float ToastScreenY;
+
         internal static void Register(FloatLayer l)
         {
             layer = l;
@@ -42,9 +45,9 @@ namespace Cafe
             if (sp.z <= 0.1f) return;
             GameBootstrap g = GameBootstrap.Instance;
             if (g != null && g.Hud != null) sp.x = g.Hud.PushRightOfOrderCards(new Vector2(sp.x, sp.y));
-            // Hộp chữ rộng ~520 đơn vị: giữ nó trong màn hình (khách sát mép không bị cắt chữ), không chạm hàng chip trên cùng
+            // Bong bóng rộng tối đa ~430 đơn vị, neo đáy: giữ trong màn hình (khách sát mép không bị cắt chữ), không chạm hàng chip trên cùng
             sp.x = Mathf.Clamp(sp.x, Screen.width * 0.2f, Screen.width * 0.8f);
-            sp.y = Mathf.Min(sp.y, Screen.height * 0.82f);
+            sp.y = Mathf.Min(sp.y, Screen.height * 0.74f);
             layer.SpawnBark(new Vector2(sp.x, sp.y), text, color);
         }
 
@@ -54,7 +57,13 @@ namespace Cafe
             if (layer != null) layer.Spawn(screenPos, text, color);
         }
 
-        /// Chữ nổi ở giữa-trên màn hình (dưới thanh chip) cho thông báo chung.
+        /// Banner ruy-băng vàng dưới thanh chip ("LÊN LEVEL 2! +180 Xu"), tự ẩn sau 2 s, không chặn chạm.
+        public static void Banner(string text)
+        {
+            if (layer != null) layer.ShowBanner(text);
+        }
+
+        /// Chữ nổi cho thông báo chung: chữ nhỏ, ngay trên mép bàn pha (ToastScreenY), không chặn chạm.
         public static void FloatTextTop(string text, Color color)
         {
             if (layer != null) layer.SpawnTop(text, color);

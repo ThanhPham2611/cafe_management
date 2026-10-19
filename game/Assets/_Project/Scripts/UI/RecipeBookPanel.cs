@@ -19,7 +19,7 @@ namespace Cafe
         private const float CardGap = 12f;
         private const float BtnW = 300f;
         private const float BtnH = 96f;
-        private const float ButtonX = -376f; // lệch trái tâm: trên mép bàn pha; ở canvas 1600 mép trái = 424 > 404 = mép phải cột "Đơn chờ"
+        private const float ButtonX = -525f; // mép trái dải bàn pha (rộng 1050); nút nhỏ cưỡi lên mép trên
         private const int MaxSteps = 6;
         private const int MaxTools = 3;
 
@@ -70,11 +70,13 @@ namespace Cafe
             this.game = game;
             this.brew = brew;
 
-            // --- Nút trên HUD, ngay trên mép bàn pha (Tick bám theo khi bàn pha trượt)
+            // --- Nút nhỏ ngay trên mép bàn pha, chỉ khi thử pha tự do / hướng dẫn trỏ vào (Tick bám theo khi bàn pha trượt).
+            // Bình thường Sổ công thức nằm trong MENU (hud_brew_redesign A3).
             Text lbl;
-            openButton = HudBuilder.AddLabelButton(parent, "RecipeBookButton", ClayStyle.Cream, RecipeStrings.Book, 36, Open, out lbl);
+            openButton = HudBuilder.AddLabelButton(parent, "RecipeBookButton", ClayStyle.Cream, RecipeStrings.Book, 26, Open, out lbl);
             openRt = (RectTransform)openButton.transform;
-            HudBuilder.SetFixed(openRt, new Vector2(0.5f, 0f), new Vector2(0f, 0f), new Vector2(ButtonX, 160f), new Vector2(340f, 112f));
+            HudBuilder.SetFixed(openRt, new Vector2(0.5f, 0f), new Vector2(0f, 0f), new Vector2(ButtonX, 160f), new Vector2(230f, 80f));
+            HudBuilder.Fit(lbl, 16);
 
             // Lối vào thường trực trong MENU (HudController gom nút này vào cột MENU theo tên)
             Text menuLbl;
@@ -86,6 +88,7 @@ namespace Cafe
             // --- Lớp phủ: nền mờ (chạm để đóng) + bảng
             RectTransform dim = HudBuilder.Panel(parent, "RecipeBookOverlay", new Color(0.1f, 0.06f, 0.04f, 0.55f), true);
             overlay = dim;
+            ModalMarker.Mark(dim.gameObject);
             HudBuilder.Stretch(dim);
             var dimBtn = dim.gameObject.AddComponent<Button>();
             dimBtn.transition = Selectable.Transition.None;
@@ -209,9 +212,9 @@ namespace Cafe
         public void Tick()
         {
             if (!visible || brew == null) return;
-            bool show = RecipeBookRules.ShowFloating(brew.Expanded, TipPinned(), IsOpen);
+            bool show = RecipeBookRules.ShowFloating(brew.Experimenting, TipPinned(), IsOpen);
             if (openButton.gameObject.activeSelf != show) openButton.gameObject.SetActive(show);
-            float y = brew.TopY + 14f;
+            float y = Mathf.Max(brew.TopY, 12f) + 8f;
             if (float.IsNaN(lastButtonY) || Mathf.Abs(y - lastButtonY) > 0.5f)
             {
                 lastButtonY = y;

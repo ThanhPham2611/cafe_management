@@ -18,9 +18,11 @@ namespace Cafe
         public int ComfortStyleTotal { get; private set; }
         /// F_ref theo cấp quán (T1 20, T2 60): TierManager đặt khi tạo/đổi lưới.
         public float FRef = GameBalance.FRefTier1;
+        /// Điểm Style của sơn tường + sàn sảnh (DecorCatalog.StyleBonus): TierManager đặt. Tính vào F của sảnh, vẫn chặn ở 1.
+        public int DecorBonus;
         public float FurnitureScore
         {
-            get { return Mathf.Clamp01(ComfortStyleTotal / Mathf.Max(1f, FRef)); }
+            get { return Mathf.Clamp01((ComfortStyleTotal + DecorBonus) / Mathf.Max(1f, FRef)); }
         }
 
         public event System.Action LayoutChanged;
@@ -69,7 +71,8 @@ namespace Cafe
         public float FurnitureScoreIn(ZoneId zone)
         {
             if (Zones == null) return FurnitureScore;
-            return Mathf.Clamp01(ComfortStyleIn(zone) / Mathf.Max(1f, Zones.IsOpen(zone) ? ZoneInfo.FRef(zone, FRef) : FRef));
+            int bonus = zone == ZoneId.Hall ? DecorBonus : 0;
+            return Mathf.Clamp01((ComfortStyleIn(zone) + bonus) / Mathf.Max(1f, Zones.IsOpen(zone) ? ZoneInfo.FRef(zone, FRef) : FRef));
         }
 
         /// F của khu chứa ghế (khách tính tip / hài lòng theo khu mình ngồi).
@@ -125,6 +128,50 @@ namespace Cafe
                 if (d != null && d.machineId == machineId) return true;
             }
             return false;
+        }
+
+        /// Số quầy pha phụ đang đặt (FurnitureDef.brewSpots > 0).
+        public int BrewStationCount
+        {
+            get
+            {
+                int n = 0;
+                for (int i = 0; i < Placed.Count; i++)
+                {
+                    FurnitureDef d = Placed[i] != null ? Placed[i].Def : null;
+                    if (d != null && d.brewSpots > 0) n++;
+                }
+                return n;
+            }
+        }
+
+        /// Tổng chỗ ly cộng thêm cho kệ giao từ các quầy line đang đặt (FurnitureDef.shelfSlots).
+        public int ShelfSlotsTotal
+        {
+            get
+            {
+                int n = 0;
+                for (int i = 0; i < Placed.Count; i++)
+                {
+                    FurnitureDef d = Placed[i] != null ? Placed[i].Def : null;
+                    if (d != null && d.shelfSlots > 0) n += d.shelfSlots;
+                }
+                return n;
+            }
+        }
+
+        /// Điểm đứng (thế giới, mặt đất, chưa bám NavMesh) của mọi chỗ làm ở quầy pha phụ, theo thứ tự đặt quầy. Phía nhân viên
+        /// là transform.forward của quầy, giống chỗ chủ quán đứng ở quầy chính (OwnerController.ComputeCart).
+        public List<Vector3> BrewSpots()
+        {
+            var list = new List<Vector3>(4);
+            for (int i = 0; i < Placed.Count; i++)
+            {
+                PlacedFurniture p = Placed[i];
+                if (p == null || p.Def == null || p.Def.brewSpots <= 0) continue;
+                StationRules.AppendSpots(list, p.transform.position, p.transform.rotation, p.Def.footprint, p.Def.brewSpots);
+            }
+            return list;
         }
 
         public bool InBounds(Vector2Int c)

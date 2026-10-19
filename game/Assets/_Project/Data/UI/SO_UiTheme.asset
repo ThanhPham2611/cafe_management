@@ -47,7 +47,31 @@ MonoBehaviour:
   iconCheck: {fileID: 21300000, guid: 399cea9a8e8a9e1418c824baaa2fa4be, type: 3}
   iconCross: {fileID: 21300000, guid: 61d123dfc8b20b447b3188333117fe92, type: 3}
   iconHeart: {fileID: 21300000, guid: f15be25140a10ca419459f5d2070117c, type: 3}
-  iconBroom: {fileID: 0}
+  iconBroom: {fileID: 21300000, guid: e8f08dfd0ae542f7b29cc70d5b73ba26, type: 3}
+  iconMenu: {fileID: 21300000, guid: 0701d449b8ad4fd6bd7dd228b720cfa0, type: 3}
+  iconShop: {fileID: 21300000, guid: dd2efae03227488daa42db5bdaf325d9, type: 3}
+  iconBook: {fileID: 21300000, guid: d3f84991cc51440d9db0cc8cff28bb44, type: 3}
+  iconMission: {fileID: 21300000, guid: c12b57e5f07349b1a9314048a17fc7cc, type: 3}
+  iconStaff: {fileID: 21300000, guid: 3fa495d7b04146669393d2bf648eb661, type: 3}
+  iconHome: {fileID: 21300000, guid: ab613708eee2410baec9deb575da015e, type: 3}
+  iconClose: {fileID: 21300000, guid: 10282665118649b1802155c40edb59e4, type: 3}
+  gaugeGlass: {fileID: 21300000, guid: 701857e4ade54b73915c884260acc9ef, type: 3}
+  gaugeMask: {fileID: 21300000, guid: 01c5958c60f84a1fbc6a126fdf56f0d6, type: 3}
+  badge: {fileID: 21300000, guid: b587412fb14c4189b199004336fe7c9f, type: 3}
+  tag: {fileID: 21300000, guid: 3edcf2f83f7249e0932dd22dde70fb7d, type: 3}
+  arrowDown: {fileID: 21300000, guid: 2427c8fe0fbb40e88b99a07d34c1a076, type: 3}
+  sparkle: {fileID: 21300000, guid: fbc1c4d2b9314d059ce32aff6314d665, type: 3}
+  iconDuong: {fileID: 21300000, guid: 1e7700fc9376482eb2c1f931728454c8, type: 3}
+  iconMuoi: {fileID: 21300000, guid: 4625aeb1114247479fb2a47e75e9b5c5, type: 3}
+  iconKemMuoi: {fileID: 21300000, guid: 670167dbc23f4a7999b1e38bdd119a14, type: 3}
+  iconCotDua: {fileID: 21300000, guid: 641ff42024bd4649bf3f6f8af16580cd, type: 3}
+  iconTrung: {fileID: 21300000, guid: 787bfa88943a42e383a802a5a728cd79, type: 3}
+  iconChanh: {fileID: 21300000, guid: 75b757715e824140afb9ff15a0d816ea, type: 3}
+  iconLac: {fileID: 21300000, guid: 8eb63b5cac4e4f72a90f8067b2fb6a9f, type: 3}
+  iconDanh: {fileID: 21300000, guid: fa43e7968a924844af04d9a5e46a5b7f, type: 3}
+  iconCacao: {fileID: 21300000, guid: d259bc53cae545e6a350aa38f421c0dd, type: 3}
+  logoWide: {fileID: 21300000, guid: 4f99202eb872d034c8842b7212a88eb5, type: 3}
+  tutorialHand: {fileID: 21300000, guid: 008dde7caf783854a95135230a5ccca5, type: 3}
   cream: {r: 1, g: 0.95686275, b: 0.8627451, a: 1}
   creamDark: {r: 0.9372549, g: 0.8901961, b: 0.78431374, a: 1}
   coffee: {r: 0.2901961, g: 0.17254902, b: 0.11764706, a: 1}

@@ -193,6 +193,14 @@ namespace Cafe
 
         public const string CupName = "Ly";
         public const string DayChipFmt = "Ngày {0}";
+        // HUD gọn (docs/hud_brew_redesign_2026-10-18.md A2)
+        public const string DayTimeShortFmt = "N{0} · {1}";
+        public const string LevelShortFmt = "Lv {0}";
+        public const string GoalPillFmt = "{0} {1}%";
+        // HUD v2 (docs/hud_visual_polish_2026-10-18.md)
+        public const string OrdersTab = "ĐƠN";
+        public const string CupsOfFmt = "{0}/{1}";
+        public const string GoalPctFmt = "{0}%";
         public const string TipFmt = "Tip +{0}";
 
         // ---- Cấp quán / Thuê mặt bằng (Tier) ----
@@ -237,6 +245,29 @@ namespace Cafe
         public const string ZoneOpenedToastFmt = "Đã mở khu {0}!";
         public const string ZoneBlockedFmt = "Lối sang khu {0} đang bị đồ chặn: dọn một lối rộng 1 m ở tường sảnh rồi mở lại";
         public const string GrandOpening = "Khai trương!";
+
+        // ---- Trang trí: sơn tường / sàn (DecorCatalog, DecorPanel) ----
+        public const string DecorButton = "TRANG TRÍ";
+        public const string DecorTitle = "Trang trí quán";
+        public const string DecorTabWall = "Sơn tường";
+        public const string DecorTabFloor = "Sàn nhà";
+        public const string DecorInUse = "ĐANG DÙNG";
+        public const string DecorOwned = "Đã có";
+        public const string DecorUse = "DÙNG";
+        public const string DecorBuyXuFmt = "MUA {0} Xu";
+        public const string DecorBuyGemsFmt = "MUA {0} Hạt";
+        public const string DecorPriceXuFmt = "{0} Xu";
+        public const string DecorPriceGemsFmt = "{0} Hạt";
+        public const string DecorFree = "Miễn phí";
+        public const string DecorNeedLevelFmt = "Cần Lv{0}";
+        public const string DecorNeedTier = "Nhà hàng";
+        public const string DecorNeedXuFmt = "Thiếu {0} Xu";
+        public const string DecorNeedGemsFmt = "Thiếu {0} Hạt";
+        public const string DecorBonusFmt = "+{0} phong cách";
+        public const string DecorMatchFmt = "Hợp tông {0}: +{1}";
+        public const string DecorHint = "Chạm một mẫu để xem thử ngay trong quán. Đóng bảng là quay lại mẫu đang dùng.";
+        public const string DecorAppliedFmt = "Đã đổi sang {0}!";
+        public const string DecorClose = "Đóng";
         public const string RentInfoFmt = "Thuê nhà: còn {0} ngày";
         public const string RentInfoTomorrow = "Thuê nhà: sáng mai";
         public const string DebtInfoFmt = "Nợ: {0} Xu";

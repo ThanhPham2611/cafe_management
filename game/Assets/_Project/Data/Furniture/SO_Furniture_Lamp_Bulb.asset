@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ba341d98cc92be48b208bac9574fcd8, type: 3}
+  m_Name: SO_Furniture_Lamp_Bulb
+  m_EditorClassIdentifier: Cafe.Runtime::Cafe.FurnitureDef
+  id: Lamp_Bulb
+  displayName: "B\xF3ng \u0111\xE8n d\xE2y t\xF3c"
+  prefab: {fileID: 5884465496826108066, guid: 307b3b7d3a92ff34896146bd6f54b24d, type: 3}
+  footprint: {x: 1, y: 1}
+  price: 350
+  kind: 2
+  comfort: 0
+  style: 2
+  seatHeight: 0
+  overhead: 0
+  hangY: 0
+  counterMount: 1
+  counterTopY: 0
+  counterMountArea:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 0
+    height: 0
+  minTier: 2
+  onlyTier: 0
+  shopVisible: 1
+  icon: {fileID: 21300000, guid: 31eec52d62c2e2b4fb0d9b757aecfad9, type: 3}
+  priceStep: 0
+  maxCount: 3
+  attract: 0
+  machineId: 
+  brewSpots: 0
+  shelfSlots: 0

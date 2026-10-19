@@ -19,6 +19,19 @@ namespace Cafe
         /// Ngón trượt ra khỏi nút ngắn hơn mức này (giây) thì chỉ tạm dừng, không hủy.
         public const float HoldSlipGraceSeconds = 0.15f;
 
+        // ---- Rót kiểu mới (docs/hud_brew_redesign_2026-10-18.md B1): chạm để rót, ly tự đầy sau PourSeconds;
+        // chạm lại trong vạch vàng = "Chuẩn!", không chạm = "Đủ", chạm sớm = "Hơi ít" (vẫn xong bước, ly tối đa 2 sao).
+        /// Mép trái vạch vàng (tỉ lệ của thời gian rót T).
+        public const float PerfectBandStart = 0.60f;
+        /// Mép phải vạch vàng (tỉ lệ của T).
+        public const float PerfectBandEnd = 0.85f;
+        /// Cộng thêm sau mép phải để bù độ trễ cảm ứng (giây).
+        public const float PerfectGraceSeconds = 0.05f;
+        /// Chạm dừng trước tỉ lệ này của T = chạm nhầm: bỏ qua, ly vẫn rót tiếp.
+        public const float UnderIgnoreFraction = 0.15f;
+        /// Bật lại thao tác giữ cũ (HoldButtonBehaviour: nhả sớm = sai bước). Mặc định tắt.
+        public static bool UseLegacyHold;
+
         public static StepAction For(BrewStep s)
         {
             switch (s)
@@ -40,7 +53,23 @@ namespace Cafe
             }
         }
 
-        /// Thời gian giữ (giây) cho bước kiểu Hold; 0 với kiểu khác.
+        /// Thời gian tự rót đầy T (giây) cho bước kiểu Hold (rót); 0 với kiểu khác.
+        public static float PourSeconds(BrewStep s)
+        {
+            switch (s)
+            {
+                case BrewStep.Phin: return 1.0f;
+                case BrewStep.CotDua: return 0.9f;
+                case BrewStep.SuaDac:
+                case BrewStep.SuaTuoi:
+                case BrewStep.Tra:
+                    return 0.8f;
+                default:
+                    return 0f;
+            }
+        }
+
+        /// Thời gian giữ (giây) cho bước kiểu Hold ở chế độ giữ cũ (UseLegacyHold); 0 với kiểu khác.
         public static float HoldSeconds(BrewStep s)
         {
             switch (s)

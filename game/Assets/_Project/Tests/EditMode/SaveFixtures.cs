@@ -24,7 +24,8 @@ namespace Cafe.Tests
             + "\"regulars\":[{\"id\":\"co_ba\",\"bond\":4,\"chaptersDone\":1,\"lastVisitDay\":20}],"
             + "\"missions\":[{\"id\":\"serve_n\",\"target\":10,\"progress\":4,\"rewardXu\":200,\"claimed\":false}],"
             + "\"missionDayKey\":20000,\"missionChestClaimed\":false,"
-            + "\"zonesOpen\":0,\"tutorialStep\":9,\"tutorialSeen\":[\"tip_a\"],\"gridVersion\":1}";
+            + "\"zonesOpen\":0,\"tutorialStep\":9,\"tutorialSeen\":[\"tip_a\"],\"gridVersion\":1,"
+            + "\"decorOwned\":[\"w_mint\"],\"decorChoices\":[{\"tier\":2,\"wall\":\"w_mint\",\"floor\":null}]}";
 
         /// Cùng V3 nhưng version cao hơn bản hiện tại.
         public static string Future()

@@ -330,6 +330,236 @@
         0
       ],
       "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_menu.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_shop.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_book.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_mission.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_staff.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_home.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_broom.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_close.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_duong.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_muoi.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_kem_muoi.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_cot_dua.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_trung.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_chanh.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_lac.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_danh.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "icon_cacao.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_gauge_glass.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_gauge_mask.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_badge.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_tag.png",
+      "border": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_arrow.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
+    },
+    {
+      "file": "ui_sparkle.png",
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 100
     }
   ]
 }

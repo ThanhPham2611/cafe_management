@@ -3,8 +3,8 @@ using UnityEngine.UI;
 
 namespace Cafe
 {
-    /// Icon dự phòng cho nguyên liệu Tier 2 chưa có sprite (bộ sprite do session khác sở hữu):
-    /// đĩa tròn tạo lúc chạy, nhuộm màu theo nguyên liệu + nhãn 2 chữ. Nguyên liệu Tier 1 vẫn dùng sprite của UiTheme.
+    /// Icon nguyên liệu: sprite của UiTheme khi có (mọi nguyên liệu đều đã có sprite); dự phòng khi sprite null:
+    /// đĩa tròn tạo lúc chạy, nhuộm màu theo nguyên liệu + nhãn 2 chữ.
     public static class StepIconFallback
     {
         private const int DiscSize = 64;
@@ -47,10 +47,11 @@ namespace Cafe
             }
         }
 
-        /// 5 nguyên liệu đã có sprite trong UiTheme.
+        /// Nguyên liệu có sprite trong UiTheme (Tier 1 + 9 nguyên liệu Tier 2 vẽ trong tools/gen_ui_sprites.py).
+        /// Sprite null (theme cũ / chưa nhập) thì Apply vẽ đĩa màu + nhãn 2 chữ.
         public static bool HasThemeIcon(BrewStep s)
         {
-            return s == BrewStep.Phin || s == BrewStep.SuaDac || s == BrewStep.SuaTuoi || s == BrewStep.Da || s == BrewStep.Tra;
+            return HudBuilder.T.IconFor(s) != null;
         }
 
         public static Color TintFor(BrewStep s)
@@ -96,6 +97,8 @@ namespace Cafe
             if (themed != null)
             {
                 img.sprite = themed;
+                img.type = Image.Type.Simple;
+                img.preserveAspect = true;
                 img.color = Color.white;
                 img.enabled = true;
                 if (tag != null) tag.gameObject.SetActive(false);

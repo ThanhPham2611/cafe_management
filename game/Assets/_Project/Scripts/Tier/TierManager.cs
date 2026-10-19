@@ -52,6 +52,11 @@ namespace Cafe
         /// Mở thêm khu xong (đã dựng sàn, bake NavMesh, tặng bàn ghế): UI vẽ lại.
         public event Action ZonesChanged;
 
+        /// Sơn tường / sàn đã mua + đang dùng theo cấp (DecorCatalog). Phòng cấp 2 và sảnh cấp 3 dùng lựa chọn của cấp hiện tại.
+        public DecorState Decor { get; private set; }
+        /// Đổi sơn / sàn (đã lưu): UI vẽ lại.
+        public event Action DecorChanged;
+
         public RentLedger Ledger { get { return ledger; } }
         /// Đang thuê mặt bằng (cấp 2): có tiền thuê hàng tuần. Cấp 3 đã mua nhà.
         public bool IsRented { get { return Current == 2; } }
@@ -75,6 +80,8 @@ namespace Cafe
             game = g;
             Current = 1;
             ledger = new RentLedger();
+            Decor = new DecorState();
+            Decor.Load(save);
             if (save != null)
             {
                 Current = Mathf.Max(1, save.tier);
@@ -166,6 +173,7 @@ namespace Cafe
         {
             if (grid == null) return;
             grid.FRef = GameBalance.FRefFor(Current);
+            grid.DecorBonus = Decor != null ? Decor.StyleBonus(Current) : 0;
             ZoneMap map = Current >= 3 ? RoomLayout.For(Current).CreateZoneMap() : null;
             if (map != null) map.SetOpen(ZonesOpen);
             grid.SetZones(map);
@@ -474,7 +482,8 @@ namespace Cafe
                 roomRoot = null;
             }
             if (game.toonMaterial == null) Debug.LogWarning("[Tier] GameBootstrap.toonMaterial trống: phòng sẽ không có màu palette");
-            roomRoot = EnvironmentBuilder.BuildRoom(game.toonMaterial, null, RoomLayout.For(Current), Current >= 3 ? ZonesOpen : 0);
+            roomRoot = EnvironmentBuilder.BuildRoom(game.toonMaterial, null, RoomLayout.For(Current), Current >= 3 ? ZonesOpen : 0,
+                DecorFor(DecorSlot.Wall, null), DecorFor(DecorSlot.Floor, null));
             roomTier = Current;
         }
 
@@ -568,7 +577,7 @@ namespace Cafe
             int paid = game.Wallet.Spend(ZoneInfo.Cost(z));
             ZonesOpen |= ZoneInfo.Bit(z);
 
-            EnvironmentBuilder.RefreshZones(roomRoot.transform, game.toonMaterial, RoomLayout.For(Current), ZonesOpen);
+            EnvironmentBuilder.RefreshZones(roomRoot.transform, game.toonMaterial, RoomLayout.For(Current), ZonesOpen, DecorFor(DecorSlot.Wall, null));
             GridSystem grid = game.Grid;
             grid.Zones.SetOpen(ZonesOpen);
             int sets = RoomLayout.PlaceZoneStarter(game, grid, this, z);
@@ -662,9 +671,53 @@ namespace Cafe
 
         // ------------------------------------------------------------------ lưu
 
+        // ------------------------------------------------------------------ trang trí
+
+        /// Lựa chọn hiển thị: `id` nếu có (xem thử), nếu không thì lựa chọn đã lưu của cấp hiện tại.
+        private DecorOption DecorFor(DecorSlot slot, string id)
+        {
+            if (string.IsNullOrEmpty(id)) id = Decor != null ? Decor.Current(slot, Current) : null;
+            return DecorCatalog.Resolve(slot, id, Current);
+        }
+
+        /// Có phòng để trang trí (cấp 2 trở lên, không đang chuyển cấp).
+        public bool CanDecorate { get { return Current >= 2 && roomRoot != null && !Transitioning; } }
+
+        /// Sơn lại phòng theo wallId / floorId (null = lựa chọn đã lưu). Chỉ đổi hình, không lưu: dùng để xem thử.
+        public void PreviewDecor(string wallId, string floorId)
+        {
+            if (!CanDecorate) return;
+            EnvironmentBuilder.ApplyDecor(roomRoot.transform, game.toonMaterial, RoomLayout.For(Current), Current >= 3 ? ZonesOpen : 0,
+                DecorFor(DecorSlot.Wall, wallId), DecorFor(DecorSlot.Floor, floorId));
+        }
+
+        /// Mua (nếu chưa có) rồi dùng một lựa chọn cho cấp hiện tại; trừ Xu / Hạt, cập nhật điểm phong cách, lưu.
+        public DecorCheck BuyOrApplyDecor(string id)
+        {
+            DecorOption o = DecorCatalog.Find(id);
+            if (o == null || !CanDecorate) return DecorCheck.Unknown;
+            int gems = game.Gems != null ? game.Gems.Gems : 0;
+            DecorCheck check = Decor.CanBuy(id, Current, game.Reputation.Level, game.Wallet.Xu, gems);
+            if (check != DecorCheck.Ok && check != DecorCheck.Owned) return check;
+            int paidXu = 0;
+            if (check == DecorCheck.Ok)
+            {
+                if (o.priceGems > 0 && (game.Gems == null || !game.Gems.TrySpend(o.priceGems))) return DecorCheck.NeedGems;
+                if (o.priceXu > 0) paidXu = game.Wallet.Spend(o.priceXu);
+                Decor.MarkOwned(id);
+            }
+            Decor.Apply(id, Current);
+            PreviewDecor(null, null);
+            if (game.Grid != null) game.Grid.DecorBonus = Decor.StyleBonus(Current);
+            game.NotifyShopTransaction(-paidXu); // dời mốc Xu đầu ngày (thoát-vào không hoàn tiền) rồi lưu
+            if (DecorChanged != null) DecorChanged();
+            return check;
+        }
+
         public void WriteToSave(SaveData data)
         {
             if (data == null) return;
+            if (Decor != null) Decor.WriteToSave(data);
             data.tier = Current;
             data.zonesOpen = Current >= 3 ? ZonesOpen : 0;
             data.gridVersion = 1;

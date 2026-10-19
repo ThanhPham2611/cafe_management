@@ -19,7 +19,9 @@ namespace Cafe
         public const string TapCustomer = "Có khách! Chạm vào khách để nhận đơn.";
         public const string BrewFirst = "Làm theo thứ tự trên bảng.";
         public const string BrewTapFmt = "Chạm nút {0}.";
-        public const string BrewHoldFmt = "Giữ nút {0} cho tới khi đầy.";
+        public const string BrewHoldFmt = "Chạm {0} để rót. Ly tự đầy.";
+        public const string BrewPourBandFmt = "Chạm {0}, tới vạch vàng thì chạm lại!";
+        public const string BrewHoldLegacyFmt = "Giữ nút {0} cho tới khi đầy.";
         public const string BrewOther = "Làm theo hướng dẫn trên nút.";
         public const string Serve = "Chạm khách để mang ly ra.";
         public const string Money = "Tiền về rồi! Phục vụ nhanh còn được tip.";

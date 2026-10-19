@@ -583,6 +583,8 @@ namespace Cafe
         {
             if (r == null) return 0f;
             float seconds = r.hidden ? r.brewSeconds * RecipeBalance.PerfectTimeFactorHidden : r.brewSeconds;
+            // Rót tự đầy mất 0,8-1 s mỗi bước: hạn không bao giờ dưới 1,3 x ngân sách thao tác (hud_brew_redesign B3)
+            seconds = Mathf.Max(seconds, PourRules.MinPerfectSeconds(r.steps));
             return seconds * MachineRules.PerfectTimeSlack(game.BrewTimeFactor); // máy tăng tốc: cửa sổ 3★ rộng hơn
         }
 

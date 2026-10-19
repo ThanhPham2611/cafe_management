@@ -27,6 +27,7 @@ namespace Cafe
             Image dim = HudBuilder.Dim(overlayParent, "RegularsBook", 0.62f);
             HudBuilder.Stretch(dim.rectTransform);
             root = dim.gameObject;
+            ModalMarker.Mark(root);
             Image card = HudBuilder.Panel(dim.transform, "Card", true);
             // đầu 125 + số hàng x 116 + chân (nút ĐÓNG) 130; nhiều người thì thẻ cao hơn, FitInCanvas thu nhỏ vừa màn hình
             HudBuilder.SetFixed(card.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),

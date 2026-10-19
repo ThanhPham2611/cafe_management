@@ -68,6 +68,10 @@ namespace Cafe
         public string[] tutorialSeen;        // mã gợi ý theo tình huống đã hiện (TutorialTips)
         public int gridVersion;              // 0 = lưới nhà hàng cũ 20 x 24 (chưa có khu), 1 = lưới 44 x 24 (sảnh bắt đầu ở ô x = 12)
 
+        // Trang trí (sơn tường / sàn, DecorCatalog). Chỉ thêm trường: file cũ đọc ra null = kiểu mặc định.
+        public string[] decorOwned;          // id sơn / sàn đã mua (dùng chung mọi cấp)
+        public DecorChoiceSave[] decorChoices; // lựa chọn đang dùng theo từng cấp quán
+
         /// Nâng file cũ lên định dạng hiện tại (gọi ngay sau khi load).
         public void Migrate()
         {
@@ -102,6 +106,15 @@ namespace Cafe
         public int preset;   // 0..3 = PF_Char_Staff_M1, M2, F1, F2
         public int level;    // 1..5
         public string name;
+    }
+
+    /// Sơn tường / sàn đang dùng ở một cấp quán (null = mặc định của cấp).
+    [Serializable]
+    public struct DecorChoiceSave
+    {
+        public int tier;
+        public string wall;
+        public string floor;
     }
 
     /// Một nhiệm vụ ngày đã lưu (id tra trong MissionCatalog).

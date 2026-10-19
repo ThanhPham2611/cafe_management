@@ -5,7 +5,7 @@ namespace Cafe
 {
     /// Bảng quản lý nhân viên (cấp quán 2+): mỗi nhân viên một hàng — thuê, nâng cấp, cho nghỉ.
     /// Số hàng theo GameBalance.StaffMaxCount (cấp 2: 1 Dọn dẹp + 1 Phục vụ; cấp 3: 3 + 2 + 3, mỗi khu phụ mở thêm 1 chỗ mỗi vai trò,
-    /// đủ 3 khu 6 + 5 + 6 = 17). Danh sách cuộn được khi dài hơn màn hình.
+    /// đủ 3 khu 6 + 5 + 6 = 17; mỗi quầy pha phụ thêm 1 Pha chế, tối đa 2). Danh sách cuộn được khi dài hơn màn hình.
     public sealed class StaffPanel
     {
         private sealed class SlotView
@@ -50,6 +50,7 @@ namespace Cafe
                 new Vector2(-24f, -462f), new Vector2(230f, 86f)); // cột phải, tránh khay nguyên liệu ở đáy
 
             panel = HudBuilder.Panel(parent, "StaffPanel", true);
+            ModalMarker.Mark(panel.gameObject);
 
             Text heading = HudBuilder.AddText(panel.transform, "Heading", "ĐỘI NGŨ QUÁN", 42,
                 TextAnchor.MiddleCenter, HudBuilder.Ink, true, false);
@@ -139,7 +140,7 @@ namespace Cafe
         /// Số chỗ lớn nhất của một vai trò (cấp 3, đủ mọi khu): số hàng phải dựng sẵn.
         private static int MostSlots(StaffRole role)
         {
-            return GameBalance.StaffMaxCount(role, 3, ZoneInfo.Buyable.Length);
+            return GameBalance.StaffMaxCount(role, 3, ZoneInfo.Buyable.Length, GameBalance.BrewStationMaxCount);
         }
 
         private int OpenZones { get { return game.Tier != null ? game.Tier.OpenZoneCount : 0; } }
@@ -211,7 +212,7 @@ namespace Cafe
         /// Hàng có hiện không: còn chỗ ở cấp này, hoặc đang có người (vd. Pha chế thuê từ trước khi cấp 3 mới mở).
         private bool IsVisible(SlotView view, int tier)
         {
-            return view.index < GameBalance.StaffMaxCount(view.role, tier, OpenZones) || game.Staff.IndexOf(view.role, view.index) >= 0;
+            return view.index < GameBalance.StaffMaxCount(view.role, tier, OpenZones, game.Staff.BrewStations) || game.Staff.IndexOf(view.role, view.index) >= 0;
         }
 
         private void Refresh()

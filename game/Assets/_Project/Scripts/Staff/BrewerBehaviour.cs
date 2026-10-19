@@ -43,11 +43,20 @@ namespace Cafe
         {
             switch (phase)
             {
-                case BrewPhase.Idle: TryStart(); break;
+                case BrewPhase.Idle: if (!TryGoToNewHome()) TryStart(); break;
                 case BrewPhase.Brewing: TickBrewing(); break;
                 case BrewPhase.Delivering: TickDelivering(); break;
                 case BrewPhase.Returning: TickReturning(); break;
             }
+        }
+
+        /// Rảnh mà vừa được gán chỗ mới (quầy pha phụ đặt / gỡ, đổi người): đi tới Home mới trước rồi mới nhận đơn.
+        private bool TryGoToNewHome()
+        {
+            if (!worker.ApplyPendingHome() || !MoveTo(worker.Home)) return false;
+            phase = BrewPhase.Returning;
+            BeginState(WorkerState.Moving);
+            return true;
         }
 
         private void TryStart()
@@ -70,7 +79,8 @@ namespace Cafe
 
             order = pick;
             elapsed = 0f;
-            total = BrewerRules.BrewSeconds(recipe.brewSeconds, Data.level, Game.BrewTimeFactor);
+            // Có chỗ ở quầy pha phụ: × BrewSpotFactor (không có chỗ thì giữ nguyên, docs/stations_spec.md §1)
+            total = BrewerRules.BrewSeconds(recipe.brewSeconds, Data.level, Game.BrewTimeFactor * StationRules.BrewFactor(worker.HasBrewSpot));
             quality = BrewerRules.Quality(Data.level, Game.Recipes == null || Game.Recipes.ToolAllowsThreeStars(recipe));
             phase = BrewPhase.Brewing;
             GameEvents.RaiseOrderClaimChanged(pick);
@@ -117,7 +127,8 @@ namespace Cafe
         /// Có nhân viên Phục vụ và quầy giao còn chỗ: để ly lên quầy rồi pha ly kế, không tự đi giao.
         private bool TryHandOffToServer()
         {
-            if (Game.Shelf == null || Game.Staff == null || !Game.Staff.HasRole(StaffRole.Server) || !Game.Shelf.HasRoom) return false;
+            if (Game.Shelf == null || Game.Staff == null || !Game.Staff.HasRole(StaffRole.Server)) return false;
+            if (!Game.Shelf.HasRoom) { StationStats.ShelfFull++; return false; } // kệ đầy: phải tự đi giao (bot đo quầy line)
             Order o = order;
             if (!Game.Shelf.TryAdd(o, quality, worker)) return false;
             order = null;
@@ -142,8 +153,10 @@ namespace Cafe
             {
                 holdsCup = false; // ly đã sang tay khách (thành ly bẩn sau khi uống)
                 CountJob();
+                StationStats.SelfDelivered++;
                 ReleaseClaim();
                 worker.Visual.SetCarry(false);
+                worker.ApplyPendingHome(); // trong lúc đi giao được gán chỗ mới: về thẳng chỗ mới
                 if (MoveTo(worker.Home)) { phase = BrewPhase.Returning; BeginState(WorkerState.Moving); }
                 else worker.StopWork();
             }

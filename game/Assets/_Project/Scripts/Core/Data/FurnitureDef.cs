@@ -55,5 +55,11 @@ namespace Cafe
         [Header("Máy móc (cấp 3)")]
         [Tooltip("Id máy (grinder, cold_brew, espresso); rỗng = không phải máy. Đặt trong quán mới có tác dụng (MachineRules)")]
         public string machineId;
+
+        [Header("Quầy pha phụ / quầy line (cấp 3, docs/stations_spec.md)")]
+        [Tooltip("Số chỗ làm của Pha chế ở quầy pha phụ (đứng phía nhân viên, pha × GameBalance.BrewSpotFactor); 0 = không phải quầy pha phụ")]
+        public int brewSpots;
+        [Tooltip("Số chỗ ly cộng thêm vào kệ giao (ReadyShelf) khi đặt quầy line; 0 = không phải quầy line")]
+        public int shelfSlots;
     }
 }
