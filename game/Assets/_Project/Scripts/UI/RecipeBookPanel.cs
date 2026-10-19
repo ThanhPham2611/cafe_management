@@ -93,6 +93,7 @@ namespace Cafe
             var dimBtn = dim.gameObject.AddComponent<Button>();
             dimBtn.transition = Selectable.Transition.None;
             dimBtn.onClick.AddListener(Close);
+            dimBtn.onClick.AddListener(Audio.UiBack);
 
             Image panel = HudBuilder.Panel(dim, "Panel", true);
             RectTransform pr = panel.rectTransform;

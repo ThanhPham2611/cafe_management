@@ -758,6 +758,7 @@ namespace Cafe
             }
             int taken = td.FinishClean(free); // hết ly thì job CleanTable tự hoàn thành
             carriedDirtyCups += taken;
+            Audio.Play(Sfx.WipeDone);
             RefreshCarry();
             if (taken > 0)
                 UiFx.FloatText(td.TopPoint + Vector3.up * 0.6f, string.Format(Strings.CupsToWashFmt, taken), HudBuilder.Mint);

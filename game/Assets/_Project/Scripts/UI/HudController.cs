@@ -80,6 +80,9 @@ namespace Cafe
         private Image cupChipImg;
         private Text cupWaitText;
         private GameObject cupWaitButton;
+        private GameObject viewButton;
+        private Text viewText;
+        private int viewShown = -1;
         private int cupWaitShown = -1;
         private Text emptyText;
         private Text moreText;
@@ -376,6 +379,35 @@ namespace Cafe
             MakeBadge(collectAll.transform, "Badge", 34f, out cupWaitText);
             cupWaitButton = collectAll.gameObject;
             cupWaitButton.SetActive(false);
+
+            // Góc nhìn: Trên -> Chéo -> Ngang (ngang tầm mắt nhân vật); nằm ngay trên nút "Thu hết"
+            ClayButton view = HudBuilder.AddLabelButton(safe, "ViewButton", ClayStyle.Cream, Strings.ViewMid, 26, OnViewClicked, out viewText);
+            HudBuilder.SetFixed((RectTransform)view.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-Margin, Margin + ChipH + 8f + 84f + 14f), new Vector2(230f, 84f));
+            HudBuilder.Fit(viewText, 18);
+            viewButton = view.gameObject;
+        }
+
+        private void OnViewClicked()
+        {
+            if (game.CameraRig != null) game.CameraRig.CycleView();
+            RefreshViewButton();
+        }
+
+        /// Nút góc nhìn: ẩn khi đang xây (chế độ xây tự nâng góc) và khi hướng dẫn (hướng dẫn cần thấy rõ vật thể); đổi chữ theo góc.
+        private void RefreshViewButton()
+        {
+            CafeCameraController rig = game.CameraRig;
+            if (rig == null || viewButton == null) return;
+            bool tutorial = TutorialGate.Active;
+            rig.TutorialFloor = tutorial;
+            bool show = !tutorial && (game.Builder == null || !game.Builder.IsOpen);
+            if (viewButton.activeSelf != show) viewButton.SetActive(show);
+            int idx = rig.ViewIndex;
+            if (idx != viewShown)
+            {
+                viewShown = idx;
+                viewText.text = idx == 0 ? Strings.ViewTop : (idx == 1 ? Strings.ViewMid : Strings.ViewEye);
+            }
         }
 
         /// Nút phụ (Khách quen, Nhân viên, Mở rộng khu, Nhiệm vụ, Đồ họa) gom vào popup MENU: HUD gọn, nút đủ to để chạm.
@@ -501,7 +533,7 @@ namespace Cafe
             menuOpenedForTutorial = false;
             menuRoot.gameObject.SetActive(!menuRoot.gameObject.activeSelf);
         }
-        private void CloseMenu() { menuRoot.gameObject.SetActive(false); }
+        private void CloseMenu() { menuRoot.gameObject.SetActive(false); Audio.UiBack(); }
 
         /// Cột "Đơn chờ" trên-trái (16, 76): thẻ 200x64 (x1,25), tối đa 3 + dòng "+N". Cột không có Graphic nên không chặn chạm,
         /// chỉ thẻ nhận chạm. Tiêu đề "Đơn chờ" chỉ hiện trong hướng dẫn.
@@ -815,6 +847,7 @@ namespace Cafe
 
         private void OnCupChipClicked()
         {
+            Audio.UiTap();
             if (game.WaitingCupCount() > 0) game.QueueCollectAll();
         }
 
@@ -926,6 +959,7 @@ namespace Cafe
         {
             CardView cv = cards[index];
             if (cv.order == null) return;
+            Audio.Play(Sfx.OrderSelect);
             game.Station.Select(cv.order);
         }
 
@@ -1001,6 +1035,7 @@ namespace Cafe
             RefreshMenuBadge();
             float dt = Time.unscaledDeltaTime;
             RefreshCupWaiting();
+            RefreshViewButton();
 
             // Thẻ thưởng level nhún nhẹ để dễ thấy (tắt khi Giảm chuyển động)
             if (levelCard != null && levelCard.gameObject.activeSelf)

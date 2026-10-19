@@ -98,6 +98,36 @@ namespace Cafe
                 }
             }
             t1Env = GameObject.Find("Environment"); // môi trường vỉa hè của scene (còn active lúc này)
+            AttachStreetViewHide(t1Env);
+        }
+
+        /// Tường nhà phố, mái che và cửa cuốn của vỉa hè: ẩn khi camera vòng ra phía sau tường để nhìn ngang không bị chắn kín.
+        /// Hướng "ra ngoài" lấy từ chính transform của tường (cả môi trường bị xoay trong scene): +z cục bộ là phía đường.
+        private static void AttachStreetViewHide(GameObject env)
+        {
+            if (env == null) return;
+            Transform wall = FindDeep(env.transform, "Wall_Shophouse");
+            if (wall == null) return;
+            Vector3 outward = wall.forward;
+            outward.y = 0f;
+            if (outward.sqrMagnitude < 0.01f) return;
+            outward.Normalize();
+            Vector3 plane = wall.position - outward * 0.55f; // mặt phẳng của mái che / tường (mái nhô ra phía trong 0,45 m)
+            foreach (string n in new[] { "Wall_Shophouse", "Awning_Roof", "Shutter_Door" })
+            {
+                Transform tr = FindDeep(env.transform, n);
+                if (tr == null || tr.GetComponent<ViewHide>() != null) continue;
+                var vh = tr.gameObject.AddComponent<ViewHide>();
+                vh.Outward = outward;
+                vh.PlanePoint = plane;
+            }
+        }
+
+        private static Transform FindDeep(Transform root, string name)
+        {
+            foreach (Transform c in root.GetComponentsInChildren<Transform>(true))
+                if (c.name == name) return c;
+            return null;
         }
 
         public void AttachPanel(UpgradePanel p)

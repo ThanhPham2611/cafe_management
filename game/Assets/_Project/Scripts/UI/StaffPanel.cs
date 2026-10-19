@@ -194,6 +194,7 @@ namespace Cafe
             if (changed)
             {
                 game.NotifyShopTransaction(-cost);
+                Audio.Play(Sfx.Purchase);
                 game.Hud.ShowToast(member < 0 ? "Đã thuê nhân viên!" : "Nhân viên đã lên cấp!");
             }
             Refresh();

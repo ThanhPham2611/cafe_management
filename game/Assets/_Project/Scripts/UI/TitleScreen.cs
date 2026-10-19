@@ -134,6 +134,7 @@ namespace Cafe
         {
             open = true;
             openedAt = Time.unscaledTime;
+            Audio.PlayMusic(Bgm.Title);
             root.SetActive(true);
             if (game.Hud != null) game.Hud.SetHudActive(false);
             if (game.CameraRig != null) game.CameraRig.AutoOrbitDegPerSec = OrbitDegPerSec;
