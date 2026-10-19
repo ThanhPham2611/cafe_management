@@ -37,6 +37,9 @@ namespace Cafe.EditorTools
             public bool counterMount;    // đồ đặt trên mặt quầy (bóng đèn, đèn bàn)
             public float counterTopY;    // (trên quầy) độ cao mặt quầy; 0 = không nhận đồ
             public Rect counterArea;     // (trên quầy) vùng XZ cục bộ cho tâm đồ, tránh tủ bánh
+            // Quầy pha phụ / quầy line (cấp 3, docs/stations_spec.md)
+            public int brewSpots;        // số chỗ làm của Pha chế (đứng phía nhân viên = +Z Unity, như quầy bar chính)
+            public int shelfSlots;       // số chỗ ly cộng thêm vào kệ giao
         }
 
         static readonly Item[] Catalog =
@@ -88,6 +91,9 @@ namespace Cafe.EditorTools
             new Item { fbx = "SM_Machine_Grinder", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Máy xay 2 họng", minTier = 3, price = 25000, style = 4, maxCount = 1, machineId = "grinder", footprint = new Vector2Int(2, 1) },
             new Item { fbx = "SM_Machine_ColdBrew", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Máy cold brew", minTier = 3, price = 60000, style = 6, maxCount = 1, machineId = "cold_brew", footprint = new Vector2Int(2, 1) },
             new Item { fbx = "SM_Machine_Espresso", folder = "Furniture", kind = FurnitureKind.Decor, displayName = "Máy espresso", minTier = 3, price = 150000, style = 10, maxCount = 1, machineId = "espresso", footprint = new Vector2Int(2, 1) },
+            // Quầy pha chế phụ + quầy line (cấp 3, docs/stations_spec.md): không phải đồ trang trí (comfort/style 0), tối đa 2 mỗi loại.
+            new Item { fbx = "SM_Counter_Brew_4x2", folder = "Counters", kind = FurnitureKind.Decor, displayName = "Quầy pha chế phụ", minTier = 3, price = 12000, maxCount = 2, brewSpots = 2, footprint = new Vector2Int(4, 2) },
+            new Item { fbx = "SM_Counter_Pass_4x1", folder = "Counters", kind = FurnitureKind.Decor, displayName = "Quầy line", minTier = 3, price = 6000, maxCount = 2, shelfSlots = 4, footprint = new Vector2Int(4, 1) },
             new Item { fbx = "SM_Cup_Phin_SuaDa", folder = "Props", kind = FurnitureKind.Decor, displayName = "Ly cà phê", hidden = true, price = 0, comfort = 0, style = 0, footprint = new Vector2Int(1, 1) },
         };
 
@@ -215,6 +221,8 @@ namespace Cafe.EditorTools
             def.maxCount = it.maxCount;
             def.attract = it.attract;
             def.machineId = it.machineId;
+            def.brewSpots = it.brewSpots;
+            def.shelfSlots = it.shelfSlots;
             def.icon = AssetDatabase.LoadAssetAtPath<Sprite>($"{ShopIconDir}/ICON_{id}.png");
             EditorUtility.SetDirty(def);
         }

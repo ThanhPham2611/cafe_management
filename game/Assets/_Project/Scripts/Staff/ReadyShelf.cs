@@ -15,16 +15,24 @@ namespace Cafe
             public int quality;
         }
 
-        public const int Capacity = 6;
+        /// Sức chứa mặc định (chưa có quầy line).
+        public const int DefaultCapacity = GameBalance.ReadyShelfBaseCapacity;
 
-        private readonly List<Drink> items = new List<Drink>(Capacity);
+        private readonly List<Drink> items = new List<Drink>(DefaultCapacity);
         private readonly Action discard;
+        private readonly Func<int> capacity;
 
         /// discard: gọi một lần cho mỗi ly bị bỏ (khách đã đi / hết ngày) để trả ly sạch về kho.
-        public ReadyShelf(Action discard)
+        /// capacity: sức chứa hiện tại (mỗi quầy line +4, StationRules.ShelfCapacity); null = DefaultCapacity.
+        public ReadyShelf(Action discard, Func<int> capacity = null)
         {
             this.discard = discard;
+            this.capacity = capacity;
         }
+
+        /// Sức chứa hiện tại (đọc lại mỗi lần: đặt / gỡ quầy line giữa ngày có tác dụng ngay). Gỡ quầy khi kệ đang nhiều ly hơn sức chứa
+        /// thì ly cũ vẫn nằm đó, chỉ không nhận thêm cho tới khi bớt.
+        public int Capacity { get { return capacity != null ? Math.Max(0, capacity()) : DefaultCapacity; } }
 
         public int Count { get { return items.Count; } }
         public bool HasRoom { get { return items.Count < Capacity; } }

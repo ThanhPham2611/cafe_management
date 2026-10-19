@@ -30,8 +30,14 @@ namespace Cafe
         public NavMeshAgent Agent { get; private set; }
         /// Chỗ đứng chờ việc (cạnh quầy); Pha chế về đây sau mỗi ly.
         public Vector3 Home { get; private set; }
+        /// Pha chế đang có chỗ làm ở quầy pha phụ (đã nhận chỗ, Home là điểm đứng của chỗ): pha × GameBalance.BrewSpotFactor.
+        public bool HasBrewSpot { get; private set; }
         /// Số việc đã xong từ đầu ngày: để chẩn đoán và thống kê.
         public int JobsDoneToday { get { return behaviour != null ? behaviour.JobsDone : 0; } }
+        private Vector3 rowHome;      // chỗ đứng trong hàng cạnh chủ quán (khi không có chỗ ở quầy pha phụ)
+        private Vector3 assignedPoint;
+        private bool assignedSpot;
+        private bool homePending;     // có chỗ mới chưa nhận (đang pha dở thì pha xong mới đổi)
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public string DebugState { get { return behaviour != null ? behaviour.DebugState() : ""; } }
 #endif
@@ -61,6 +67,8 @@ namespace Cafe
             if (NavMesh.SamplePosition(start, out hit, 3f, NavMesh.AllAreas)) start = hit.position;
             transform.position = start;
             Home = start;
+            rowHome = start;
+            assignedPoint = start;
 
             Visual = gameObject.AddComponent<CustomerVisual>();
             GameObject prefab = null;
@@ -120,9 +128,33 @@ namespace Cafe
             if (Agent != null) Agent.speed = StaffWorkerRules.MoveSpeed(data.level);
         }
 
+        /// Gán (hoặc bỏ) chỗ làm ở quầy pha phụ. Chỉ ghi nhận; người đang làm dở nhận chỗ mới khi rảnh (ApplyPendingHome).
+        public void AssignBrewSpot(bool hasSpot, Vector3 point)
+        {
+            Vector3 target = hasSpot ? point : rowHome;
+            if (hasSpot == assignedSpot && (target - assignedPoint).sqrMagnitude < 0.0001f) return;
+            assignedSpot = hasSpot;
+            assignedPoint = target;
+            homePending = true;
+        }
+
+        /// Nhận chỗ đã gán (bám NavMesh). true nếu Home vừa đổi (người gọi cho đi tới Home mới).
+        public bool ApplyPendingHome()
+        {
+            if (!homePending) return false;
+            homePending = false;
+            Vector3 p = assignedPoint;
+            NavMeshHit hit;
+            if (NavMesh.SamplePosition(p, out hit, 1.5f, NavMesh.AllAreas)) p = hit.position;
+            Home = p;
+            HasBrewSpot = assignedSpot;
+            return true;
+        }
+
         public void ResetForNewDay()
         {
             StopWork();
+            ApplyPendingHome(); // đầu ngày: nhận chỗ ở quầy pha phụ đặt lúc chuẩn bị
             behaviour.ResetJobs();
             NavMeshHit hit;
             // Về đúng chỗ đứng của mình (Home), không dồn cả đội vào một điểm

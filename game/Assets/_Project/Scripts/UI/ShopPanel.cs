@@ -70,6 +70,7 @@ namespace Cafe
             // --- Bảng
             Image panel = HudBuilder.Panel(parent, "ShopPanel", true);
             panelRoot = panel.rectTransform;
+            ModalMarker.Mark(panel.gameObject);
             HudBuilder.SetFixed(panelRoot, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-24f, 0f), new Vector2(PanelW, PanelH));
 
             Text title = HudBuilder.AddText(panelRoot, "Title", Strings.Shop, 58, TextAnchor.MiddleLeft, HudBuilder.Ink, true, false);
@@ -337,10 +338,13 @@ namespace Cafe
                 else if (poor) cv.reason.text = string.Format(Strings.NeedMoreXuFmt, Strings.FormatInt(price - xu));
 
                 bool isMachine = !string.IsNullOrEmpty(d.machineId);
-                bool hasAttract = d.attract > 0 || isMachine;
+                string stationEffect = StationRules.Effect(d.brewSpots, d.shelfSlots); // quầy pha phụ / quầy line
+                bool hasAttract = d.attract > 0 || isMachine || stationEffect.Length > 0;
                 bool hasComfort = d.comfort > 0 || d.style > 0;
                 cv.attractChip.gameObject.SetActive(!blocked && hasAttract);
-                if (hasAttract) cv.attractText.text = isMachine ? MachineRules.Effect(d.machineId) : string.Format(Strings.AttractBadgeFmt, d.attract);
+                if (hasAttract)
+                    cv.attractText.text = isMachine ? MachineRules.Effect(d.machineId)
+                        : stationEffect.Length > 0 ? stationEffect : string.Format(Strings.AttractBadgeFmt, d.attract);
                 cv.comfortChip.gameObject.SetActive(!blocked && hasComfort);
                 if (hasComfort)
                 {

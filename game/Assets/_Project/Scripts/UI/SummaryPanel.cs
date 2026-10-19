@@ -10,6 +10,8 @@ namespace Cafe
         {
             public Text label;
             public Text value;
+            public int target;      // số tiền đích khi đếm lên
+            public bool sign;
         }
 
         private const float PopTime = 0.2f;
@@ -36,6 +38,14 @@ namespace Cafe
         private readonly Image[] starIcons;
         private float popTimer = -1f;
 
+        // Số tiền đếm lên khi bảng mở (0,6 s), dòng "Lãi ròng" nảy khi đếm xong (hud_visual_polish §6)
+        private const float CountSeconds = 0.6f;
+        private readonly System.Collections.Generic.List<Row> moneyRows = new System.Collections.Generic.List<Row>();
+        private RectTransform profitChip;
+        private int profitTarget;
+        private float countTimer = -1f;
+        private float profitPop = -1f;
+
         public bool IsVisible { get { return root.activeSelf; } }
 
         public SummaryPanel(GameBootstrap game, Transform parent)
@@ -46,6 +56,7 @@ namespace Cafe
             dim.color = new Color(0f, 0f, 0f, 0.55f);
             HudBuilder.Stretch(dim.rectTransform);
             root = dim.gameObject;
+            ModalMarker.Mark(root);
 
             Image panel = HudBuilder.Panel(dim.transform, "Card", true);
             card = panel.rectTransform;
@@ -73,6 +84,7 @@ namespace Cafe
             Image chip = HudBuilder.Chip(card, "ProfitChip", false);
             chip.color = new Color(1f, 0.88f, 0.52f, 1f);
             HudBuilder.SetFixed(chip.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(86f, -528f), new Vector2(430f, 100f));
+            profitChip = chip.rectTransform;
             Image coin = HudBuilder.Icon(chip.transform, "Coin", HudBuilder.T.iconCoin, 96f);
             HudBuilder.SetFixed(coin.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(2f, 4f), new Vector2(96f, 96f));
             Text pl = HudBuilder.AddText(chip.transform, "Label", Strings.SumProfit, 32, TextAnchor.MiddleLeft, HudBuilder.Ink, true, false);
@@ -147,11 +159,14 @@ namespace Cafe
             HudBuilder.SetFixed(r, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(x, y), new Vector2(w, 58f));
             Image ic = HudBuilder.Icon(r, "Icon", icon, 52f);
             HudBuilder.SetFixed(ic.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0f), new Vector2(52f, 52f));
+            // Nhãn và giá trị chia 2 cột, cách nhau >= 16 px (trước đây chồng 22% bề ngang: "Dự án tuần16/110 khách" dính chữ)
             Text l = HudBuilder.AddText(r, "Label", label, 30, TextAnchor.MiddleLeft, HudBuilder.Ink, false, false);
-            HudBuilder.SetRect(l.rectTransform, Vector2.zero, new Vector2(0.62f, 1f), new Vector2(64f, 0f), Vector2.zero);
+            HudBuilder.SetRect(l.rectTransform, Vector2.zero, new Vector2(0.56f, 1f), new Vector2(64f, 0f), new Vector2(-8f, 0f));
+            HudBuilder.Fit(l, 18);
             row.label = l;
-            row.value =HudBuilder.AddText(r, "Value", "", 36, TextAnchor.MiddleRight, HudBuilder.GoodDark, true, false);
-            HudBuilder.SetRect(row.value.rectTransform, new Vector2(0.4f, 0f), Vector2.one, Vector2.zero, Vector2.zero);
+            row.value = HudBuilder.AddText(r, "Value", "", 36, TextAnchor.MiddleRight, HudBuilder.GoodDark, true, false);
+            HudBuilder.SetRect(row.value.rectTransform, new Vector2(0.56f, 0f), Vector2.one, new Vector2(8f, 0f), Vector2.zero);
+            HudBuilder.Fit(row.value, 18); // giá trị dài thì co chữ
             return row;
         }
 
@@ -179,6 +194,7 @@ namespace Cafe
 
         public void Show(DaySummary s)
         {
+            moneyRows.Clear();
             title.text = string.Format(Strings.SummaryTitleFmt, s.day) + "  ·  " + Strings.TierShortName(s.tier);
             SetMoney(rowRevenue, s.revenue, true);
             SetMoney(rowTips, s.tips, true);
@@ -217,6 +233,7 @@ namespace Cafe
             }
 
             int net = s.NetProfit;
+            profitTarget = net;
             profitValue.text = (net >= 0 ? "+" : "") + Strings.FormatInt(net) + " Xu";
             profitValue.color = net >= 0 ? HudBuilder.GoodDark : HudBuilder.Red;
 
@@ -242,6 +259,10 @@ namespace Cafe
 
             root.SetActive(true);
             popTimer = 0f;
+            profitChip.localScale = Vector3.one;
+            profitPop = -1f;
+            countTimer = GraphicsQuality.ReduceMotion ? -1f : 0f;
+            if (countTimer >= 0f) WriteCount(0f);
             card.localScale = new Vector3(0.9f, 0.9f, 1f);
             dim.color = new Color(0f, 0f, 0f, 0f);
         }
@@ -270,15 +291,36 @@ namespace Cafe
             rowMissions.value.color = book.HasClaimable ? HudBuilder.Red : HudBuilder.GoodDark;
         }
 
-        private static void SetMoney(Row row, int v, bool sign)
+        private void SetMoney(Row row, int v, bool sign)
         {
-            row.value.text = (v > 0 && sign ? "+" : "") + Strings.FormatInt(v) + " Xu";
+            row.target = v;
+            row.sign = sign;
+            row.value.text = MoneyText(v, sign);
             row.value.color = v < 0 ? HudBuilder.Red : (v == 0 ? HudBuilder.InkSoft : HudBuilder.GoodDark);
+            if (!moneyRows.Contains(row)) moneyRows.Add(row);
+        }
+
+        private static string MoneyText(int v, bool sign)
+        {
+            return (v > 0 && sign ? "+" : "") + Strings.FormatInt(v) + " Xu";
+        }
+
+        /// Ghi các số tiền ở tỉ lệ k (0..1) của giá trị thật.
+        private void WriteCount(float k)
+        {
+            for (int i = 0; i < moneyRows.Count; i++)
+            {
+                Row r = moneyRows[i];
+                r.value.text = MoneyText(Mathf.RoundToInt(r.target * k), r.sign);
+            }
+            int net = Mathf.RoundToInt(profitTarget * k);
+            profitValue.text = (net >= 0 ? "+" : "") + Strings.FormatInt(net) + " Xu";
         }
 
         /// Gọi mỗi frame từ HudController: hiệu ứng bật lên.
         public void Tick()
         {
+            if (root.activeSelf) TickCount(Time.unscaledDeltaTime);
             if (popTimer < 0f) return;
             popTimer += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(popTimer / PopTime);
@@ -293,6 +335,34 @@ namespace Cafe
                 popTimer = -1f;
                 card.localScale = Vector3.one;
                 dim.color = new Color(0f, 0f, 0f, 0.55f);
+            }
+        }
+
+        /// Đếm số tiền lên 0,6 s rồi nảy chip "Lãi ròng" (chỉ chạy khi bảng vừa mở).
+        private void TickCount(float dt)
+        {
+            if (countTimer >= 0f)
+            {
+                countTimer += dt;
+                float k = Mathf.Clamp01(countTimer / CountSeconds);
+                WriteCount(1f - (1f - k) * (1f - k));
+                if (k >= 1f)
+                {
+                    countTimer = -1f;
+                    profitPop = 0f;
+                }
+            }
+            if (profitPop >= 0f)
+            {
+                profitPop += dt;
+                float k = Mathf.Clamp01(profitPop / 0.3f);
+                float s = 1f + 0.1f * Mathf.Sin(k * Mathf.PI);
+                profitChip.localScale = new Vector3(s, s, 1f);
+                if (k >= 1f)
+                {
+                    profitPop = -1f;
+                    profitChip.localScale = Vector3.one;
+                }
             }
         }
     }

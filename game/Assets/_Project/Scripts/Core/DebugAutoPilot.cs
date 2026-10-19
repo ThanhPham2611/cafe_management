@@ -26,6 +26,10 @@ namespace Cafe
     ///   -shotzones            mở lần lượt 3 khu bằng đường mua thật và chụp từng khu + bảng Mở rộng (cần -autoshot, -t3xu để đủ Xu)
     ///   -gfxcycle             đổi mức đồ họa giữa chừng (Vừa -> Thấp -> Cao) và chụp từng mức, không lưu lựa chọn
     ///   -shotsettings         mở bảng Cài đặt đồ họa rồi chụp màn hình (cần -autoshot)
+    ///   -stations <n>         (cấp 3) bot đặt n quầy pha chế phụ (tối đa 2) gần quầy chính khi đủ Xu; -passes <n> tương tự cho quầy line
+    ///   -nostationslots       tắt "+1 chỗ thuê Pha chế mỗi quầy pha phụ" (tách hiệu ứng tốc độ khỏi hiệu ứng thêm người).
+    ///                         Cấp 3 mỗi ngày in "[AutoPilot] QUẦY pha=.. line=.. kệĐầy=.. tựGiao=.. lyPha/NV=.." (docs/stations_spec.md §3)
+    ///   -shotlamps            (cấp 2+) đặt 2 đèn quầy lên mặt quầy pha, chụp quầy lúc 10h / 17h30 / 21h và MENU đang mở (cần -autoshot)
     ///   -gfx low|medium|high  ép mức đồ họa (bản Development); log "[Gfx]" cho biết mức đang dùng
     ///   -cleaners <n>         số nhân viên Dọn dẹp bot thuê (mặc định = tối đa của cấp)
     ///   -fullstaff            thuê đủ nhân viên của cấp ngay khi đủ tiền tuyển (không chờ đủ ghế / quỹ dự phòng)
@@ -38,12 +42,14 @@ namespace Cafe
     public class DebugAutoPilot : MonoBehaviour
     {
         string shotDir;
+        int brewShotCount;
         bool autoplay;
         bool autoshop;
         bool autorecipes;
-        bool cheatXu, cheatRp, autoUpgrade, autoUpgrade3, cheatT3, fullStaff, noMachines, autoZones, shotZones, bestMenu, gfxCycle, shotSettings, autoDecor3, autoStaff, noBrewer, autoBuy, autoHidden, upgradeStaff, perf, autoDecor, autoPrep, shotMissions;
+        bool cheatXu, cheatRp, autoUpgrade, autoUpgrade3, cheatT3, fullStaff, noMachines, autoZones, shotZones, bestMenu, gfxCycle, shotSettings, shotLamps, autoDecor3, autoStaff, noBrewer, autoBuy, autoHidden, upgradeStaff, perf, autoDecor, autoPrep, shotMissions, paintTest;
         bool prepBought, missionsShot;
         int cleanerLimit = 99;
+        int stationTarget, passTarget; // -stations / -passes
         int t3ExtraXu;
         int targetDays = 1;
         int daysPlayed;
@@ -101,6 +107,7 @@ namespace Cafe
             p.fullStaff = Has(args, "-fullstaff");
             p.noMachines = Has(args, "-nomachines");
             p.shotSettings = Has(args, "-shotsettings");
+            p.shotLamps = Has(args, "-shotlamps");
             p.autoZones = Has(args, "-autozones");
             p.bestMenu = Has(args, "-bestmenu");
             string sp = Arg(args, "-staffprio");
@@ -115,6 +122,13 @@ namespace Cafe
             string tx = Arg(args, "-t3xu");
             int txn;
             if (tx != null && int.TryParse(tx, out txn) && Debug.isDebugBuild) p.t3ExtraXu = Mathf.Max(0, txn);
+            string stn = Arg(args, "-stations");
+            int stnN;
+            if (stn != null && int.TryParse(stn, out stnN)) p.stationTarget = Mathf.Clamp(stnN, 0, GameBalance.BrewStationMaxCount);
+            string pas = Arg(args, "-passes");
+            int pasN;
+            if (pas != null && int.TryParse(pas, out pasN)) p.passTarget = Mathf.Clamp(pasN, 0, 2);
+            if (Has(args, "-nostationslots")) StationRules.HireSlotsEnabled = false;
             string cl = Arg(args, "-cleaners");
             int cln;
             if (cl != null && int.TryParse(cl, out cln)) p.cleanerLimit = Mathf.Clamp(cln, 0, 9);
@@ -127,6 +141,7 @@ namespace Cafe
             p.autoPrep = Has(args, "-autoprep");
             p.shotMissions = Has(args, "-shotmissions");
             p.autoDecor = Has(args, "-autodecor") || Has(args, "-autodecor3");
+            p.paintTest = Has(args, "-paint");
             string days = Arg(args, "-days");
             int nd;
             if (days != null && int.TryParse(days, out nd)) p.targetDays = Mathf.Clamp(nd, 1, 200);
@@ -191,6 +206,9 @@ namespace Cafe
             if (autoHidden) StartCoroutine(HiddenMenuLoop());
             if (perf) DebugPerfProbe.Attach();
             if (autoDecor) StartCoroutine(DecorTest());
+            if (shotLamps) StartCoroutine(LampsTest());
+            if (stationTarget > 0 || passTarget > 0) StartCoroutine(StationLoop());
+            if (paintTest) StartCoroutine(PaintTest());
             if (shotDir != null) GameEvents.LevelUp += OnLevelUpShot;   // chụp hiệu ứng lên level (cần -autoshot)
             if (shotSettings) StartCoroutine(SettingsShot());
             if (shotZones) StartCoroutine(ZoneShots());
@@ -233,6 +251,8 @@ namespace Cafe
             if (CleaningRules.Enabled)
                 Debug.Log($"[AutoPilot] CI cuối ngày {s.day}: TB={s.cleanliness:0.0} hiện tại={CleaningRules.CurrentCI:0.0}");
             if (tierNow >= 3 && tg.Grid != null && tg.Grid.Zones != null) Debug.Log("[AutoPilot] KHU " + ZoneSummary(tg));
+            if (tierNow >= 3 && tg.Grid != null && tg.Staff != null) Debug.Log("[AutoPilot] " + StationSummary(tg));
+            StationStats.Reset();
             if (autorecipes) LogRecipes();
             StartCoroutine(FinishAfterSummary());
         }
@@ -453,7 +473,7 @@ namespace Cafe
         {
             // Vòng Dọn dẹp -> Phục vụ -> Pha chế lặp tới trần lớn nhất (cấp 3 đủ khu: 6 / 5 / 6); trần thật do CanHire quyết định
             var order = new System.Collections.Generic.List<StaffRole>();
-            for (int round = 0; round < 6; round++)
+            for (int round = 0; round < 8; round++) // 8: Pha chế đủ khu + 2 quầy pha phụ
             {
                 order.Add(StaffRole.Cleaner);
                 order.Add(StaffRole.Server);
@@ -522,6 +542,132 @@ namespace Cafe
         }
 
         /// Số việc mỗi vai trò đã làm trong ngày (để chứng minh nhân viên thật sự làm việc).
+        /// Quầy pha phụ / quầy line trong ngày: số quầy đang đặt, số lần kệ giao đầy (Pha chế phải tự đi giao), số ly Pha chế tự giao,
+        /// số ly trung bình mỗi Pha chế; kèm số Pha chế / trần, số người có chỗ ở quầy pha phụ, sức chứa kệ.
+        static string StationSummary(GameBootstrap g)
+        {
+            int brewers = 0, cups = 0, spots = 0;
+            foreach (StaffWorker w in g.Staff.Workers)
+            {
+                if (w == null || w.Role != StaffRole.Brewer) continue;
+                brewers++;
+                cups += w.JobsDoneToday;
+                if (w.HasBrewSpot) spots++;
+            }
+            float perBrewer = brewers > 0 ? (float)cups / brewers : 0f;
+            return $"QUẦY pha={g.Grid.BrewStationCount} line={CountPlaced(g, PassCounterId)} kệĐầy={StationStats.ShelfFull} tựGiao={StationStats.SelfDelivered} " +
+                   $"lyPha/NV={perBrewer:0.0} (Pha chế {brewers}/{g.Staff.MaxFor(StaffRole.Brewer)}, có chỗ {spots}, kệ {g.Shelf.Capacity})";
+        }
+
+        const string BrewStationId = "Counter_Brew_4x2";
+        const string PassCounterId = "Counter_Pass_4x1";
+
+        static int CountPlaced(GameBootstrap g, string id)
+        {
+            int n = 0;
+            for (int i = 0; i < g.Grid.Placed.Count; i++)
+                if (g.Grid.Placed[i] != null && g.Grid.Placed[i].Def != null && g.Grid.Placed[i].Def.id == id) n++;
+            return n;
+        }
+
+        /// -stations / -passes: ở nhà hàng (cấp 3), khi quán mở và không đang chuyển cấp, đặt quầy pha phụ (trước) rồi quầy line gần
+        /// quầy chính qua đúng luồng build mode (Builder.DebugPlace) khi đủ Xu (giữ 5.000 Xu dự phòng như máy móc).
+        IEnumerator StationLoop()
+        {
+            bool stationsDone = stationTarget <= 0, passesDone = passTarget <= 0;
+            while (!stationsDone || !passesDone)
+            {
+                yield return new WaitForSeconds(2f);
+                var g = GameBootstrap.Instance;
+                if (g == null || g.Tier == null || g.Day == null || g.Grid == null || g.Builder == null || g.Wallet == null) continue;
+                if (g.Tier.Current < 3 || g.Tier.Transitioning || g.Day.CurrentPhase != DayCycle.Phase.Open) continue;
+                if (!stationsDone)
+                {
+                    int r = TryPlaceStation(g, BrewStationId, stationTarget, g.Grid.BrewStationCount, true);
+                    if (r != 0) stationsDone = true;
+                    else continue; // chưa đủ Xu / vừa đặt một quầy: chưa mua quầy line
+                }
+                if (!passesDone && TryPlaceStation(g, PassCounterId, passTarget, CountPlaced(g, PassCounterId), false) != 0) passesDone = true;
+            }
+        }
+
+        /// Đặt thêm một quầy nếu chưa đủ `target`. 1 = đã đủ, 0 = chưa (thiếu Xu hoặc vừa đặt một cái), -1 = bỏ (không có def / không có chỗ).
+        static int TryPlaceStation(GameBootstrap g, string id, int target, int have, bool needStandSide)
+        {
+            if (have >= target) return 1;
+            FurnitureDef def = g.GetDef(id);
+            if (def == null || def.prefab == null) { Debug.Log($"[AutoPilot] QUẦY {id}: KHÔNG có FurnitureDef/prefab"); return -1; }
+            int price = ShopRules.Price(g.Grid, def);
+            if (g.Wallet.Xu < price + 5000) return 0;
+            int xu0 = g.Wallet.Xu;
+            Vector2Int at;
+            bool ok = PlaceNearBar(g, def, needStandSide, out at);
+            Debug.Log($"[AutoPilot] QUẦY mua {id}: {(ok ? "đã đặt ô " + at : "KHÔNG có chỗ")}, Xu {xu0} -> {g.Wallet.Xu}, " +
+                      $"pha phụ={g.Grid.BrewStationCount} trần Pha chế={g.Staff.MaxFor(StaffRole.Brewer)} kệ={g.Shelf.Capacity}");
+            if (!ok) return -1;
+            return have + 1 >= target ? 1 : 0;
+        }
+
+        /// Quét các ô trong sảnh theo khoảng cách tới quầy chính (gần trước), chừa ô quanh chỗ chủ quán đứng; quầy pha phụ còn cần các
+        /// điểm đứng phía nhân viên (StationRules.StaffSide, theo góc đặt) rơi vào ô trống trong khu đã mở.
+        static bool PlaceNearBar(GameBootstrap g, FurnitureDef def, bool needStandSide, out Vector2Int placedAt)
+        {
+            placedAt = new Vector2Int(-1, -1);
+            GridSystem grid = g.Grid;
+            PlacedFurniture bar = grid.BrewStationFurniture;
+            RectInt scan = ScanRect(g);
+            Vector2 barCenter = bar != null
+                ? new Vector2(bar.Cell.x + bar.Footprint.x * 0.5f, bar.Cell.y + bar.Footprint.y * 0.5f)
+                : scan.center;
+            Vector2Int ownerCell = new Vector2Int(int.MinValue / 2, int.MinValue / 2);
+            if (g.Owner != null) grid.WorldToCell(g.Owner.CartPoint, out ownerCell);
+
+            var cells = new System.Collections.Generic.List<Vector2Int>();
+            for (int y = scan.yMin; y < scan.yMax; y++)
+                for (int x = scan.xMin; x < scan.xMax; x++)
+                    cells.Add(new Vector2Int(x, y));
+            // DebugPlace đặt theo góc build mode chọn cho món mới (quay mặt +Z về phía camera): kiểm tra theo đúng góc đó
+            int rot = FacingCameraRot();
+            Vector2Int fp = GridSystem.RotatedFootprint(def.footprint, rot);
+            Vector2 half = new Vector2(fp.x * 0.5f, fp.y * 0.5f);
+            cells.Sort((a, b) => (new Vector2(a.x, a.y) + half - barCenter).sqrMagnitude
+                .CompareTo((new Vector2(b.x, b.y) + half - barCenter).sqrMagnitude));
+
+            for (int i = 0; i < cells.Count; i++)
+            {
+                Vector2Int c = cells[i];
+                // Chừa 1 ô quanh chỗ chủ quán đứng ở quầy chính
+                if (ownerCell.x >= c.x - 1 && ownerCell.x <= c.x + fp.x && ownerCell.y >= c.y - 1 && ownerCell.y <= c.y + fp.y) continue;
+                if (!grid.CanPlace(def, c, rot)) continue;
+                if (needStandSide && !StandSideFree(grid, def, c, rot)) continue;
+                if (g.Builder.DebugPlace(def, c)) { placedAt = c; return true; }
+            }
+            return false;
+        }
+
+        /// Góc (bước 90°) build mode dùng cho món mới: +Z của model quay về phía camera (BuildModeController.FacingCameraRotation).
+        static int FacingCameraRot()
+        {
+            Camera cam = Camera.main;
+            if (cam == null) return 0;
+            Vector3 toCam = -cam.transform.forward;
+            return GridSystem.NormalizeRotation(Mathf.RoundToInt(Mathf.Atan2(toCam.x, toCam.z) * Mathf.Rad2Deg / 90f));
+        }
+
+        /// Mọi điểm đứng của quầy pha phụ (đặt ở góc rot) nằm trên ô trống trong khu đã mở.
+        static bool StandSideFree(GridSystem grid, FurnitureDef def, Vector2Int cell, int rot)
+        {
+            Vector3 center = grid.FootprintCenter(def, cell, rot);
+            Quaternion q = Quaternion.Euler(0f, 90f * rot, 0f);
+            for (int i = 0; i < def.brewSpots; i++)
+            {
+                Vector2Int sc;
+                if (!grid.WorldToCell(center + q * StationRules.SpotLocal(def.footprint, def.brewSpots, i), out sc)) return false;
+                if (grid.GetAt(sc) != null || !grid.IsCellOpen(sc)) return false;
+            }
+            return true;
+        }
+
         static string StaffWorkSummary(GameBootstrap g)
         {
             var sb = new System.Text.StringBuilder();
@@ -862,6 +1008,135 @@ namespace Cafe
                       $"F={g.Grid.FurnitureScore:0.00} ({g.Grid.ComfortStyleTotal}/{g.Grid.FRef})");
         }
 
+        /// -paint: ở cấp 2+ (dùng kèm -autoupgrade / -cheatt3), mở bảng Trang trí, xem thử từng sơn tường / sàn (chụp nếu có -autoshot),
+        /// rồi mua và dùng hai mẫu cùng họ qua đúng luồng TierManager.BuyOrApplyDecor; log điểm phong cách + số tường còn trong phòng.
+        IEnumerator PaintTest()
+        {
+            GameBootstrap g = null;
+            int needTier = cheatT3 || autoUpgrade3 ? 3 : 2;
+            while (g == null || g.Tier == null || g.Tier.Current < needTier || g.Tier.Transitioning || g.Hud == null || g.Day.CurrentPhase != DayCycle.Phase.Open
+                   || (autoZones && g.Tier.OpenZoneCount == 0))
+            {
+                yield return new WaitForSeconds(2f);
+                g = GameBootstrap.Instance;
+            }
+            yield return new WaitForSeconds(2f);
+            DecorPanel panel = g.Hud.DebugDecorPanel;
+            Debug.Log($"[AutoPilot] PAINT cấp {g.Tier.Current} Lv{g.Reputation.Level}: tường {g.Tier.Decor.WallFor(g.Tier.Current)}, sàn {g.Tier.Decor.FloorFor(g.Tier.Current)}, " +
+                      $"bonus {g.Grid.DecorBonus}, F={g.Grid.FurnitureScore:0.00}");
+            panel.DebugOpen(true);
+            foreach (DecorSlot slot in new[] { DecorSlot.Wall, DecorSlot.Floor })
+                foreach (DecorOption o in DecorCatalog.For(slot))
+                {
+                    if (g.Tier.Current < o.minTier) continue;
+                    panel.DebugPick(o.id);
+                    yield return new WaitForSecondsRealtime(0.8f);
+                    if (shotDir != null) Shot("paint_" + o.id);
+                    yield return new WaitForSecondsRealtime(0.3f);
+                }
+            panel.DebugOpen(false);
+            yield return null;
+
+            g.Wallet.Earn(20000);
+            g.Gems.Add(500);
+            DecorCheck locked = g.Tier.BuyOrApplyDecor("w_hoian");
+            Debug.Log($"[AutoPilot] PAINT mua w_hoian ở Lv{g.Reputation.Level}: {locked}");
+            if (g.Reputation.Level < 9) g.Reputation.Add(LevelRules.RpFor(9) - g.Reputation.RP + 1f);
+            foreach (string id in new[] { "w_brick", "f_terracotta", "w_hoian", "f_hue" })
+            {
+                int xu0 = g.Wallet.Xu, gem0 = g.Gems.Gems;
+                DecorCheck r = g.Tier.BuyOrApplyDecor(id);
+                yield return null;
+                Transform room = GameObject.Find("Room_T" + g.Tier.Current)?.transform;
+                int walls = 0, floors = 0;
+                if (room != null)
+                    foreach (Transform c in room)
+                    {
+                        if (!c.gameObject.activeSelf) continue;
+                        if (c.name.StartsWith("Wall_")) walls++;
+                        if (c.name == "Floor") floors++;
+                    }
+                Debug.Log($"[AutoPilot] PAINT {id}: {r}, Xu {xu0}->{g.Wallet.Xu}, Hạt {gem0}->{g.Gems.Gems}, bonus {g.Grid.DecorBonus}, " +
+                          $"F={g.Grid.FurnitureScore:0.00}, tường={walls} sàn={floors}");
+                if (shotDir != null) { yield return new WaitForSecondsRealtime(0.8f); Shot("paint_bought_" + id); }
+            }
+            Debug.Log($"[AutoPilot] PAINT xong: tường {g.Tier.Decor.WallFor(g.Tier.Current)}, sàn {g.Tier.Decor.FloorFor(g.Tier.Current)}");
+        }
+
+        /// -shotlamps: đặt Bóng đèn dây tóc + Đèn bàn quầy lên mặt quầy pha bằng luồng build mode thật (quét mọi ô, chỉ ô trên quầy hợp lệ),
+        /// rồi chụp quầy theo giờ (ngày / chiều / tối: đèn phải sáng khi trời tối) và chụp MENU đang mở.
+        IEnumerator LampsTest()
+        {
+            GameBootstrap g = null;
+            while (g == null || g.Tier == null || g.Tier.Current < 2 || g.Tier.Transitioning || g.Builder == null || g.Day.CurrentPhase != DayCycle.Phase.Open)
+            {
+                yield return new WaitForSeconds(2f);
+                g = GameBootstrap.Instance;
+            }
+            g.Wallet.Earn(5000);
+            yield return new WaitForSeconds(1f);
+            PlacedFurniture bar = g.Grid.BrewStationFurniture;
+            Debug.Log($"[AutoPilot] LAMPS quầy={(bar != null ? bar.Def.id : "KHÔNG CÓ")}, mặt quầy y={g.Grid.CounterTopY:0.00}");
+            foreach (string id in new[] { "Lamp_Bulb", "Lamp_Desk" })
+            {
+                FurnitureDef def = g.GetDef(id);
+                if (def == null || def.prefab == null) { Debug.Log($"[AutoPilot] LAMPS {id}: KHÔNG có FurnitureDef/prefab"); continue; }
+                int valid = 0;
+                bool ok = false;
+                Vector2Int at = Vector2Int.zero;
+                for (int y = 0; y < g.Grid.Size.y && !ok; y++)
+                    for (int x = 0; x < g.Grid.Size.x && !ok; x++)
+                    {
+                        var c = new Vector2Int(x, y);
+                        if (!g.Grid.CanPlace(def, c, 0)) continue;
+                        valid++;
+                        ok = g.Builder.DebugPlace(def, c);
+                        if (ok) at = c;
+                    }
+                PlacedFurniture pf = ok ? g.Grid.Placed[g.Grid.Placed.Count - 1] : null;
+                Debug.Log($"[AutoPilot] LAMPS {id}: {(ok ? "đã đặt ô " + at : "KHÔNG đặt được")}, counterMount={def.counterMount}, " +
+                          $"y={(pf != null ? pf.transform.position.y.ToString("0.00") : "-")}, Xu={g.Wallet.Xu}, ô hợp lệ đã thử={valid}");
+                yield return null;
+            }
+            if (shotDir == null) yield break;
+            yield return new WaitForSecondsRealtime(2f);
+            float keep = DayNightController.ForcedHour;
+            if (bar != null) g.CameraRig.FocusOn(bar.transform.position + Vector3.up * 1.05f, 4.5f, Vector3.back, 35f); // cận mặt quầy
+            foreach (float h in new[] { 10f, 17.5f, 21f })
+            {
+                DayNightController.ForcedHour = h;
+                yield return new WaitForSecondsRealtime(2f);
+                Shot("lamps_" + Mathf.RoundToInt(h * 10f));
+                yield return new WaitForSecondsRealtime(0.5f); // CaptureScreenshot ghi ở cuối khung: chờ trước khi đổi cảnh
+            }
+            DayNightController.ForcedHour = keep;
+            g.CameraRig.ClearFocus();
+            if (g.Hud != null)
+            {
+                yield return new WaitForSecondsRealtime(1.5f);
+                g.Hud.DebugOpenMenu(true);
+                yield return new WaitForSecondsRealtime(1f);
+                Shot("menu_open");
+                yield return new WaitForSecondsRealtime(0.5f);
+                g.Hud.DebugOpenMenu(false);
+            }
+            if (!autoUpgrade3) yield break;
+            // Cấp 3: chụp cận quầy pha phụ / quầy line mà bot (-stations / -passes) đã đặt
+            while (g.Tier.Current < 3 || g.Tier.Transitioning) yield return new WaitForSeconds(2f);
+            yield return new WaitForSeconds(60f);
+            int k = 0;
+            foreach (PlacedFurniture pf in g.Grid.Placed.ToArray())
+            {
+                if (pf == null || pf.Def == null || (pf.Def.brewSpots <= 0 && pf.Def.shelfSlots <= 0)) continue;
+                g.CameraRig.FocusOn(pf.transform.position + Vector3.up * 0.8f, 6f, Vector3.back, 40f);
+                yield return new WaitForSecondsRealtime(2f);
+                Shot("station_" + (k++) + "_" + pf.Def.id);
+                yield return new WaitForSecondsRealtime(0.5f);
+            }
+            g.CameraRig.ClearFocus();
+            Debug.Log($"[AutoPilot] LAMPS cấp 3: chụp {k} quầy");
+        }
+
         /// -autodecor: sau khi lên cấp 2, mua và đặt thử bộ trang trí kiểu Việt qua đúng luồng build mode (Builder.DebugPlace),
         /// kiểm tra luật đặt đồ + NavMesh rebake, rồi chụp màn hình (cần -autoshot và chạy có đồ họa).
         IEnumerator DecorTest()
@@ -1157,6 +1432,12 @@ namespace Cafe
                 float t0 = Time.time;
                 while (!g.Owner.IsAtCart && Time.time - t0 < 30f) yield return tap;
                 if (!g.Owner.IsAtCart || g.Station.Selected != o) continue;
+                // -autoshot: chụp khay pha đang mở (thưa: ly thứ 1, 21, 41…) để soát bố cục khay theo cấp quán
+                if (shotDir != null && (brewShotCount++ % 20) == 0)
+                {
+                    yield return new WaitForSecondsRealtime(0.4f); // chờ khay trượt lên xong
+                    Shot("brewtray_" + brewShotCount);
+                }
 
                 foreach (BrewStep step in o.recipe.steps)
                 {

@@ -4,18 +4,24 @@ using UnityEngine.UI;
 namespace Cafe
 {
     /// UI của chuyển cấp (phong cách "Clay Café"):
-    ///  - Cấp 1 / 2: thẻ tiến độ "Thuê mặt bằng" / "Mua nhà hàng" (Xu 12.400/18.000, RP 120/300) dưới tên quán, góc phải;
-    ///    đủ điều kiện thì thành nút vàng lớn.
+    ///  - Cấp 1 / 2: viên thuốc gọn "Nhà hàng 11%" + thanh mảnh dưới chip giờ, góc phải (docs/hud_brew_redesign_2026-10-18.md A2);
+    ///    chạm thì bung thẻ tiến độ đầy đủ (Xu 12.400/18.000, RP 120/300) 4 s, tự bung 3 s khi qua mốc 25/50/75%;
+    ///    đủ điều kiện thì thành nút vàng.
     ///  - Hộp xác nhận (đặt cọc 18.000 Xu / mua nhà hàng), màn đen mờ chuyển cảnh, pháo giấy + chữ "Khai trương!".
-    ///  - Cấp 2: dòng nhỏ "Thuê nhà: còn N ngày / Nợ" dưới thẻ; cấp 3: chỉ hiện nợ còn lại (nếu có).
+    ///  - Cấp 2: dòng nhỏ "Thuê nhà: còn N ngày" chỉ hiện (đỏ) khi còn <= 2 ngày, hoặc khi có nợ; cấp 3: chỉ hiện nợ còn lại.
     /// Dựng bằng code từ HudController.Init (UpgradePanel.Create); TierManager gọi Tick() mỗi frame (không đăng ký sự kiện).
     public class UpgradePanel
     {
-        private const float Margin = 24f;
-        private const float TopOffset = Margin + 96f + 6f + 40f + 10f; // dưới chip ngày + tên quán
-        private const float CardW = 440f;
-        private const float CardH = 170f;
-        private const float CtaH = 150f;
+        private const float Margin = 20f;
+        private const float TopOffset = 10f + 70f + 8f; // dưới chip giờ (HudController: TopMargin + ChipH)
+        private const float CardW = 375f;   // thẻ đầy đủ 300x140 (x1,25)
+        private const float CardH = 175f;
+        private const float CtaH = 120f;
+        private const float PillW = 275f;   // viên thuốc 220x36 (x1,25)
+        private const float PillH = 44f;    // hud_visual_polish §2: cao 44, đĩa icon_home 52 bên trái
+        private const float TapExpandSeconds = 4f;
+        private const float StageExpandSeconds = 3f;
+        private const int RentWarnDays = 2;
 
         private const int ConfettiCount = 72;
         private const float ConfettiMaxTime = 6f;
@@ -36,6 +42,17 @@ namespace Cafe
         private Text infoText;
         private int lastXu = int.MinValue, lastRp = int.MinValue, lastDays = int.MinValue, lastDebt = int.MinValue, lastNext = -1;
         private float pulse;
+
+        // viên thuốc gọn
+        private Image pill;
+        private Text pillText;
+        private Text pillPct;
+        private BarView pillBar;
+        private float expandUntil = -1f;
+        private bool pinned;
+        private int lastStage = -1;
+        private int lastPillXu = int.MinValue, lastPillRp = int.MinValue, lastPillNext = -1;
+        private bool rentUrgent;
 
         // lớp phủ
         private Canvas overlay;
@@ -92,13 +109,13 @@ namespace Cafe
             RectTransform c = lockedCard.Content;
 
             cardTitle = HudBuilder.AddText(c, "Title", Strings.TierCardTitle, 34, TextAnchor.MiddleLeft, HudBuilder.Ink, true, false);
-            HudBuilder.SetFixed(cardTitle.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -6f), new Vector2(384f, 38f));
+            HudBuilder.SetFixed(cardTitle.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -6f), new Vector2(CardW - 56f, 38f));
             HudBuilder.Fit(cardTitle, 22);
 
             xuText = HudBuilder.AddText(c, "Xu", "", 24, TextAnchor.MiddleLeft, HudBuilder.InkSoft, false, false);
-            HudBuilder.SetFixed(xuText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -44f), new Vector2(384f, 26f));
+            HudBuilder.SetFixed(xuText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -44f), new Vector2(CardW - 56f, 26f));
             xuBar = HudBuilder.CreateBar(c, "XuBar");
-            HudBuilder.SetFixed(xuBar.root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -72f), new Vector2(384f, 18f));
+            HudBuilder.SetFixed(xuBar.root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -72f), new Vector2(CardW - 56f, 18f));
             // Quỹ lên cấp 4 chặng: 3 vạch ở 25 / 50 / 75% (HouseFund); vạch sẫm lại khi đã qua chặng
             fundTicks = new Image[HouseFund.Stages - 1];
             for (int i = 0; i < fundTicks.Length; i++)
@@ -114,29 +131,48 @@ namespace Cafe
             }
 
             rpText = HudBuilder.AddText(c, "Rp", "", 24, TextAnchor.MiddleLeft, HudBuilder.InkSoft, false, false);
-            HudBuilder.SetFixed(rpText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -94f), new Vector2(384f, 26f));
+            HudBuilder.SetFixed(rpText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -94f), new Vector2(CardW - 56f, 26f));
             rpBar = HudBuilder.CreateBar(c, "RpBar");
-            HudBuilder.SetFixed(rpBar.root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -122f), new Vector2(384f, 18f));
+            HudBuilder.SetFixed(rpBar.root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -122f), new Vector2(CardW - 56f, 18f));
 
             // --- nút vàng lớn (đủ điều kiện)
             ctaWrap = HudBuilder.NewRect("TierCtaWrap", chipRoot);
             HudBuilder.SetFixed(ctaWrap, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(CardW, CtaH));
-            ClayButton cta = HudBuilder.AddLabelButton(ctaWrap, "TierCta", ClayStyle.Gold, Strings.TierCtaTitle, 52, OnTap, out ctaTitle);
+            ClayButton cta = HudBuilder.AddLabelButton(ctaWrap, "TierCta", ClayStyle.Gold, Strings.TierCtaTitle, 40, OnTap, out ctaTitle);
             HudBuilder.Stretch((RectTransform)cta.transform);
-            ctaTitle.rectTransform.offsetMin = new Vector2(10f, 46f);
+            ctaTitle.rectTransform.offsetMin = new Vector2(10f, 36f);
             ctaTitle.rectTransform.offsetMax = new Vector2(-10f, -2f);
             ctaSub = HudBuilder.AddText(cta.Content, "Sub", string.Format(Strings.TierCtaSubFmt, Strings.FormatInt(GameBalance.Tier2Deposit)),
-                28, TextAnchor.MiddleCenter, HudBuilder.Ink, false, false);
-            HudBuilder.SetRect(ctaSub.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(10f, 6f), new Vector2(-10f, 46f));
+                24, TextAnchor.MiddleCenter, HudBuilder.Ink, false, false);
+            HudBuilder.SetRect(ctaSub.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(10f, 4f), new Vector2(-10f, 38f));
+            HudBuilder.Fit(ctaSub, 16);
 
-            // --- cấp 2+: dòng thông tin thuê nhà / nợ, nằm dưới thẻ
-            infoText = HudBuilder.AddText(chipRoot, "Info", "", 28, TextAnchor.UpperRight, HudBuilder.Cream, true, true);
+            // --- viên thuốc gọn (mặc định): "Nhà hàng 11%" + thanh mảnh; chạm để bung thẻ đầy đủ vài giây
+            pill = HudBuilder.Chip(chipRoot, "TierPill", true);
+            HudBuilder.SetFixed(pill.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), Vector2.zero, new Vector2(PillW, PillH));
+            var pillBtn = pill.gameObject.AddComponent<Button>();
+            pillBtn.transition = Selectable.Transition.None;
+            pillBtn.onClick.AddListener(OnPillTap);
+            // đĩa icon_home 52 lồi ra trái, "Mặt bằng" Nunito 22 + "3%" Baloo 24 bên phải, thanh 10 px dọc đáy
+            Image home = HudBuilder.Icon(pill.transform, "Home", HudBuilder.T.iconHome != null ? HudBuilder.T.iconHome : HudBuilder.T.iconStar, 52f);
+            HudBuilder.SetFixed(home.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(10f, 3f), new Vector2(52f, 52f));
+            pillText = HudBuilder.AddText(pill.transform, "Text", "", 22, TextAnchor.MiddleLeft, HudBuilder.Ink, false, false);
+            HudBuilder.SetRect(pillText.rectTransform, Vector2.zero, Vector2.one, new Vector2(42f, 12f), new Vector2(-70f, -1f));
+            HudBuilder.Fit(pillText, 14);
+            pillPct = HudBuilder.AddText(pill.transform, "Pct", "", 24, TextAnchor.MiddleRight, HudBuilder.Ink, true, false);
+            HudBuilder.SetRect(pillPct.rectTransform, new Vector2(1f, 0f), Vector2.one, new Vector2(-70f, 12f), new Vector2(-14f, -1f));
+            pillBar = HudBuilder.CreateBar(pill.transform, "Bar");
+            HudBuilder.SetRect(pillBar.root, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(40f, 4f), new Vector2(-14f, 14f));
+
+            // --- cấp 2+: dòng thông tin thuê nhà (chỉ khi gấp) / nợ, nằm dưới viên thuốc / thẻ
+            infoText = HudBuilder.AddText(chipRoot, "Info", "", 26, TextAnchor.UpperRight, HudBuilder.Cream, true, true);
             infoText.horizontalOverflow = HorizontalWrapMode.Wrap;
             HudBuilder.SetFixed(infoText.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(0f, -(CardH + 8f)), new Vector2(CardW, 84f));
 
             lockedCard.gameObject.SetActive(false);
             ctaWrap.gameObject.SetActive(false);
+            pill.gameObject.SetActive(false);
             infoText.gameObject.SetActive(false);
             chipRoot.gameObject.SetActive(false);
         }
@@ -238,6 +274,18 @@ namespace Cafe
             tier.RequestUpgrade();
         }
 
+        /// Chạm viên thuốc: bung thẻ đầy đủ 4 s.
+        private void OnPillTap()
+        {
+            expandUntil = Time.unscaledTime + TapExpandSeconds;
+        }
+
+        /// Hướng dẫn trỏ vào thẻ mục tiêu (HudController.RevealForTutorial): giữ thẻ bung tới khi thả.
+        public void SetPinned(bool v)
+        {
+            pinned = v;
+        }
+
         private void OnYes()
         {
             HideConfirm();
@@ -276,13 +324,24 @@ namespace Cafe
             bool showCta = !hidden && affordable;
             string info = hidden ? "" : RefreshInfo();
             bool showInfo = info.Length > 0;
+            if (showLocked) RefreshProgress(); // trước khi quyết định bung: qua mốc quỹ 25/50/75% thì tự bung
+            bool expanded = pinned || Time.unscaledTime < expandUntil;
+            bool showCard = showLocked && expanded;
+            bool showPill = showLocked && !expanded;
 
-            SetActive(lockedCard.gameObject, showLocked);
+            SetActive(lockedCard.gameObject, showCard);
+            SetActive(pill.gameObject, showPill);
             SetActive(ctaWrap.gameObject, showCta);
             SetActive(infoText.gameObject, showInfo);
             SetActive(chipRoot.gameObject, showLocked || showCta || showInfo);
 
-            if (showLocked) RefreshProgress();
+            if (showPill) RefreshPill();
+            if (showInfo)
+            {
+                float top = showCard ? CardH : (showCta ? CtaH : (showPill ? PillH : 0f));
+                infoText.rectTransform.anchoredPosition = new Vector2(0f, -(top + 6f));
+                infoText.color = rentUrgent ? new Color(1f, 0.6f, 0.52f, 1f) : HudBuilder.Cream;
+            }
             if (showCta)
             {
                 RefreshCta();
@@ -291,6 +350,25 @@ namespace Cafe
                 ctaWrap.localScale = new Vector3(s, s, 1f);
             }
             if (showInfo) infoText.text = info;
+        }
+
+        /// Viên thuốc: "Nhà hàng 11%" (tiến độ = phần chậm hơn giữa Xu và RP) + thanh mảnh; đỏ khi sắp tới hạn tiền thuê.
+        private void RefreshPill()
+        {
+            pill.color = rentUrgent ? new Color(1f, 0.72f, 0.66f, 1f) : (HudBuilder.T.chip != null ? Color.white : HudBuilder.Cream);
+            int xu = tier.XuNow;
+            int rp = tier.RpNow;
+            int next = tier.NextTier;
+            if (xu == lastPillXu && rp == lastPillRp && next == lastPillNext) return;
+            lastPillXu = xu;
+            lastPillRp = rp;
+            lastPillNext = next;
+            float fx = tier.NextTierXu > 0 ? xu / (float)tier.NextTierXu : 1f;
+            float fr = tier.NextTierRp > 0 ? rp / (float)tier.NextTierRp : 1f;
+            float f = Mathf.Clamp01(Mathf.Min(fx, fr));
+            pillText.text = Strings.TierShortName(next);
+            pillPct.text = string.Format(Strings.GoalPctFmt, Mathf.FloorToInt(f * 100f));
+            pillBar.Set(f, HudBuilder.Accent);
         }
 
         private static void SetActive(GameObject go, bool v)
@@ -313,6 +391,7 @@ namespace Cafe
             int rp = tier.RpNow;
             int next = tier.NextTier;
             if (xu == lastXu && rp == lastRp && next == lastNext) return;
+            if (next != lastNext) lastStage = -1;
             lastXu = xu;
             lastRp = rp;
             lastNext = next;
@@ -324,6 +403,8 @@ namespace Cafe
             rpText.text = string.Format(Strings.TierRpFmt, Strings.FormatInt(rp), Strings.FormatInt(needRp), LevelRules.LevelFor(needRp));
             xuBar.Set(xu / (float)needXu, xu >= needXu ? HudBuilder.Good : HudBuilder.Accent);
             int stage = HouseFund.StageFor(xu, needXu);
+            if (lastStage >= 0 && stage > lastStage) expandUntil = Time.unscaledTime + StageExpandSeconds; // qua mốc 25/50/75%: tự bung
+            lastStage = stage;
             for (int i = 0; i < fundTicks.Length; i++)
                 fundTicks[i].color = stage > i ? new Color(1f, 1f, 1f, 0.9f) : new Color(HudBuilder.Ink.r, HudBuilder.Ink.g, HudBuilder.Ink.b, 0.55f);
             rpBar.Set(rp / (float)needRp, rp >= needRp ? HudBuilder.Good : HudBuilder.Accent);
@@ -331,19 +412,20 @@ namespace Cafe
 
         private string infoCache = "";
 
-        /// Dòng dưới thẻ: cấp 2 = "Thuê nhà: còn N ngày" (+ nợ); cấp 3 = chỉ nợ còn lại. Rỗng = không hiện.
+        /// Dòng dưới viên thuốc: cấp 2 = "Thuê nhà: còn N ngày" chỉ khi còn <= 2 ngày (+ nợ); cấp 3 = chỉ nợ còn lại. Rỗng = không hiện.
         private string RefreshInfo()
         {
             RentLedger l = tier.Ledger;
-            if (l == null || tier.Current < 2) return "";
+            if (l == null || tier.Current < 2) { rentUrgent = false; return ""; }
             int days = tier.IsRented ? l.DaysUntilRent : -1;
             int debt = l.Debt;
             if (days == lastDays && debt == lastDebt) return infoCache;
             lastDays = days;
             lastDebt = debt;
 
+            rentUrgent = days >= 0 && days <= RentWarnDays;
             string debtLine = debt > 0 ? string.Format(Strings.DebtInfoFmt, Strings.FormatInt(debt)) : "";
-            if (days < 0) return infoCache = debtLine;
+            if (!rentUrgent) return infoCache = debtLine;
             string rent = days <= 0 ? Strings.RentInfoTomorrow : string.Format(Strings.RentInfoFmt, days);
             return infoCache = debt > 0 ? rent + "\n" + debtLine : rent;
         }

@@ -163,7 +163,8 @@ namespace Cafe
             Recipes.Load(hasSave ? save : null);
             if (Tier != null) Tier.TierChanged += Recipes.NotifyTierChanged; // lên cấp: mở món thường của cấp mới, làm mới khay/sổ
             Stock.Init(GameBalance.StartCups);
-            Shelf = new ReadyShelf(() => Stock.Return()); // ly bị bỏ (khách đi mất) trả ly sạch về kho
+            // ly bị bỏ (khách đi mất) trả ly sạch về kho; sức chứa 6 + 4 mỗi quầy line đang đặt (Grid tạo ngay sau, đọc lúc dùng)
+            Shelf = new ReadyShelf(() => Stock.Return(), () => StationRules.ShelfCapacity(Grid != null ? Grid.ShelfSlotsTotal : 0));
             int startDay = hasSave ? Mathf.Max(1, save.day) : 1;
             loadedStartDay = startDay;
             dayStartXu = Wallet.Xu;
@@ -227,7 +228,8 @@ namespace Cafe
             // Chủ quán (người chơi) đứng ở xe đẩy; phải có trước HUD vì BrewPanel nghe sự kiện của chủ quán
             Owner = OwnerController.Create(this, OwnerLook);
             Sign = ShopSign.Create(this);
-            Staff = new StaffRoster(Wallet, Tier.Ledger, () => Tier != null ? Tier.Current : 1, () => Tier != null ? Tier.OpenZoneCount : 0);
+            Staff = new StaffRoster(Wallet, Tier.Ledger, () => Tier != null ? Tier.Current : 1, () => Tier != null ? Tier.OpenZoneCount : 0,
+                () => Tier != null && Grid != null ? StationRules.StationsCounted(Tier.Current, Grid.BrewStationCount, StationRules.HireSlotsEnabled) : 0);
             Staff.Load(hasSave ? save : null);
             Staff.Attach(this);
             Regulars = new RegularsManager();

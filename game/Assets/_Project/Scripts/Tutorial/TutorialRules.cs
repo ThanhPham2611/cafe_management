@@ -355,5 +355,24 @@ namespace Cafe
             centerX = canvasW * 0.5f;
             return false;
         }
+
+        /// Bề rộng thẻ lớn nhất vừa dải trống rộng hơn ở hai bên bảng (trừ lề hai phía). Có thể âm khi bảng phủ kín.
+        public static float SideFreeWidth(float avoidMinX, float avoidMaxX, float canvasW, float margin)
+        {
+            float free = avoidMinX > canvasW - avoidMaxX ? avoidMinX : canvasW - avoidMaxX;
+            return free - margin * 2f;
+        }
+
+        /// Thẻ đặt ở đáy màn hình (khi bảng modal không chừa chỗ hai bên): tâm X sao cho thẻ không đè lên vùng chỉ (lỗ).
+        /// Ưu tiên sát trái, rồi sát phải; không bên nào vừa thì bên rộng hơn (giữ trong màn hình). Không có lỗ: giữa màn hình.
+        public static float PickBottomCenterX(bool hasHole, float holeMinX, float holeMaxX, float canvasW, float cardW, float margin)
+        {
+            float leftX = margin + cardW * 0.5f;
+            float rightX = canvasW - margin - cardW * 0.5f;
+            if (!hasHole) return canvasW * 0.5f;
+            if (holeMinX >= cardW + margin * 2f) return leftX;
+            if (canvasW - holeMaxX >= cardW + margin * 2f) return rightX;
+            return holeMinX >= canvasW - holeMaxX ? leftX : rightX;
+        }
     }
 }

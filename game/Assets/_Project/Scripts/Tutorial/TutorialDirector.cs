@@ -554,7 +554,11 @@ namespace Cafe
             BrewStep bs = r.steps[idx];
             StepAction act = StepActions.For(bs);
             string name = Strings.StepName(bs);
-            string text = act == StepAction.Hold ? string.Format(TutorialStrings.BrewHoldFmt, name)
+            // Rót: lần rót đầu chỉ cần chạm (ly tự đầy, không thể sai); lần rót sau dạy vạch vàng
+            bool legacy = StepActions.UseLegacyHold;
+            string holdFmt = legacy ? TutorialStrings.BrewHoldLegacyFmt
+                           : (FirstPourIndex(r) == idx ? TutorialStrings.BrewHoldFmt : TutorialStrings.BrewPourBandFmt);
+            string text = act == StepAction.Hold ? string.Format(holdFmt, name)
                         : act == StepAction.Tap ? string.Format(TutorialStrings.BrewTapFmt, name)
                         : TutorialStrings.BrewOther;
             if (idx > 0 && act == StepAction.Tap) text = string.Format(TutorialStrings.BrewTapFmt, name);
@@ -562,10 +566,19 @@ namespace Cafe
             Present(new TutorialPrompt
             {
                 text = text,
-                target = TutorialTarget.Ui(() => FindUi(key)),
+                target = TutorialTarget.Ui(() => RevealAndFind(key)),
                 block = true,
-                hand = act == StepAction.Hold ? HandMode.Hold : HandMode.Tap
+                hand = act == StepAction.Hold && legacy ? HandMode.Hold : HandMode.Tap
             });
+        }
+
+        /// Chỉ số bước rót đầu tiên của công thức (-1 nếu không có).
+        private static int FirstPourIndex(RecipeDef r)
+        {
+            if (r == null || r.steps == null) return -1;
+            for (int i = 0; i < r.steps.Length; i++)
+                if (StepActions.For(r.steps[i]) == StepAction.Hold) return i;
+            return -1;
         }
 
         // ------------------------------------------------------------------ gợi ý theo tình huống
@@ -743,8 +756,8 @@ namespace Cafe
             {
                 case TutorialTips.NoCup: text = TutorialStrings.NoCup; target = UiTarget("CupChip"); break;
                 case TutorialTips.Lost: text = TutorialStrings.Lost; target = UiTarget("ShopButton"); break;
-                case TutorialTips.Upgrade1: text = TutorialStrings.Upgrade1; target = TutorialTarget.Ui(() => FindUi("TierCta") ?? FindUi("TierCard")); break;
-                case TutorialTips.Upgrade2: text = TutorialStrings.Upgrade2; target = TutorialTarget.Ui(() => FindUi("TierCta") ?? FindUi("TierCard")); break;
+                case TutorialTips.Upgrade1: text = TutorialStrings.Upgrade1; target = TutorialTarget.Ui(() => FindUi("TierCta") ?? RevealAndFind("TierCard")); break;
+                case TutorialTips.Upgrade2: text = TutorialStrings.Upgrade2; target = TutorialTarget.Ui(() => FindUi("TierCta") ?? RevealAndFind("TierCard")); break;
                 case TutorialTips.Mission: text = TutorialStrings.Mission; target = UiTarget("MissionButton"); break;
                 case TutorialTips.BacXiu: text = TutorialStrings.BacXiu; target = UiTarget("RecipeBookButton"); break;
                 case TutorialTips.T2Table:
@@ -775,7 +788,18 @@ namespace Cafe
         {
             // Nút phụ nằm trong popup MENU (đang đóng thì không thấy): chỉ vào nút MENU
             bool inMenu = path == "StaffButton" || path == "ZonesButton" || path == "MissionButton" || path == "RegularsButton" || path == "GraphicsButton" || path == "RecipeBookMenuButton";
-            return TutorialTarget.Ui(() => FindUi(path) ?? (inMenu ? FindUi("MenuButton") : null));
+            return TutorialTarget.Ui(() => RevealAndFind(path) ?? (inMenu ? FindUi("MenuButton") : null));
+        }
+
+        /// HUD gọn (hud_brew_redesign A4): mục tiêu có thể đang nằm trong MENU đóng / viên thuốc mục tiêu / bàn pha ẩn.
+        /// Nhờ HUD mở ra trước (HudController.RevealForTutorial, tự đóng khi thẻ hướng dẫn tắt) rồi mới tìm.
+        private RectTransform RevealAndFind(string path)
+        {
+            if (game.Hud != null && game.Hud.RevealForTutorial(path))
+            {
+                uiNextScan.Remove(path); // vừa mở ra: quét lại ngay, không chờ nhịp 0,3 s
+            }
+            return FindUi(path);
         }
 
         // ------------------------------------------------------------------ xem lại / bỏ qua

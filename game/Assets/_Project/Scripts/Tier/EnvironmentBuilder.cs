@@ -21,6 +21,7 @@ namespace Cafe
         internal struct WallStyle
         {
             public int lower, cap, upper;
+            public bool brick; // kẻ mạch vữa ngang trên thân tường (sơn "Gạch thẻ trần")
         }
 
         internal static readonly WallStyle HallStyle = new WallStyle
@@ -28,32 +29,58 @@ namespace Cafe
             lower = TierConfig.CellWainscot, cap = TierConfig.CellWoodDark, upper = TierConfig.CellWallCream
         };
 
+        /// Kiểu tường của sảnh theo sơn đang chọn (null = vôi ngà mặc định).
+        internal static WallStyle StyleOf(DecorOption paint)
+        {
+            if (paint == null || paint.slot != DecorSlot.Wall) return HallStyle;
+            return new WallStyle { lower = paint.lower, cap = paint.cap, upper = paint.upper, brick = paint.brick };
+        }
+
+        private static FloorPattern PatternOf(DecorOption floor, RoomSpec r)
+        {
+            if (floor != null && floor.slot == DecorSlot.Floor) return floor.floor;
+            return r.Tier >= 3 ? FloorPattern.Parquet : FloorPattern.Encaustic;
+        }
+
         /// Dựng phòng theo RoomSpec của cấp, trả về root "Room_T{cấp}" (con của parent nếu có). mat = GameBootstrap.toonMaterial.
         /// zoneMask: các khu phụ đã mở (bit ZoneInfo.Bit), chỉ có tác dụng khi phòng có khu (cấp 3).
-        public static GameObject BuildRoom(Material mat, Transform parent, RoomSpec r, int zoneMask = 0)
+        /// paint / floor: sơn tường + sàn của sảnh (DecorCatalog; null = mặc định của cấp).
+        public static GameObject BuildRoom(Material mat, Transform parent, RoomSpec r, int zoneMask = 0, DecorOption paint = null, DecorOption floor = null)
         {
             var root = new GameObject("Room_T" + r.Tier);
             if (parent != null) root.transform.SetParent(parent, false);
             Transform rt = root.transform;
 
-            BuildInteriorFloor(rt, mat, r);
+            BuildInteriorFloor(rt, mat, r, PatternOf(floor, r));
             BuildStreet(rt, mat, r);
             BuildColliders(rt, r);
-            BuildWalls(rt, mat, r);
-            RefreshZones(rt, mat, r, zoneMask);
+            BuildWalls(rt, mat, r, StyleOf(paint));
+            RefreshZones(rt, mat, r, zoneMask, paint);
             BuildDetails(rt, mat, r);
             return root;
+        }
+
+        /// Sơn lại tường + lát lại sàn sảnh (xem thử / mua trang trí). Chỉ dựng lại mesh không có collider nên KHÔNG cần bake NavMesh.
+        public static void ApplyDecor(Transform room, Material mat, RoomSpec r, int zoneMask, DecorOption paint, DecorOption floor)
+        {
+            if (room == null) return;
+            DestroyChild(room, "Floor");
+            DestroyChild(room, "Wall_Back");
+            DestroyChild(room, "Wall_Front");
+            BuildInteriorFloor(room, mat, r, PatternOf(floor, r));
+            BuildWalls(room, mat, r, StyleOf(paint));
+            RefreshZones(room, mat, r, zoneMask, paint);
         }
 
         /// Dựng (hoặc dựng lại) phần phụ thuộc các khu đang mở: hai tường hông của sảnh (có lỗ mở sang khu đã mở), bãi đất của khu
         /// chưa mở, sàn + tường + collider của khu đã mở (chỉ dựng một lần). Gọi lúc mở thêm khu; mọi thứ bị phá ở đây đều
         /// KHÔNG có collider nên NavMesh có thể bake lại ngay trong cùng frame.
-        public static void RefreshZones(Transform room, Material mat, RoomSpec r, int zoneMask)
+        public static void RefreshZones(Transform room, Material mat, RoomSpec r, int zoneMask, DecorOption paint = null)
         {
             DestroyChild(room, "Wall_Left");
             DestroyChild(room, "Wall_Right");
             for (int i = 0; i < ZoneInfo.Buyable.Length; i++) DestroyChild(room, "Lot_" + ZoneInfo.Buyable[i]);
-            BuildSideWalls(room, mat, r, zoneMask);
+            BuildSideWalls(room, mat, r, zoneMask, StyleOf(paint));
             if (!r.HasZones) return;
             for (int i = 0; i < ZoneInfo.Buyable.Length; i++)
             {
@@ -75,46 +102,118 @@ namespace Cafe
             if (t == null) return;
             t.name = "_destroyed"; // Destroy chỉ chạy cuối khung: đổi tên để Find lần sau (cùng khung) không thấy bản cũ
             t.gameObject.SetActive(false);
+            // mesh dựng lúc chạy không tự giải phóng khi hủy GameObject (sơn lại nhiều lần sẽ rò bộ nhớ)
+            foreach (MeshFilter mf in t.GetComponentsInChildren<MeshFilter>(true))
+                if (mf.sharedMesh != null) Object.Destroy(mf.sharedMesh);
             Object.Destroy(t.gameObject);
         }
 
         // ------------------------------------------------------------------ sàn
 
-        private static void BuildInteriorFloor(Transform root, Material mat, RoomSpec r)
+        private static void BuildInteriorFloor(Transform root, Material mat, RoomSpec r, FloorPattern pattern)
         {
             var b = new PaletteMeshBuilder();
             b.AddUpQuad(0f, 0f, 0.001f, r.Width, r.Depth, TierConfig.CellGrout);
-            if (r.Tier >= 3) AddParquet(b, r);
-            else AddEncausticTiles(b, r);
+            switch (pattern)
+            {
+                case FloorPattern.Parquet: AddParquet(b, r); break;
+                case FloorPattern.Terracotta: AddTerracotta(b, r); break;
+                case FloorPattern.Terrazzo: AddTerrazzo(b, r); break;
+                case FloorPattern.HueTile:
+                    AddEncausticTiles(b, r, 44, 27, 27, 42, 37); break;
+                default:
+                    AddEncausticTiles(b, r, TierConfig.CellTileCream, TierConfig.CellTileBlue, TierConfig.CellTileRed, TierConfig.CellTileYellow, -1); break;
+            }
             Mesh mesh = b.ToMesh("SM_Room_Floor", true);
             GameObject floor = PaletteBox.MakeFromMesh("Floor", mesh, mat, root, Vector3.zero);
             floor.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
         }
 
-        /// Cấp 2: gạch bông 0,5 m (nền kem + hoa văn hình thoi + chấm góc).
-        private static void AddEncausticTiles(PaletteMeshBuilder b, RoomSpec r)
+        /// Số ô 0,5 m của sàn sảnh (không tính khu phụ) và góc trái-trước.
+        private static void HallTiles(RoomSpec r, out int cols, out int rows, out float x0, out float z0)
         {
-            Vector3 o = r.GridOrigin;
-            float corner = Cell * 0.5f - 0.07f;
-            for (int i = 0; i < r.GridSize.x; i++)
-            {
-                for (int j = 0; j < r.GridSize.y; j++)
-                {
-                    float cx = o.x + (i + 0.5f) * Cell;
-                    float cz = o.z + (j + 0.5f) * Cell;
-                    bool alt = ((i + j) & 1) == 1;
-                    int accent = alt ? TierConfig.CellTileBlue : TierConfig.CellTileRed;
-                    int dots = alt ? TierConfig.CellTileRed : TierConfig.CellTileBlue;
+            cols = Mathf.RoundToInt(r.Width / Cell);
+            rows = Mathf.RoundToInt(r.Depth / Cell);
+            x0 = -r.Width * 0.5f;
+            z0 = -r.Depth * 0.5f;
+        }
 
-                    b.AddUpQuad(cx, cz, 0.003f, Cell - 0.03f, Cell - 0.03f, TierConfig.CellTileCream);
+        /// Băm ô (i, j) ra số giả ngẫu nhiên cố định (hoa văn không đổi giữa các lần dựng).
+        private static int Hash(int i, int j, int k)
+        {
+            unchecked
+            {
+                int h = i * 73856093 ^ j * 19349663 ^ k * 83492791;
+                h ^= h >> 13;
+                h *= 0x5bd1e995;
+                return (h ^ (h >> 15)) & 0x7fffffff;
+            }
+        }
+
+        /// Gạch bông 0,5 m (nền + hoa văn hình thoi + chấm góc). Mặc định cấp 2: kem, thoi xanh/đỏ xen kẽ, tâm vàng.
+        /// accentB = -1: hai ô liền nhau đổi màu thoi và chấm cho nhau; khác -1: mọi ô dùng thoi accentA, chấm dotsColor, tâm accentB.
+        private static void AddEncausticTiles(PaletteMeshBuilder b, RoomSpec r, int baseColor, int accentA, int accentAlt, int center, int accentB)
+        {
+            int cols, rows;
+            float x0, z0;
+            HallTiles(r, out cols, out rows, out x0, out z0);
+            float corner = Cell * 0.5f - 0.07f;
+            for (int i = 0; i < cols; i++)
+            {
+                for (int j = 0; j < rows; j++)
+                {
+                    float cx = x0 + (i + 0.5f) * Cell;
+                    float cz = z0 + (j + 0.5f) * Cell;
+                    bool alt = accentB < 0 && ((i + j) & 1) == 1;
+                    int accent = alt ? accentA : accentAlt;
+                    int dots = accentB >= 0 ? accentB : (alt ? accentAlt : accentA);
+
+                    b.AddUpQuad(cx, cz, 0.003f, Cell - 0.03f, Cell - 0.03f, baseColor);
                     b.AddUpDiamond(cx, cz, 0.005f, 0.19f, accent);
-                    b.AddUpDiamond(cx, cz, 0.007f, 0.085f, TierConfig.CellTileYellow);
+                    b.AddUpDiamond(cx, cz, 0.007f, 0.085f, center);
                     b.AddUpQuad(cx - corner, cz - corner, 0.005f, 0.08f, 0.08f, dots);
                     b.AddUpQuad(cx + corner, cz - corner, 0.005f, 0.08f, 0.08f, dots);
                     b.AddUpQuad(cx - corner, cz + corner, 0.005f, 0.08f, 0.08f, dots);
                     b.AddUpQuad(cx + corner, cz + corner, 0.005f, 0.08f, 0.08f, dots);
                 }
             }
+        }
+
+        /// Gạch tàu đỏ 0,5 m, mạch vữa rộng, thỉnh thoảng một viên sẫm hơn.
+        private static void AddTerracotta(PaletteMeshBuilder b, RoomSpec r)
+        {
+            int cols, rows;
+            float x0, z0;
+            HallTiles(r, out cols, out rows, out x0, out z0);
+            for (int i = 0; i < cols; i++)
+                for (int j = 0; j < rows; j++)
+                {
+                    int c = Hash(i, j, 1) % 7 == 0 ? TierConfig.CellTileRed : 46;
+                    b.AddUpQuad(x0 + (i + 0.5f) * Cell, z0 + (j + 0.5f) * Cell, 0.003f, Cell - 0.05f, Cell - 0.05f, c);
+                }
+        }
+
+        /// Đá mài granito: nền kem muối liền mạch, rắc hạt đá màu nhỏ.
+        private static void AddTerrazzo(PaletteMeshBuilder b, RoomSpec r)
+        {
+            int[] chips = { 45, 41, 42, 19, 47, 43 };
+            int cols, rows;
+            float x0, z0;
+            HallTiles(r, out cols, out rows, out x0, out z0);
+            b.AddUpQuad(0f, 0f, 0.003f, r.Width, r.Depth, 10);
+            for (int i = 0; i < cols; i++)
+                for (int j = 0; j < rows; j++)
+                    for (int k = 0; k < 5; k++)
+                    {
+                        int h = Hash(i, j, k + 7);
+                        float size = 0.025f + (h % 5) * 0.01f;
+                        float u = ((h >> 4) % 100) / 100f, v = ((h >> 11) % 100) / 100f;
+                        b.AddUpQuad(x0 + (i + 0.1f + u * 0.8f) * Cell, z0 + (j + 0.1f + v * 0.8f) * Cell, 0.005f, size, size * 0.8f,
+                            chips[(h >> 18) % chips.Length]);
+                    }
+            // nẹp đồng chia ô 2 m
+            for (float x = -r.Width * 0.5f + 2f; x < r.Width * 0.5f - 0.1f; x += 2f) b.AddUpQuad(x, 0f, 0.006f, 0.02f, r.Depth, TierConfig.CellTileYellow);
+            for (float z = -r.Depth * 0.5f + 2f; z < r.Depth * 0.5f - 0.1f; z += 2f) b.AddUpQuad(0f, z, 0.006f, r.Width, 0.02f, TierConfig.CellTileYellow);
         }
 
         /// Cấp 3: sàn gỗ ghép thanh sáng màu (thanh rộng 25 cm, dài 2 m, lệch hàng) — êm mắt hơn gạch bông để nội thất nổi bật.
@@ -205,14 +304,14 @@ namespace Cafe
 
         // ------------------------------------------------------------------ tường
 
-        private static void BuildWalls(Transform root, Material mat, RoomSpec r)
+        private static void BuildWalls(Transform root, Material mat, RoomSpec r, WallStyle style)
         {
             float hd = r.Depth * 0.5f;
             float t = RoomLayout.WallThickness;
 
-            MakeWall(root, mat, r, "Wall_Back", new Vector3(0f, 0f, hd + t * 0.5f), true, r.Width, Vector3.forward, null, false, true, HallStyle);
+            MakeWall(root, mat, r, "Wall_Back", new Vector3(0f, 0f, hd + t * 0.5f), true, r.Width, Vector3.forward, null, false, true, style);
             MakeWall(root, mat, r, "Wall_Front", new Vector3(0f, 0f, -(hd + t * 0.5f)), true, r.Width, Vector3.back,
-                new[] { new Vector2(RoomLayout.DoorCenterX, r.DoorHalfWidth) }, false, false, HallStyle);
+                new[] { new Vector2(RoomLayout.DoorCenterX, r.DoorHalfWidth) }, false, false, style);
         }
 
         /// Lỗ mở trên tường hông sảnh sang khu phụ (toạ độ dọc tường = z): sân vườn ở giữa tường trái, lầu và VIP ở nửa trước / nửa sau tường phải.
@@ -220,7 +319,7 @@ namespace Cafe
         internal const float AnnexOpeningZ = 3f;
 
         /// Tường hông sảnh. Cấp 3 (có khu phụ) tường nằm đúng trên đường biên giữa sảnh và khu phụ.
-        private static void BuildSideWalls(Transform root, Material mat, RoomSpec r, int zoneMask)
+        private static void BuildSideWalls(Transform root, Material mat, RoomSpec r, int zoneMask, WallStyle style)
         {
             float hw = r.Width * 0.5f;
             float t = RoomLayout.WallThickness;
@@ -236,8 +335,8 @@ namespace Cafe
                 if ((zoneMask & ZoneInfo.Bit(ZoneId.Vip)) != 0) rl.Add(new Vector2(AnnexOpeningZ, AnnexOpeningHalf));
                 if (rl.Count > 0) right = rl.ToArray();
             }
-            MakeWall(root, mat, r, "Wall_Left", new Vector3(-x, 0f, 0f), false, len, Vector3.left, left, true, false, HallStyle);
-            MakeWall(root, mat, r, "Wall_Right", new Vector3(x, 0f, 0f), false, len, Vector3.right, right, true, false, HallStyle);
+            MakeWall(root, mat, r, "Wall_Left", new Vector3(-x, 0f, 0f), false, len, Vector3.left, left, true, false, style);
+            MakeWall(root, mat, r, "Wall_Right", new Vector3(x, 0f, 0f), false, len, Vector3.right, right, true, false, style);
         }
 
         /// center: tâm đáy tường (y = 0). alongX: tường chạy dọc trục X (tường trước/sau) hay Z (tường hông).
@@ -328,6 +427,9 @@ namespace Cafe
             lower.AddBox(Pos(alongX, mid, lowH * 0.5f), Size(alongX, len, lowH, t), style.lower);
             lower.AddBox(Pos(alongX, mid, lowH + capH * 0.5f), Size(alongX, len, capH, t + 0.04f), style.cap);
             upper.AddBox(Pos(alongX, mid, upH * 0.5f), Size(alongX, len, upH, t), style.upper);
+            if (style.brick)
+                for (float y = 0.15f; y < upH - 0.05f; y += 0.15f) // mạch vữa ngang, nhô 6 mm mỗi mặt
+                    upper.AddBox(Pos(alongX, mid, y), Size(alongX, len, 0.018f, t + 0.012f), TierConfig.CellGrout);
         }
 
         /// Cửa sổ ở mặt trong tường: khung gỗ + kính (ô bạc hà) + chấn song.

@@ -38,7 +38,7 @@ namespace Cafe
 
         private static readonly string[] CleanerNames = { "Cô Út", "Cô Hạnh", "Chị Mai", "Cô Tư", "Chị Lan", "Cô Sáu" };
         private static readonly string[] ServerNames = { "Bạn An", "Bạn Lộc", "Bạn Vy", "Bạn Phúc", "Bạn Nhi" };
-        private static readonly string[] BrewerNames = { "Anh Bảo", "Anh Khoa", "Anh Tín", "Chị Thảo", "Anh Hưng", "Anh Dũng" };
+        private static readonly string[] BrewerNames = { "Anh Bảo", "Anh Khoa", "Anh Tín", "Chị Thảo", "Anh Hưng", "Anh Dũng", "Chị Ngân", "Anh Quân" }; // +2: quầy pha phụ (tối đa 8 Pha chế)
 
         /// Tên mặc định cho người thứ n (từ 0) của vai trò; vượt danh sách thì quay vòng.
         public static string DefaultName(StaffRole role, int n = 0)

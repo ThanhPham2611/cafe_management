@@ -585,6 +585,75 @@ def counter_bar(name):
                               "ref_height": 1.05})
 
 
+def counter_brew(name):
+    """Quầy pha chế phụ 4×2 (2.0×1.0×1.05 m, cấp 3): thân gỗ ốp nan xanh ngọc, mặt inox; trên mặt quầy hai chỗ làm
+    (trái: giá phin + 3 ly phin đang nhỏ giọt; phải: ấm đồng + hũ cà phê / sữa đặc), mặt ốp nan (+Y) quay ra khách,
+    Pha chế đứng phía -Y (= +Z cục bộ trong Unity, cùng phía chủ quán ở quầy bar chính; StationRules.StaffSide)."""
+    b = Builder()
+    FY = 0.43                                        # mặt ốp nan (phía khách)
+    b.rounded_slab(1.80, 0.76, 0.0, 0.09, C["wood_dark"], corner=0.04, edge=0.0, segs=2)      # chân thụt
+    b.rounded_slab(1.90, 0.86, 0.09, 0.91, C["wood_mid"], corner=0.05, edge=0.012, segs=2)    # thân tủ
+    b.rounded_slab(1.94, 0.90, 0.91, 0.96, C["wood_dark"], corner=0.07, edge=0.0, segs=2)     # đường chỉ
+    b.rounded_slab(2.00, 1.00, 0.96, 1.05, C["inox"], corner=0.09, edge=0.018)                # mặt inox
+    for i in range(12):                                                                        # nan xanh ngọc mặt trước
+        x = -0.825 + 0.15 * i
+        b.rbox((0.10, 0.016, 0.70), (x, FY + 0.008, 0.50), C["teal"], r=0.006, segs=1)
+    b.rbox((1.80, 0.026, 0.04), (0, FY + 0.013, 0.87), C["wood_honey"], r=0)                  # nẹp trên
+    b.rbox((1.80, 0.026, 0.04), (0, FY + 0.013, 0.13), C["wood_honey"], r=0)                  # nẹp dưới
+    # --- chỗ làm trái: giá phin gỗ + 3 ly phin
+    TOP = 1.05
+    b.rbox((0.62, 0.20, 0.03), (-0.50, -0.05, TOP + 0.10), C["wood_dark"], r=0.008, segs=1)    # thanh giá
+    for sx in (-1, 1):
+        b.rbox((0.03, 0.18, 0.10), (-0.50 + sx * 0.29, -0.05, TOP + 0.05), C["wood_dark"], r=0.006, segs=1)
+    for k in range(3):
+        x = -0.70 + 0.20 * k
+        b.cylinder(0.042, 0.034, TOP, TOP + 0.085, C["white_pl"], segs=10, center=(x, -0.05))   # ly
+        b.cylinder(0.038, 0.038, TOP + 0.06, TOP + 0.08, C["coffee"], segs=10, center=(x, -0.05))  # cà phê trong ly
+        b.cylinder(0.040, 0.034, TOP + 0.115, TOP + 0.20, C["inox_mid"], segs=10, center=(x, -0.05), round_r=0.006)  # phin
+        b.cylinder(0.046, 0.046, TOP + 0.20, TOP + 0.215, C["inox"], segs=10, center=(x, -0.05))  # nắp phin
+    # --- chỗ làm phải: ấm đồng, hũ cà phê, lon sữa đặc
+    b.cylinder(0.085, 0.07, TOP, TOP + 0.16, C["caramel"], segs=12, center=(0.40, -0.08), round_r=0.03)  # ấm
+    b.rod((0.48, -0.08, TOP + 0.08), (0.58, -0.08, TOP + 0.16), 0.012, C["caramel"], segs=5)    # vòi ấm
+    b.rod((0.33, -0.08, TOP + 0.15), (0.40, -0.08, TOP + 0.22), 0.010, C["charcoal"], segs=5)   # quai
+    b.rod((0.47, -0.08, TOP + 0.15), (0.40, -0.08, TOP + 0.22), 0.010, C["charcoal"], segs=5)
+    b.cylinder(0.055, 0.055, TOP, TOP + 0.14, C["mint"], segs=10, center=(0.68, -0.18))        # hũ thủy tinh
+    b.cylinder(0.050, 0.050, TOP + 0.01, TOP + 0.10, C["espresso"], segs=10, center=(0.68, -0.18))  # hạt cà phê
+    b.cylinder(0.058, 0.058, TOP + 0.14, TOP + 0.165, C["wood_dark"], segs=10, center=(0.68, -0.18))  # nắp gỗ
+    b.cylinder(0.04, 0.04, TOP, TOP + 0.09, C["red"], segs=10, center=(0.80, 0.0))           # lon sữa đặc
+    b.cylinder(0.041, 0.041, TOP + 0.03, TOP + 0.06, C["milk"], segs=10, center=(0.80, 0.0))  # nhãn
+    b.rbox((0.30, 0.20, 0.012), (0.10, 0.15, TOP + 0.006), C["wood_honey"], r=0.004, segs=1)  # khay gỗ
+    return b.to_object(name, {"category": "counter", "footprint_x": 4, "footprint_z": 2,
+                              "ref_height": 1.05})
+
+
+def counter_pass(name):
+    """Quầy line (quầy giao món) 4×1 (2.0×0.5×1.0 m, cấp 3): tủ gỗ, mặt kem, kệ inox hai tầng phía trên để đặt ly đã pha,
+    thanh kẹp phiếu order + chuông gọi món. Phục vụ lấy ly ở mặt trước (-Y)."""
+    b = Builder()
+    TOP = 1.0
+    b.rounded_slab(1.86, 0.38, 0.0, 0.08, C["wood_dark"], corner=0.03, edge=0.0, segs=1)
+    b.rounded_slab(1.94, 0.44, 0.08, 0.92, C["wood_honey"], corner=0.04, edge=0.01, segs=1)  # thân
+    for sx in (-1, 0, 1):                                                                       # 3 cánh tủ
+        b.rbox((0.58, 0.02, 0.66), (sx * 0.62, -0.225, 0.48), C["wood_mid"], r=0.008, segs=1)
+        b.rbox((0.10, 0.024, 0.02), (sx * 0.62, -0.24, 0.74), C["inox_mid"], r=0)
+    b.rounded_slab(2.00, 0.50, 0.92, TOP, C["salt"], corner=0.05, edge=0.015)                  # mặt kem
+    # kệ inox trên cao (chân 4 góc, 1 tầng giữa)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            b.rod((sx * 0.93, sy * 0.18, TOP), (sx * 0.93, sy * 0.18, TOP + 0.48), 0.013, C["inox_mid"], segs=6)
+    b.rounded_slab(1.92, 0.40, TOP + 0.46, TOP + 0.48, C["inox"], corner=0.03, edge=0.0, segs=1)
+    b.rbox((1.86, 0.014, 0.012), (0, 0.17, TOP + 0.36), C["inox"], r=0)                        # thanh kẹp phiếu
+    for k in range(5):                                                                          # phiếu order
+        b.rbox((0.09, 0.006, 0.13), (-0.70 + 0.30 * k, 0.163, TOP + 0.295), C["paper"], r=0)
+    for k, col in enumerate((C["white_pl"], C["mint"], C["white_pl"])):                       # ly mẫu tầng trên
+        x = -0.55 + 0.55 * k
+        b.cylinder(0.04, 0.032, TOP + 0.48, TOP + 0.57, col, segs=8, center=(x, 0.0))
+    b.cylinder(0.05, 0.045, TOP, TOP + 0.02, C["charcoal"], segs=10, center=(0.82, -0.12))     # đế chuông
+    b.blob((0.82, -0.12, TOP + 0.045), (0.045, 0.045, 0.035), C["caramel"], u=8, v=4)          # chuông đồng
+    b.cylinder(0.008, 0.008, TOP + 0.075, TOP + 0.095, C["inox"], segs=5, center=(0.82, -0.12))
+    return b.to_object(name, {"category": "counter", "footprint_x": 4, "footprint_z": 1,
+                              "ref_height": 1.0})
+
 def sink_counter(name):
     """Quầy rửa 2×1 (1.0×0.5 m, mặt làm việc 0.95 m): tủ xanh sage + cửa kem sơn, mặt inox có bồn rửa LÕM thật,
     vòi cổ ngỗng + 2 núm nóng/lạnh, giá úp ly (chốt + ly úp nhiều màu) ở phần ráo nước, ốp tường gạch trắng."""
@@ -1360,6 +1429,8 @@ ASSETS_T3 = {
     "SM_Machine_Grinder": machine_grinder,
     "SM_Machine_ColdBrew": machine_cold_brew,
     "SM_Machine_Espresso": machine_espresso,
+    "SM_Counter_Brew_4x2": counter_brew,
+    "SM_Counter_Pass_4x1": counter_pass,
 }
 
 ASSETS = {**ASSETS_T1, **ASSETS_T2, **ASSETS_T2B, **ASSETS_T3}

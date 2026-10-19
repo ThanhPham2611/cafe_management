@@ -26,6 +26,14 @@ namespace Cafe
         public int HeldQuality { get; private set; }
         public float StartTime { get; private set; }
 
+        /// Số lần rót "Hơi ít" của ly đang pha (khác 0 thì ly tối đa 2 sao; hướng dẫn không đếm).
+        public int UnderCount { get; private set; }
+        /// Số bước rót đã xong của ly đang pha / số lần trong đó đạt "Chuẩn!".
+        public int PourSteps { get; private set; }
+        public int PerfectPours { get; private set; }
+        /// Ly đang cầm là ly "chuẩn vị" (mọi bước rót đều Chuẩn + 3 sao). Để sau: Customer.Serve cộng tip.
+        public bool HeldPerfect { get; private set; }
+
         /// Đang ở chế độ thử pha tự do (State vẫn là Idle khi chưa có nguyên liệu nào, Brewing khi đã thêm).
         public bool Experiment { get; private set; }
 
@@ -98,7 +106,34 @@ namespace Cafe
             return true;
         }
 
-        public TapResult TapStep(BrewStep step)
+        /// Làm một bước. grade chỉ có nghĩa với bước rót (kiểu Hold): mặc định Good để autopilot / code cũ gọi TapStep(step) không đổi.
+        public TapResult TapStep(BrewStep step, PourGrade grade = PourGrade.Good)
+        {
+            TapResult pre = Precheck();
+            if (pre != TapResult.Ok) return pre;
+            if (Experiment) return TapExperimentStep(step);
+
+            TapResult start = EnsureBrewing();
+            if (start != TapResult.Ok) return start;
+
+            if (step == Recipe.steps[NextIndex])
+            {
+                CountPour(step, grade);
+                NextIndex++;
+                if (NextIndex >= Recipe.steps.Length)
+                {
+                    Finish();
+                    return TapResult.Done;
+                }
+                Raise();
+                return TapResult.Ok;
+            }
+
+            return RegisterWrong();
+        }
+
+        /// Đang cầm ly / chủ quán đi xa: báo và trả lý do; Ok = được làm bước.
+        private TapResult Precheck()
         {
             if (State == Phase.Ready)
             {
@@ -111,42 +146,84 @@ namespace Cafe
                 GameEvents.RaiseToast(Strings.OwnerComing);
                 return TapResult.OwnerAway;
             }
-            if (Experiment) return TapExperimentStep(step);
+            return TapResult.Ok;
+        }
 
-            if (State == Phase.Idle)
+        /// Chưa pha thì bắt đầu pha đơn đang chọn (lấy ly sạch + trừ nguyên liệu). Ok = đang pha.
+        private TapResult EnsureBrewing()
+        {
+            if (State != Phase.Idle) return TapResult.Ok;
+            if (Selected == null || Recipe == null || Recipe.steps == null || Recipe.steps.Length == 0)
             {
-                if (Selected == null || Recipe == null || Recipe.steps == null || Recipe.steps.Length == 0)
-                {
-                    GameEvents.RaiseToast(Strings.NoOrderSelected);
-                    return TapResult.NoOrder;
-                }
-                if (!game.Stock.TryTake())
-                {
-                    GameEvents.RaiseToast(NoCupMessage());
-                    return TapResult.NoCup;
-                }
-                // Bắt đầu pha: trừ nguyên liệu ngay
-                game.Wallet.Spend(Recipe.ingredientCost);
-                if (game.Day.Summary != null) game.Day.Summary.ingredientCost += Recipe.ingredientCost;
-                State = Phase.Brewing;
-                NextIndex = 0;
-                Wrong = 0;
-                StartTime = Time.time;
+                GameEvents.RaiseToast(Strings.NoOrderSelected);
+                return TapResult.NoOrder;
             }
+            if (!game.Stock.TryTake())
+            {
+                GameEvents.RaiseToast(NoCupMessage());
+                return TapResult.NoCup;
+            }
+            // Bắt đầu pha: trừ nguyên liệu ngay
+            game.Wallet.Spend(Recipe.ingredientCost);
+            if (game.Day.Summary != null) game.Day.Summary.ingredientCost += Recipe.ingredientCost;
+            State = Phase.Brewing;
+            NextIndex = 0;
+            Wrong = 0;
+            ResetPourStats();
+            StartTime = Time.time;
+            return TapResult.Ok;
+        }
 
+        private void ResetPourStats()
+        {
+            UnderCount = 0;
+            PourSteps = 0;
+            PerfectPours = 0;
+        }
+
+        /// Ghi kết quả một bước rót đúng. "Hơi ít" trong hướng dẫn (NoPenalty) không bị giới hạn 2 sao.
+        private void CountPour(BrewStep step, PourGrade grade)
+        {
+            if (StepActions.For(step) != StepAction.Hold) return;
+            PourSteps++;
+            if (grade == PourGrade.Perfect) PerfectPours++;
+            else if (grade == PourGrade.Under && !TutorialGate.NoPenalty) UnderCount++;
+        }
+
+        /// Bước kế tiếp của đơn đang pha / đang chọn (pha theo đơn, không phải thử pha). false nếu không có.
+        public bool TryGetNextStep(out BrewStep step)
+        {
+            step = BrewStep.Phin;
+            if (Experiment || Recipe == null || Recipe.steps == null || Recipe.steps.Length == 0) return false;
+            if (State == Phase.Ready) return false;
+            if (State == Phase.Idle && Selected == null) return false;
+            int i = State == Phase.Brewing ? NextIndex : 0;
+            if (i < 0 || i >= Recipe.steps.Length) return false;
+            step = Recipe.steps[i];
+            return true;
+        }
+
+        /// Nút rót vừa được chạm (PourButtonBehaviour). Trả true nếu được bắt đầu rót bước này
+        /// (chưa pha thì bắt đầu pha luôn: lấy ly + trừ nguyên liệu; bước chỉ tính khi rót xong qua TapStep(step, grade)).
+        /// Chọn sai nguyên liệu vẫn là sai bước như chạm (result = Wrong / Ruined); thử pha tự do thì thêm nguyên liệu ngay, không rót.
+        public bool TryBeginPour(BrewStep step, out TapResult result)
+        {
+            result = Precheck();
+            if (result != TapResult.Ok) return false;
+            if (Experiment)
+            {
+                result = TapExperimentStep(step);
+                return false;
+            }
+            result = EnsureBrewing();
+            if (result != TapResult.Ok) return false;
             if (step == Recipe.steps[NextIndex])
             {
-                NextIndex++;
-                if (NextIndex >= Recipe.steps.Length)
-                {
-                    Finish();
-                    return TapResult.Done;
-                }
-                Raise();
-                return TapResult.Ok;
+                Raise(); // có thể vừa bắt đầu pha: bàn pha vẽ lại chấm bước / thanh pha nhanh
+                return true;
             }
-
-            return RegisterWrong();
+            result = RegisterWrong();
+            return false;
         }
 
         /// Bước kiểu Giữ bị nhả tay sớm = bước sai (nếu ly đang pha dở). Chưa bắt đầu pha thì chỉ nhắc, không phạt.
@@ -181,17 +258,11 @@ namespace Cafe
         private void Finish()
         {
             float elapsed = Time.time - StartTime;
-            if (Wrong == 0)
-            {
-                bool perfect = game.Recipes != null
-                    ? game.Recipes.IsPerfect(Recipe, elapsed)
-                    : elapsed <= Recipe.brewSeconds;
-                HeldQuality = perfect ? 3 : 2;
-            }
-            else
-            {
-                HeldQuality = 1;
-            }
+            bool fast = game.Recipes != null
+                ? game.Recipes.IsPerfect(Recipe, elapsed)
+                : elapsed <= Mathf.Max(Recipe.brewSeconds, PourRules.MinPerfectSeconds(Recipe.steps));
+            HeldQuality = PourRules.Quality(Wrong, UnderCount, fast); // sai -> 1; "Hơi ít" hoặc chậm -> 2
+            HeldPerfect = PourRules.IsPerfectPourDrink(PourSteps, PerfectPours, HeldQuality);
             State = Phase.Ready;
             Selected = null;
             GameEvents.RaiseToast(Strings.BrewDone);
@@ -206,6 +277,7 @@ namespace Cafe
             State = Phase.Idle;
             NextIndex = 0;
             Wrong = 0;
+            ResetPourStats();
             expSteps.Clear();
             if (Selected == null) Recipe = null;
             Raise();
@@ -378,6 +450,7 @@ namespace Cafe
             Recipe = null;
             Selected = null;
             HeldQuality = 0;
+            HeldPerfect = false;
             Raise();
             return true;
         }
@@ -392,6 +465,7 @@ namespace Cafe
             Recipe = null;
             Selected = null;
             HeldQuality = 0;
+            HeldPerfect = false;
             Raise();
             return quality;
         }
@@ -407,6 +481,7 @@ namespace Cafe
             Recipe = null;
             Selected = null;
             HeldQuality = 0;
+            HeldPerfect = false;
             Raise();
             return true;
         }
@@ -420,6 +495,7 @@ namespace Cafe
             NextIndex = 0;
             Wrong = 0;
             HeldQuality = 0;
+            HeldPerfect = false;
             Experiment = false;
             expSteps.Clear();
             Raise();

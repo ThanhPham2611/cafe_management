@@ -194,6 +194,28 @@ namespace Cafe.EditorTools
             t.iconHeart = Sp("icon_heart");
             t.tutorialHand = Sp("Logo/ui_hand_pointer"); // bàn tay hướng dẫn; fingertip pivot (0.109, 0.93)
             t.iconBroom = Sp("icon_broom"); // chưa có file thì null -> CleaningRules.BroomIcon dùng icon ly
+            t.iconMenu = Sp("icon_menu");
+            t.iconShop = Sp("icon_shop");
+            t.iconBook = Sp("icon_book");
+            t.iconMission = Sp("icon_mission");
+            t.iconStaff = Sp("icon_staff");
+            t.iconHome = Sp("icon_home");
+            t.iconClose = Sp("icon_close");
+            t.gaugeGlass = Sp("ui_gauge_glass");
+            t.gaugeMask = Sp("ui_gauge_mask");
+            t.badge = Sp("ui_badge");
+            t.tag = Sp("ui_tag");
+            t.arrowDown = Sp("ui_arrow");
+            t.sparkle = Sp("ui_sparkle");
+            t.iconDuong = Sp("icon_duong");
+            t.iconMuoi = Sp("icon_muoi");
+            t.iconKemMuoi = Sp("icon_kem_muoi");
+            t.iconCotDua = Sp("icon_cot_dua");
+            t.iconTrung = Sp("icon_trung");
+            t.iconChanh = Sp("icon_chanh");
+            t.iconLac = Sp("icon_lac");
+            t.iconDanh = Sp("icon_danh");
+            t.iconCacao = Sp("icon_cacao");
 
             EditorUtility.SetDirty(t);
             AssetDatabase.SaveAssets();

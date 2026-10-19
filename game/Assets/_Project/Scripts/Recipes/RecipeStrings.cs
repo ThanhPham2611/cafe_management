@@ -47,6 +47,12 @@ namespace Cafe
 
         // ---- Thao tác ----
         public const string HoldHintFmt = "Giữ nút {0} cho đủ lượng";
+        public const string PourHintFmt = "Chạm {0} để rót";
+        public const string PourStopHint = "Chạm lại khi tới vạch vàng!";
+        public const string PourPerfect = "Chuẩn!";
+        public const string PourGood = "Đủ";
+        public const string PourUnder = "Hơi ít";
+        public const string GaugeBand = "CHUẨN";
         public const string SwipeHintFmt = "Vuốt lên trên nút {0}";
         public const string SpinHintFmt = "Xoay vòng tròn trên nút {0}";
         public const string TapHintFmt = "Chạm nút {0}";
@@ -68,7 +74,7 @@ namespace Cafe
         {
             switch (a)
             {
-                case StepAction.Hold: return "Giữ";
+                case StepAction.Hold: return StepActions.UseLegacyHold ? "Giữ" : "Rót";
                 case StepAction.Swipe: return "Vuốt";
                 case StepAction.Spin: return "Xoay";
                 default: return "Chạm";
@@ -80,7 +86,7 @@ namespace Cafe
             string name = Strings.StepName(step);
             switch (StepActions.For(step))
             {
-                case StepAction.Hold: return string.Format(HoldHintFmt, name);
+                case StepAction.Hold: return string.Format(StepActions.UseLegacyHold ? HoldHintFmt : PourHintFmt, name);
                 case StepAction.Swipe: return string.Format(SwipeHintFmt, name);
                 case StepAction.Spin: return string.Format(SpinHintFmt, name);
                 default: return string.Format(TapHintFmt, name);

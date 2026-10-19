@@ -47,6 +47,7 @@ namespace Cafe
             Image dim = HudBuilder.Dim(overlayParent, "GraphicsSettings", 0.62f);
             HudBuilder.Stretch(dim.rectTransform);
             root = dim.gameObject;
+            ModalMarker.Mark(root);
             Image card = HudBuilder.Panel(dim.transform, "Card", true);
             bool fpsRow = GraphicsQuality.FpsSelectable;
             HudBuilder.SetFixed(card.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero,

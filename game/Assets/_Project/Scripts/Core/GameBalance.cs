@@ -158,18 +158,30 @@ namespace Cafe
         /// vì thông lượng Pha chế / Phục vụ là giới hạn, nên nhu cầu +20% mỗi khu phải đi cùng thêm người làm.
         public const int StaffSlotsPerZone = 1;
 
+        // ---- Quầy pha chế phụ + Quầy line (cấp 3, docs/stations_spec.md) ----
+        /// Pha chế có chỗ ở quầy pha phụ: thời gian pha × 0,85 (người không có chỗ giữ nguyên, save cũ không chậm đi).
+        public const float BrewSpotFactor = 0.85f;
+        /// Mỗi quầy pha phụ nới thêm 1 chỗ thuê Pha chế (đủ 3 khu: 6 -> 8 với 2 quầy).
+        public const int StaffSlotsPerBrewStation = 1;
+        /// Tối đa quầy pha phụ được tính (khớp maxCount = 2 của FurnitureDef).
+        public const int BrewStationMaxCount = 2;
+        /// Sức chứa gốc của kệ giao (ReadyShelf); mỗi quầy line cộng thêm shelfSlots (4).
+        public const int ReadyShelfBaseCapacity = 6;
+
         /// Số nhân viên tối đa mỗi vai trò theo cấp quán (tổng cấp 2 = 2, cấp 3 sảnh = 8 và +3 mỗi khu phụ đã mở; economy §3.1).
         /// Đo bằng autoplay ở cấp 2 (14–16 ghế, 9 ngày): người Dọn dẹp thứ hai và Pha chế đều KHÔNG tăng số khách (~40/ngày dù có hay
         /// không) mà tốn thêm lương, nên cấp 2 chỉ 1 Dọn dẹp + 1 Phục vụ; người thứ hai và Pha chế mở từ cấp 3 (sảnh lớn, nhiều khách).
-        public static int StaffMaxCount(StaffRole role, int tier, int openZones = 0)
+        /// brewStations: số quầy pha phụ đang đặt (docs/stations_spec.md §1): mỗi quầy +1 chỗ Pha chế, chỉ ở cấp 3, tối đa BrewStationMaxCount.
+        public static int StaffMaxCount(StaffRole role, int tier, int openZones = 0, int brewStations = 0)
         {
             if (tier < 2) return 0;
             bool restaurant = tier >= 3;
             int extra = restaurant ? StaffSlotsPerZone * Mathf.Max(0, openZones) : 0;
+            int stations = restaurant ? StaffSlotsPerBrewStation * Mathf.Clamp(brewStations, 0, BrewStationMaxCount) : 0;
             switch (role)
             {
                 case StaffRole.Server: return (restaurant ? 2 : 1) + extra;
-                case StaffRole.Brewer: return (restaurant ? 3 : 0) + extra;
+                case StaffRole.Brewer: return (restaurant ? 3 : 0) + extra + stations;
                 default: return (restaurant ? 3 : 1) + extra;
             }
         }

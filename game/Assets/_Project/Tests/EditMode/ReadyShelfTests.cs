@@ -37,7 +37,7 @@ namespace Cafe.Tests
         [Test]
         public void TryAdd_RejectsWhenFull_OrBadInput()
         {
-            for (int i = 0; i < ReadyShelf.Capacity; i++)
+            for (int i = 0; i < ReadyShelf.DefaultCapacity; i++)
             {
                 Order o = NewOrder(i);
                 o.TryClaim(brewer);
@@ -50,7 +50,7 @@ namespace Cafe.Tests
             Assert.That(shelf.TryAdd(extra, 2, brewer), Is.False, "quầy đầy");
             Assert.That(shelf.TryAdd(null, 2, brewer), Is.False);
             Assert.That(shelf.TryAdd(NewOrder(100), 0, brewer), Is.False, "ly hỏng không đặt lên quầy");
-            Assert.That(shelf.Count, Is.EqualTo(ReadyShelf.Capacity));
+            Assert.That(shelf.Count, Is.EqualTo(ReadyShelf.DefaultCapacity));
         }
 
         [Test]
