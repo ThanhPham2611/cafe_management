@@ -13,6 +13,7 @@ Shader "Cafe/Toon_Palette"
         _Band2 ("Band Light", Range(0, 1)) = 0.7
         _BandSoft ("Band Softness", Range(0.001, 0.2)) = 0.04
         _AmbientStrength ("Ambient Strength", Range(0, 1)) = 0.3
+        _NightAmbientBoost ("Night Ambient Boost", Range(0, 1)) = 0.2
         _RimColor ("Rim Color", Color) = (1, 0.851, 0.627, 1)
         _RimPower ("Rim Power", Range(0.5, 8)) = 3
         _RimIntensity ("Rim Intensity", Range(0, 1)) = 0.35
@@ -33,6 +34,7 @@ Shader "Cafe/Toon_Palette"
             half _Band2;
             half _BandSoft;
             half _AmbientStrength;
+            half _NightAmbientBoost;
             half4 _RimColor;
             half _RimPower;
             half _RimIntensity;
@@ -40,6 +42,8 @@ Shader "Cafe/Toon_Palette"
 
         // Toàn cục (DayNightController): 0 = ban ngày, 1 = đêm. Để ngoài UnityPerMaterial để giữ SRP Batcher.
         float _CafeNight;
+        // Toàn cục (LampLights): độ mượt ánh đèn thật, 0 = chia bậc cứng như nắng, 1 = mượt.
+        float _CafeLampSoft;
         ENDHLSL
 
         Pass
@@ -52,6 +56,7 @@ Shader "Cafe/Toon_Palette"
             #pragma fragment frag
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
 
@@ -119,7 +124,19 @@ Shader "Cafe/Toon_Palette"
                 tone = lerp(tone, half3(1, 1, 1), t2);
 
                 half3 col = albedo * tone * light.color;
-                col += albedo * SampleSH(n) * _AmbientStrength;
+                col += albedo * SampleSH(n) * (_AmbientStrength + _NightAmbientBoost * saturate(_CafeNight));
+
+            #if defined(_ADDITIONAL_LIGHTS)
+                // Đèn thật (đèn thả, đèn cây...; chỉ mức Vừa / Cao): không bóng, chia bậc như nắng, mượt dần theo _CafeLampSoft
+                uint lightCount = GetAdditionalLightsCount();
+                for (uint li = 0u; li < lightCount; ++li)
+                {
+                    Light lamp = GetAdditionalLight(li, i.positionWS);
+                    half lt = saturate(dot(n, lamp.direction)) * lamp.distanceAttenuation;
+                    half banded = smoothstep(0.03h, 0.08h, lt) * 0.55h + smoothstep(0.15h, 0.35h, lt) * 0.45h;
+                    col += albedo * lamp.color * lerp(banded, saturate(lt * 2.5h), _CafeLampSoft);
+                }
+            #endif
 
                 // Rim ấm chỉ ở phía ngược sáng
                 half rim = pow(1.0 - saturate(dot(n, v)), _RimPower) * (1.0 - t2);
@@ -128,7 +145,12 @@ Shader "Cafe/Toon_Palette"
                 // Đèn tự phát sáng về đêm: ô palette 57 ("Vàng sao", art_bible §4) bỏ qua bậc sáng/tối
                 float2 cell = floor(float2(uv.x * 8.0, (1.0 - uv.y) * 8.0));
                 half glow = abs(cell.y * 8.0 + cell.x - 57.0) < 0.5 ? 1.0 : 0.0;
-                col = lerp(col, albedo * 1.35, glow * saturate(_CafeNight));
+            #if defined(_ADDITIONAL_LIGHTS)
+                half glowMul = 1.35h;
+            #else
+                half glowMul = 2.0h; // mức Thấp (không có đèn thật): ô đèn phải tự sáng rực hơn để vẫn thấy "đèn đang bật"
+            #endif
+                col = lerp(col, albedo * glowMul, glow * saturate(_CafeNight));
 
                 col = MixFog(col, i.fogFactor);
                 return half4(col, 1);

@@ -336,7 +336,7 @@ namespace Cafe
                         di.shown = true;
                         di.rect.gameObject.SetActive(true);
                     }
-                    di.rect.anchoredPosition = new Vector2(sp.x, sp.y) * k;
+                    HudRules.Place(di.rect, new Vector2(sp.x, sp.y) * k);
                     bool old = td.IsOld;
                     di.disc.color = old ? HudBuilder.Red : HudBuilder.Cream;
                     float s = old ? 1f + 0.1f * Mathf.Sin(t * 6f) : 1f;
@@ -360,9 +360,9 @@ namespace Cafe
                 if (ring)
                 {
                     if (!ringRoot.gameObject.activeSelf) ringRoot.gameObject.SetActive(true);
-                    ringRoot.anchoredPosition = new Vector2(sp.x, sp.y) * k;
+                    HudRules.Place(ringRoot, new Vector2(sp.x, sp.y) * k);
                     float p = Mathf.Clamp01(owner.WorkProgress);
-                    if (ringFill.type == Image.Type.Filled) ringFill.fillAmount = p;
+                    if (ringFill.type == Image.Type.Filled) ringFill.fillAmount = HudRules.QuantizeRing(p);
                     else ringFill.rectTransform.localScale = new Vector3(p, p, 1f);
                     ringFill.color = HudBuilder.Good;
                     Sprite ic = owner.WorkType == OwnerTaskType.WashCups ? HudBuilder.T.iconCup : CleaningRules.BroomIcon(HudBuilder.T);

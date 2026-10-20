@@ -29,7 +29,8 @@ namespace Cafe
 
     /// Bảng ánh sáng theo giờ 06:00 -> 22:00 (art_bible §6.1). Chỉ hình ảnh, không ảnh hưởng gameplay.
     /// Nắng ban ngày (09:30-15:00) trùng giá trị dựng sẵn trong PrototypeSceneBuilder.SetupLighting.
-    /// Góc nắng kẹp trong [MinPitch, MaxPitch] để toon band không vỡ; đêm vẫn đủ sáng để đọc.
+    /// Góc nắng kẹp trong [MinPitch, MaxPitch] để toon band không vỡ; đêm sáng xanh ánh trăng, vẫn đủ sáng để đọc
+    /// (nắng ~0,9 và ambient sáng hơn ngày khoảng một nửa). `night` cũng là độ sáng của đèn (LampLights): 0 từ 17:30, đầy lúc 19:00.
     public static class DayNightRules
     {
         public const float MinPitch = 12f;
@@ -68,10 +69,10 @@ namespace Cafe
             K( 8.5f, 0xFFE6C8, 1.05f, 32f, -55f, 0.60f, 0xC4D6E8, 0xEBCFA8, 0x7A5A4A, 0xC4D6E8, 0.0f),
             K( 9.5f, 0xFFEBD2, 1.15f, 38f, -35f, 0.60f, 0xBFD3E6, 0xE8C9A0, 0x7A5A4A, 0xBFD3E6, 0.0f),
             K(15.0f, 0xFFEBD2, 1.15f, 38f, -35f, 0.60f, 0xBFD3E6, 0xE8C9A0, 0x7A5A4A, 0xBFD3E6, 0.0f),
-            K(17.5f, 0xFFC98A, 1.00f, 24f, -10f, 0.55f, 0xD9A6A0, 0xF0A878, 0x6A4A4A, 0xE3B8A0, 0.3f),
-            K(19.0f, 0xE88A6A, 0.60f, 12f,   5f, 0.40f, 0x4A5A8C, 0xB07A7A, 0x4A3A48, 0x3A3F6A, 1.0f),
-            K(20.5f, 0x7F9CE0, 0.50f, 45f,  10f, 0.30f, 0x46567F, 0x5A5F86, 0x2E2F4A, 0x1B2440, 1.0f),
-            K(22.0f, 0x7F9CE0, 0.50f, 45f,  10f, 0.30f, 0x46567F, 0x5A5F86, 0x2E2F4A, 0x1B2440, 1.0f),
+            K(17.5f, 0xFFC98A, 1.00f, 24f, -10f, 0.55f, 0xD9A6A0, 0xF0A878, 0x6A4A4A, 0xE3B8A0, 0.0f),
+            K(19.0f, 0xE88A6A, 0.70f, 12f,   5f, 0.40f, 0x5A6A9C, 0xB07A7A, 0x4A3A48, 0x3A3F6A, 1.0f),
+            K(20.5f, 0x8FA8E8, 0.90f, 45f,  10f, 0.30f, 0x6676AA, 0x7A82B4, 0x40446A, 0x1B2440, 1.0f),
+            K(22.0f, 0x8FA8E8, 0.90f, 45f,  10f, 0.30f, 0x6676AA, 0x7A82B4, 0x40446A, 0x1B2440, 1.0f),
         };
 
         public static DayNightLook Sample(float hour)

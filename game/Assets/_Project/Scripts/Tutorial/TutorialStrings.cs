@@ -53,5 +53,7 @@ namespace Cafe
         public const string T3Machines = "Nhà hàng có máy móc! Mua ở Cửa hàng.";
         public const string T3Staff = "Thuê Pha chế và Phục vụ để quán tự chạy.";
         public const string T3Zone = "Đủ tiền mở thêm khu! Bấm MỞ RỘNG.";
+        public const string NightLamps = "Đèn thắp sáng quán về đêm. Thêm đèn cho quán ấm hơn!";
+        public const string NightLampsLow = "Đèn sáng về đêm! Đồ họa Vừa/Cao cho ánh sáng thật hơn.";
     }
 }

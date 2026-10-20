@@ -260,7 +260,7 @@ namespace Cafe
         public static void SetRing(Image fill, float v)
         {
             v = Mathf.Clamp01(v);
-            if (fill.type == Image.Type.Filled) fill.fillAmount = v;
+            if (fill.type == Image.Type.Filled) fill.fillAmount = HudRules.QuantizeRing(v);
             fill.color = PatienceColor(v);
         }
 

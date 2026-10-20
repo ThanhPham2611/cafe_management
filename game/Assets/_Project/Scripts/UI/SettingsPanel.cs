@@ -8,9 +8,9 @@ namespace Cafe
     public sealed class SettingsPanel
     {
         private const float CardW = 1000f;
-        private const float CardH = 700f;
+        private const float CardH = 810f;
         private const float OptionW = 290f;
-        private const float OptionH = 340f;
+        private const float OptionH = 450f;
         private const float OptionGap = 24f;
 
         private sealed class OptionView
@@ -112,8 +112,9 @@ namespace Cafe
             Text name = HudBuilder.AddText(c, "Name", GraphicsPresets.Name(level), 56, TextAnchor.MiddleCenter, HudBuilder.Cream, true, true);
             HudBuilder.SetFixed(name.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -22f), new Vector2(OptionW - 30f, 76f));
 
-            Text desc = HudBuilder.AddText(c, "Desc", GraphicsPresets.Description(level), 26, TextAnchor.UpperCenter, HudBuilder.Cream, false, false);
-            HudBuilder.SetFixed(desc.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -112f), new Vector2(OptionW - 44f, 170f));
+            // Dòng cuối mô tả đèn của mức này (đèn chỉ phát sáng / đèn thật tối đa N)
+            Text desc = HudBuilder.AddText(c, "Desc", GraphicsPresets.Description(level) + "\n" + GraphicsPresets.LightingNote(level), 26, TextAnchor.UpperCenter, HudBuilder.Cream, false, false);
+            HudBuilder.SetFixed(desc.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -112f), new Vector2(OptionW - 44f, 240f));
             desc.horizontalOverflow = HorizontalWrapMode.Wrap;
             HudBuilder.Fit(desc, 18);
 

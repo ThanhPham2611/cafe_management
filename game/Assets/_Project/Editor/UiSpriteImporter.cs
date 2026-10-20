@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Cafe.EditorTools
 {
     /// Nhập sprite UI "Clay Café": mọi PNG trong Assets/_Project/Art/UI thành Sprite (single, không mipmap,
-    /// alphaIsTransparency, bilinear, không nén) + spriteBorder đọc từ ui_sprites.json (tools/gen_ui_sprites.py).
+    /// alphaIsTransparency, bilinear, nén ASTC trên Android / iOS) + spriteBorder đọc từ ui_sprites.json (tools/gen_ui_sprites.py).
     /// EnsureTheme() tạo/cập nhật Assets/_Project/Data/UI/SO_UiTheme.asset.
     public class UiSpriteImporter : AssetPostprocessor
     {
@@ -45,6 +45,25 @@ namespace Cafe.EditorTools
             }
         }
 
+        /// Nén ASTC trên điện thoại (RGBA32 không nén: icon 256x256 = 256 KB, logo 2048x1024 = 8 MB). Icon cửa hàng + logo ngang ASTC 6x6;
+        /// sprite UI 9-slice / bàn tay ASTC 4x4 (viền sắc, khối 6x6 dễ lem viền). Ảnh nguồn icon app chỉ để PlayerSettings cắt icon,
+        /// không vào bản dựng nên giữ nguyên không nén.
+        private static void ApplyCompression(TextureImporter ti)
+        {
+            string path = ti.assetPath;
+            bool keep = path == BrandingSetup.IconFull || path == BrandingSetup.AdaptiveFg || path == BrandingSetup.AdaptiveBg;
+            ti.textureCompression = keep ? TextureImporterCompression.Uncompressed : TextureImporterCompression.Compressed;
+            if (keep) return;
+            var format = path.StartsWith(UiDir + "/Shop/") || path.EndsWith("/logo_wide.png") ? TextureImporterFormat.ASTC_6x6 : TextureImporterFormat.ASTC_4x4;
+            foreach (string platform in new[] { "Android", "iOS" })
+            {
+                TextureImporterPlatformSettings ps = ti.GetPlatformTextureSettings(platform);
+                ps.overridden = true;
+                ps.format = format;
+                ti.SetPlatformTextureSettings(ps);
+            }
+        }
+
         private void OnPreprocessTexture()
         {
             if (!assetPath.StartsWith(UiDir + "/") || !assetPath.EndsWith(".png")) return;
@@ -58,7 +77,7 @@ namespace Cafe.EditorTools
             ti.wrapMode = TextureWrapMode.Clamp;
             ti.isReadable = false;
             ti.sRGBTexture = true;
-            ti.textureCompression = TextureImporterCompression.Uncompressed;
+            ApplyCompression(ti);
             ti.spritePixelsPerUnit = 100f;
             ti.spriteBorder = Vector4.zero;
 

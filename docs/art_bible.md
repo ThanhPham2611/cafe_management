@@ -224,8 +224,8 @@ Quy tắc:
 - **1 Directional Light** "golden hour": màu `#FFC98A`, intensity 1.3, rotation (X 38°, Y -35°). Đây là nguồn chính.
 - **Ambient:** Gradient — Sky `#BFD3E6`, Equator `#E8C9A0`, Ground `#7A5A4A`. Intensity 1.0.
 - **Shadow:** Soft, **1 cascade**, distance 18 m, resolution 1024 (512 trên máy yếu), depth bias 0.05, normal bias 0.4.
-- **Baked:** không dùng lightmap. Đèn trong quán dùng *emission + quad glow* (fake), không realtime point light (tối đa 1 additional light có shadow tắt).
-- Ban ngày/đêm (đã làm, chỉ hình ảnh): `DayNightController` đọc `DayCycle.ClockHours` (06→22) và nội suy bảng `DayNightRules` (nắng, 3 màu ambient, nền camera). Nắng 09:30–15:00 = giá trị dựng sẵn ở trên; góc nắng kẹp 12°–45° để toon band không vỡ; đêm sáng ≥ ~35% giữa trưa. Pha Chuẩn bị luôn sáng ban ngày. Đèn phát sáng qua global shader `_CafeNight`: ô palette 57 ("Vàng sao") của `Toon_Palette` bỏ qua bậc sáng/tối khi trời tối, không dùng light thật. Chụp ảnh theo giờ: cờ `-dayhour N`.
+- **Baked:** không dùng lightmap. Đèn trong quán: ô palette 57 tự phát sáng (emission giả) ở mọi mức; mức Vừa / Cao thêm Point Light thật không bóng (xem §6.4).
+- Ban ngày/đêm (đã làm, chỉ hình ảnh): `DayNightController` đọc `DayCycle.ClockHours` (06→22) và nội suy bảng `DayNightRules` (nắng, 3 màu ambient, nền camera). Nắng 09:30–15:00 = giá trị dựng sẵn ở trên; góc nắng kẹp 12°–45° để toon band không vỡ; đêm sáng khoảng một nửa ban ngày (§6.4). Pha Chuẩn bị luôn sáng ban ngày. Đèn phát sáng qua global shader `_CafeNight`: ô palette 57 ("Vàng sao") của `Toon_Palette` bỏ qua bậc sáng/tối khi trời tối. Chụp ảnh theo giờ: cờ `-dayhour N`.
 
 ### 6.2 Perf rules
 - **SRP Batcher: ON**, **GPU Instancing: ON** cho prop lặp lại (ghế, bàn, ly).
@@ -248,8 +248,21 @@ Người chơi chọn trong **Cài đặt đồ họa** (nút "ĐỒ HỌA" ở 
 | Khử răng cưa | không | không | MSAA 2x |
 | FPS tối đa trên điện thoại | **30** | 60 | 60 |
 | Viền chữ UI (Outline) | tắt | bật | bật |
+| Đèn thật về đêm (§6.4) | không (chỉ ô đèn sáng rực hơn) | tối đa 4, tầm 3,2 m | tối đa 8, tầm 4,5 m, ánh sáng mềm hơn |
 
 Mỗi mức = một mức chất lượng của Unity (`ProjectSettings/QualitySettings` có đúng 3 mức Low / Medium / High) trỏ tới URP asset riêng; `UrpSetup.Ensure` (menu Cafe) tạo lại 3 asset nếu mất. UI (Screen Space Overlay) luôn vẽ ở độ phân giải gốc nên chữ vẫn nét khi giảm độ nét cảnh 3D. Thêm cờ chạy thử: `-gfx low|medium|high` (bản Development).
+
+### 6.4 Night lighting & lamp lights
+
+- **Đêm sáng xanh ánh trăng, không còn "đen":** từ 20:30, nắng `#8FA8E8` cường độ 0,9 (trước 0,5); ambient Sky `#6676AA`, Equator `#7A82B4`, Ground `#40446A`. Vẫn chỉ khoảng 55–65% độ sáng giữa trưa (test `DayNightRulesTests` giữ khoảng này). Shader cộng thêm `_NightAmbientBoost` (0,2) vào `_AmbientStrength` (0,3) theo `_CafeNight`, tức ambient 0,5 về đêm.
+- **Đèn bật dần:** `night` trong bảng `DayNightRules` = độ sáng đèn: 0 đến 17:30, đầy lúc 19:00 (≈ 0,67 lúc 18:30), tắt dần từ 06:00 (0,4) về 0 lúc 08:30. Pha Chuẩn bị (09:30) luôn tắt.
+- **Đồ đèn:** `Lamp_Bulb`, `Lamp_Desk`, `Lamp_Floor`, `Lamp_Pendant`, `Lantern_Hoian`, `Chandelier_Brass` (`LampLights.IsLamp`).
+- **Thấp:** URP "Additional Lights" = Disabled, không tạo Light nào. Ô đèn (palette 57) nhân màu ×2,0 thay vì ×1,35 để vẫn đọc được "đèn đang bật" (biến thể shader không có `_ADDITIONAL_LIGHTS`).
+- **Vừa / Cao:** URP Additional Lights = Per Pixel, không bóng đổ (đèn điểm đổ bóng = 6 lượt vẽ cả quán, quá nặng cho điện thoại; shader cũng không có biến thể `_ADDITIONAL_LIGHT_SHADOWS`). Per-object limit 4 (Vừa) / 8 (Cao). `LampLights` giữ một nhóm Point Light ấm `#FFB86B`, gắn vào các đèn gần tâm lưới nhất (tối đa 4 / 8), cập nhật khi đặt / gỡ / dời đồ, đổi cấp quán, đổi mức đồ họa. Cường độ = `GraphicsPresets.LampIntensity` × `_CafeNight`.
+- **Shader:** `Toon_Palette` lặp qua đèn phụ, ánh sáng chia bậc như nắng (hai bậc, ngưỡng 0,03–0,08 và 0,15–0,35 trên `ndl × attenuation`); global `_CafeLampSoft` (Cao 0,6) trộn dần sang gradient mượt cho ánh sáng "thật" hơn. Pass ShadowCaster / DepthOnly không đổi. Mọi vật thể trong cảnh dùng `M_Toon_Palette` nên đều nhận đèn.
+- **Số liệu** nằm hết ở `GraphicsPresets.Lamp*` (có test); URP asset do `UrpSetup.Ensure` tạo lại từ cùng số liệu.
+- **Nhắc người chơi:** Cài đặt đồ họa ghi dòng đèn của từng mức (`GraphicsPresets.LightingNote`); gợi ý tình huống `night_lamps` (TutorialDirector, hiện một lần theo save) khi trời tối và quán có đèn, chỉ vào nút ĐỒ HỌA nếu đang ở mức Thấp.
+- Chụp thử: `-dayhour 21 -gfx low|medium|high` (bản Development).
 
 ---
 

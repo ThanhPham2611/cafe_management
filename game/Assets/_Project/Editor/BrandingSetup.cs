@@ -83,7 +83,7 @@ namespace Cafe.EditorTools
                 ti.alphaIsTransparency = true;
                 ti.filterMode = FilterMode.Bilinear;
                 ti.wrapMode = TextureWrapMode.Clamp;
-                ti.textureCompression = TextureImporterCompression.Uncompressed;
+                // nén do UiSpriteImporter quyết định (ASTC trừ ảnh nguồn icon app)
                 if (changed) ti.SaveAndReimport();
             }
         }

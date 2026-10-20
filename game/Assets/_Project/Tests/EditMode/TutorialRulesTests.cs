@@ -165,7 +165,7 @@ namespace Cafe.Tests
             {
                 day = 9, tier = 2, lostCustomer = true, cupsEmpty = true, bacXiuNew = true, missionClaimable = true, canUpgrade = true,
                 canAffordStool = true, dirtyTable = true, wantsMop = true, dirtyCupsCarried = true, canHireCleaner = true,
-                canExperiment = true, canAffordZone = true
+                canExperiment = true, canAffordZone = true, nightWithLamps = true
             };
             var t3 = all;
             t3.tier = 3;
@@ -177,6 +177,20 @@ namespace Cafe.Tests
                 bool any = TutorialRules.Eligible(id, all) || TutorialRules.Eligible(id, t3) || TutorialRules.Eligible(id, t1);
                 Assert.That(any, Is.True, "tip " + id + " không bao giờ đủ điều kiện");
             }
+        }
+
+        [Test]
+        public void NightLampsTip_NeedsNightAndLamps_AndReachesVeteransToo()
+        {
+            var seen = new TutorialSeen();
+            Assert.That(TutorialRules.PickTip(new TipContext { day = 5, tier = 2 }, seen), Is.Null);
+            var night = new TipContext { day = 5, tier = 2, nightWithLamps = true };
+            Assert.That(TutorialRules.PickTip(night, seen), Is.EqualTo(TutorialTips.NightLamps));
+            seen.AddKnownForTier(3);
+            Assert.That(seen.Has(TutorialTips.NightLamps), Is.False, "người chơi cũ vẫn được nhắc một lần");
+            Assert.That(TutorialRules.PickTip(night, seen), Is.EqualTo(TutorialTips.NightLamps));
+            seen.Add(TutorialTips.NightLamps);
+            Assert.That(TutorialRules.PickTip(night, seen), Is.Null, "chỉ nhắc một lần");
         }
 
         [Test]

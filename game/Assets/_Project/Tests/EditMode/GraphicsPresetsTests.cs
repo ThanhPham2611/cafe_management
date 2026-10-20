@@ -89,7 +89,52 @@ namespace Cafe.Tests
             {
                 Assert.That(GraphicsPresets.Name(level), Is.Not.Empty);
                 Assert.That(GraphicsPresets.Description(level), Is.Not.Empty);
+                Assert.That(GraphicsPresets.LightingNote(level), Is.Not.Empty);
             }
+        }
+
+        [Test]
+        public void LampLights_LowHasNone_AndGrowWithLevel()
+        {
+            Assert.That(GraphicsPresets.LampLights(GraphicsLevel.Low), Is.EqualTo(0));
+            Assert.That(GraphicsPresets.LampRange(GraphicsLevel.Low), Is.EqualTo(0f));
+            Assert.That(GraphicsPresets.LampIntensity(GraphicsLevel.Low), Is.EqualTo(0f));
+            Assert.That(GraphicsPresets.LampLights(GraphicsLevel.Medium), Is.GreaterThan(0));
+            Assert.That(GraphicsPresets.LampLights(GraphicsLevel.Medium), Is.LessThanOrEqualTo(GraphicsPresets.LampLights(GraphicsLevel.High)));
+            Assert.That(GraphicsPresets.LampRange(GraphicsLevel.Medium), Is.GreaterThan(0f));
+            Assert.That(GraphicsPresets.LampRange(GraphicsLevel.Medium), Is.LessThanOrEqualTo(GraphicsPresets.LampRange(GraphicsLevel.High)));
+            Assert.That(GraphicsPresets.LampIntensity(GraphicsLevel.Medium), Is.GreaterThan(0f));
+            Assert.That(GraphicsPresets.LampSoftness(GraphicsLevel.Medium), Is.LessThanOrEqualTo(GraphicsPresets.LampSoftness(GraphicsLevel.High)));
+            foreach (GraphicsLevel level in GraphicsPresets.All)
+                Assert.That(GraphicsPresets.LampSoftness(level), Is.InRange(0f, 1f));
+        }
+
+        [Test]
+        public void LightingNote_MentionsTheLampCountOfTheLevel()
+        {
+            Assert.That(GraphicsPresets.LightingNote(GraphicsLevel.Medium), Does.Contain(GraphicsPresets.LampLights(GraphicsLevel.Medium).ToString()));
+            Assert.That(GraphicsPresets.LightingNote(GraphicsLevel.High), Does.Contain(GraphicsPresets.LampLights(GraphicsLevel.High).ToString()));
+        }
+
+        [TestCase("Lamp_Bulb", true)]
+        [TestCase("Lamp_Desk", true)]
+        [TestCase("Lamp_Floor", true)]
+        [TestCase("Lamp_Pendant", true)]
+        [TestCase("Lantern_Hoian", true)]
+        [TestCase("Chandelier_Brass", true)]
+        [TestCase("Fan_Ceiling", false)]
+        [TestCase("", false)]
+        public void IsLamp_MatchesTheLampItems(string id, bool expected)
+        {
+            Assert.That(LampLights.IsLamp(id), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void LampLights_FitTheUrpPerObjectLimit()
+        {
+            // UrpSetup đặt m_AdditionalLightsPerObjectLimit = max(4, đèn); URP chỉ nhận tối đa 8 đèn phụ mỗi vật
+            foreach (GraphicsLevel level in GraphicsPresets.All)
+                Assert.That(GraphicsPresets.LampLights(level), Is.LessThanOrEqualTo(8));
         }
     }
 }
