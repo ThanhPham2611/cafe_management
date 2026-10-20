@@ -129,7 +129,7 @@ namespace Cafe
                 return;
             }
             SetContent(true);
-            rect.anchoredPosition = new Vector2(sp.x, sp.y) / canvas.scaleFactor;
+            HudRules.Place(rect, new Vector2(sp.x, sp.y) / canvas.scaleFactor);
         }
     }
 }

@@ -34,6 +34,7 @@ Material:
     - _Band2: 0.7
     - _BandSoft: 0.04
     - _MidTone: 0.82
+    - _NightAmbientBoost: 0.2
     - _RimIntensity: 0.35
     - _RimPower: 3
     - _SwatchIndex: -1

@@ -72,7 +72,7 @@ namespace Cafe
             SetVisible(true);
             phase += Time.unscaledDeltaTime * CupCollectRules.PulseSpeed(urgency);
             float bounce = Mathf.Abs(Mathf.Sin(phase)) * 10f;
-            rect.anchoredPosition = new Vector2(sp.x, sp.y + bounce) / canvas.scaleFactor;
+            HudRules.Place(rect, new Vector2(sp.x, sp.y + bounce) / canvas.scaleFactor);
         }
     }
 }

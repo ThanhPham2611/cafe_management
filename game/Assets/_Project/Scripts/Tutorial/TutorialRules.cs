@@ -36,6 +36,7 @@ namespace Cafe
         public const string T3Machines = "t3_machines";
         public const string T3Staff = "t3_staff";
         public const string T3Zone = "t3_zone";
+        public const string NightLamps = "night_lamps";
 
         /// Cấp quán mà gợi ý này "thuộc về" (người đã ở cấp đó coi như biết rồi). Gợi ý lên cấp k thuộc cấp k+1 (đã lên cấp là biết).
         public static int TipTier(string id)
@@ -44,6 +45,7 @@ namespace Cafe
             {
                 case Upgrade1: case T2Table: case T2Mop: case T2Sink: case T2Cleaner: case T2Experiment: return 2;
                 case Upgrade2: case T3Machines: case T3Staff: case T3Zone: return 3;
+                case NightLamps: return int.MaxValue; // tính năng mới: người chơi cũ cũng được nhắc một lần
             }
             return 1; // nocup, lost, mission, stool, bacxiu: cơ bản của cấp 1
         }
@@ -53,7 +55,7 @@ namespace Cafe
         {
             NoCup, Lost, Upgrade1, Upgrade2, Mission, Stool, BacXiu,
             T2Table, T2Mop, T2Sink, T2Cleaner, T2Experiment,
-            T3Machines, T3Staff, T3Zone
+            T3Machines, T3Staff, T3Zone, NightLamps
         };
     }
 
@@ -74,6 +76,7 @@ namespace Cafe
         public bool canHireCleaner;
         public bool canExperiment;
         public bool canAffordZone;
+        public bool nightWithLamps;     // trời đã tối và quán có đèn
     }
 
     /// Tập mã hướng dẫn đã xem (lưu/đọc dạng mảng chuỗi).
@@ -263,6 +266,7 @@ namespace Cafe
                 case TutorialTips.T3Machines: return c.tier >= 3;
                 case TutorialTips.T3Staff: return c.tier >= 3;
                 case TutorialTips.T3Zone: return c.tier >= 3 && c.canAffordZone;
+                case TutorialTips.NightLamps: return c.nightWithLamps;
             }
             return false;
         }

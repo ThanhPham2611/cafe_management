@@ -29,7 +29,10 @@ namespace Cafe.EditorTools
                 target = BuildTarget.Android,
                 options = BuildOptions.Development,
             };
+            bool oldTiming = PlayerSettings.enableFrameTimingStats;
+            PlayerSettings.enableFrameTimingStats = true; // DebugPerfProbe đọc GPU ms (chỉ bản Development)
             BuildReport report = BuildPipeline.BuildPlayer(options);
+            PlayerSettings.enableFrameTimingStats = oldTiming;
             var s = report.summary;
             Debug.Log($"[Cafe] Android build {s.result}: {s.outputPath} ({s.totalSize / (1024 * 1024)} MB, " +
                       $"{s.totalErrors} lỗi, {s.totalWarnings} cảnh báo)");
@@ -83,7 +86,10 @@ namespace Cafe.EditorTools
                 target = BuildTarget.StandaloneOSX,
                 options = BuildOptions.Development,
             };
+            bool oldTiming = PlayerSettings.enableFrameTimingStats;
+            PlayerSettings.enableFrameTimingStats = true; // DebugPerfProbe đọc GPU ms (chỉ bản Development)
             BuildReport report = BuildPipeline.BuildPlayer(options);
+            PlayerSettings.enableFrameTimingStats = oldTiming;
             var s = report.summary;
             Debug.Log($"[Cafe] Build {s.result}: {s.outputPath} ({s.totalSize / (1024 * 1024)} MB, " +
                       $"{s.totalErrors} lỗi, {s.totalWarnings} cảnh báo)");

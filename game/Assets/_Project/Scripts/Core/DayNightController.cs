@@ -11,6 +11,8 @@ namespace Cafe
         public static float ForcedHour = -1f;
         public const float PrepHour = 9.5f;
         private const float Smooth = 3f;
+        /// Độ tối hiện tại 0..1 (đã làm mượt, trùng _CafeNight): LampLights nhân vào cường độ đèn, TutorialDirector dùng để nhắc đèn.
+        public static float Night { get; private set; }
 
         private static readonly int NightId = Shader.PropertyToID("_CafeNight");
 
@@ -39,6 +41,7 @@ namespace Cafe
 
         private void OnDestroy()
         {
+            Night = 0f;
             Shader.SetGlobalFloat(NightId, 0f);
         }
 
@@ -78,6 +81,7 @@ namespace Cafe
             RenderSettings.ambientEquatorColor = l.equator;
             RenderSettings.ambientGroundColor = l.ground;
             if (cam != null) cam.backgroundColor = l.background;
+            Night = l.night;
             Shader.SetGlobalFloat(NightId, l.night);
         }
     }

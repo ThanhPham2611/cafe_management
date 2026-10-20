@@ -52,7 +52,7 @@ namespace Cafe
         /// Gọi một lần khi game khởi động (GameBootstrap.Awake).
         public static void Init()
         {
-            Recommended = GraphicsPresets.Recommend(SystemInfo.systemMemorySize, SystemInfo.processorCount, IsMobile);
+            Recommended = GraphicsPresets.Recommend(SystemInfo.systemMemorySize, SystemInfo.processorCount, IsMobile, SystemInfo.graphicsDeviceName);
             fakeHz = ReadFakeHz();
             int[] rates = ReadRefreshRates();
             DisplayHz = Mathf.Max(rates);
@@ -116,7 +116,7 @@ namespace Cafe
             ApplyUiOutlines();
             var rp = GraphicsSettings.currentRenderPipeline;
             Debug.Log("[Gfx] mức " + level + " (chất lượng " + index + ", URP=" + (rp != null ? rp.name : "không") + ", FPS tối đa " +
-                      (IsMobile ? TargetFps.ToString() : "không giới hạn") + ", màn hình " + DisplayHz + " Hz, viền chữ " + UiOutlines + ")");
+                      (IsMobile ? TargetFps.ToString() : "không giới hạn") + ", màn hình " + DisplayHz + " Hz, viền chữ " + UiOutlines + ", GPU " + SystemInfo.graphicsDeviceName + ")");
             if (Changed != null) Changed();
         }
 

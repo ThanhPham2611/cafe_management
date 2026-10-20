@@ -644,6 +644,7 @@ namespace Cafe
             c.dirtyCupsCarried = game.Owner != null && game.Owner.DirtyCupsCarried > 0;
             c.canHireCleaner = game.Staff != null && !game.Staff.HasRole(StaffRole.Cleaner) && game.Staff.CanHire(StaffRole.Cleaner)
                                && game.Wallet.Xu >= GameBalance.StaffHireFee(StaffRole.Cleaner);
+            c.nightWithLamps = DayNightController.Night >= 0.6f && LampLights.AnyPlaced(game.Grid);
             c.canExperiment = game.Recipes != null && game.Recipes.CanExperiment && game.Station.State == BrewStation.Phase.Idle;
             if (c.tier >= 3 && game.Tier != null)
             {
@@ -772,6 +773,12 @@ namespace Cafe
                 case TutorialTips.T3Machines: text = TutorialStrings.T3Machines; target = UiTarget("ShopButton"); break;
                 case TutorialTips.T3Staff: text = TutorialStrings.T3Staff; target = UiTarget("StaffButton"); break;
                 case TutorialTips.T3Zone: text = TutorialStrings.T3Zone; target = UiTarget("ZonesButton"); break;
+                case TutorialTips.NightLamps:
+                    // Mức Thấp: chỉ vào nút ĐỒ HỌA để đổi; mức khác chỉ báo đèn
+                    bool low = GraphicsQuality.Current == GraphicsLevel.Low;
+                    text = low ? TutorialStrings.NightLampsLow : TutorialStrings.NightLamps;
+                    if (low) target = UiTarget("GraphicsButton");
+                    break;
             }
             return new TutorialPrompt
             {

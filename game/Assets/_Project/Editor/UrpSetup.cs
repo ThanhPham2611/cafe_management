@@ -23,10 +23,11 @@ namespace Cafe.EditorTools
 
 #if CAFE_URP
     /// Tạo 3 URP asset cho mobile theo art_bible §6 — mỗi mức đồ họa một asset (runtime chọn bằng QualitySettings, xem GraphicsQuality):
-    ///   Thấp  URP_Mobile_Low    : không bóng, độ nét 70%, không MSAA
-    ///   Vừa   URP_Mobile_Medium : bóng cứng 512 (18 -> 14 m), độ nét 85%
-    ///   Cao   URP_Mobile        : bóng mềm 1024, độ nét 100%, MSAA 2x
-    /// Chung: 1 cascade, không HDR, không depth/opaque texture, SRP Batcher bật, tắt đèn phụ. Mức chất lượng i của Unity = GraphicsLevel i
+    ///   Thấp  URP_Mobile_Low    : không bóng, độ nét 70%, không MSAA, tắt đèn phụ
+    ///   Vừa   URP_Mobile_Medium : bóng cứng 512 (18 -> 14 m), độ nét 85%, đèn phụ per-pixel (4 đèn / vật)
+    ///   Cao   URP_Mobile        : bóng mềm 1024, độ nét 100%, MSAA 2x, đèn phụ per-pixel (8 đèn / vật)
+    /// Đèn phụ = đèn thật của đồ đèn về đêm (LampLights, số đèn lấy từ GraphicsPresets.LampLights), không bóng đổ ở mọi mức.
+    /// Chung: 1 cascade, không HDR, không depth/opaque texture, SRP Batcher bật. Mức chất lượng i của Unity = GraphicsLevel i
     /// (ProjectSettings/QualitySettings có đúng 3 mức Low / Medium / High).
     public static class UrpSetup
     {
@@ -38,14 +39,15 @@ namespace Cafe.EditorTools
             public string path;
             public bool shadows, soft;
             public int shadowRes, msaa;
+            public GraphicsLevel level;
             public float shadowDistance, renderScale;
         }
 
         static readonly Preset[] Presets =
         {
-            new Preset { path = Dir + "/URP_Mobile_Low.asset", shadows = false, soft = false, shadowRes = 512, msaa = 1, shadowDistance = 14f, renderScale = 0.7f },
-            new Preset { path = Dir + "/URP_Mobile_Medium.asset", shadows = true, soft = false, shadowRes = 512, msaa = 1, shadowDistance = 14f, renderScale = 0.85f },
-            new Preset { path = Dir + "/URP_Mobile.asset", shadows = true, soft = true, shadowRes = 1024, msaa = 2, shadowDistance = 18f, renderScale = 1f },
+            new Preset { path = Dir + "/URP_Mobile_Low.asset", shadows = false, soft = false, shadowRes = 512, msaa = 1, shadowDistance = 14f, renderScale = 0.7f, level = GraphicsLevel.Low },
+            new Preset { path = Dir + "/URP_Mobile_Medium.asset", shadows = true, soft = false, shadowRes = 512, msaa = 1, shadowDistance = 14f, renderScale = 0.85f, level = GraphicsLevel.Medium },
+            new Preset { path = Dir + "/URP_Mobile.asset", shadows = true, soft = true, shadowRes = 1024, msaa = 2, shadowDistance = 18f, renderScale = 1f, level = GraphicsLevel.High },
         };
 
         public static void Ensure()
@@ -102,7 +104,10 @@ namespace Cafe.EditorTools
             SetBool(so, "m_RequireDepthTexture", false);
             SetBool(so, "m_RequireOpaqueTexture", false);
             SetBool(so, "m_UseSRPBatcher", true);
-            SetInt(so, "m_AdditionalLightsRenderingMode", 0); // tắt đèn phụ (fake bằng emission)
+            int lamps = GraphicsPresets.LampLights(p.level);
+            SetInt(so, "m_AdditionalLightsRenderingMode", lamps > 0 ? 1 : 0); // 1 = PerPixel, 0 = tắt (mức Thấp: đèn chỉ phát sáng trên mô hình)
+            SetInt(so, "m_AdditionalLightsPerObjectLimit", Mathf.Max(4, lamps));
+            SetBool(so, "m_AdditionalLightShadowsSupported", false);
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
