@@ -6,6 +6,13 @@ namespace Cafe.Tests
     public class LevelRulesTests
     {
         [Test]
+        public void Tier3Band_NoStepLargerThan700Rp()
+        {
+            for (int lv = 16; lv < 31; lv++)
+                Assert.That(LevelRules.RpFor(lv + 1) - LevelRules.RpFor(lv), Is.LessThanOrEqualTo(700), "Lv" + lv + " -> Lv" + (lv + 1));
+        }
+
+        [Test]
         public void Thresholds_AscendFromZero_AndHitEveryStarThreshold()
         {
             Assert.That(LevelRules.Thresholds[0], Is.Zero);

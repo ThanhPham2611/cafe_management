@@ -104,6 +104,23 @@ namespace Cafe.Tests
         }
 
         [Test]
+        public void Prune_HandsDrinkToAnotherWaitingCustomer_InsteadOfDiscarding()
+        {
+            Order gone = NewOrder(1), next = NewOrder(2);
+            gone.TryClaim(brewer);
+            shelf.TryAdd(gone, 3, brewer);
+
+            int removed = shelf.Prune(o => !ReferenceEquals(o, gone), o => next);
+
+            Assert.That(removed, Is.Zero);
+            Assert.That(discarded, Is.Zero, "ly được giữ lại, không đổ");
+            Assert.That(shelf.Items[0].order, Is.SameAs(next));
+            Assert.That(shelf.Items[0].quality, Is.EqualTo(3));
+            Assert.That(next.IsClaimed, Is.True, "đơn mới do quầy giao giữ");
+            Assert.That(gone.IsClaimed, Is.False);
+        }
+
+        [Test]
         public void Clear_RemovesEverything_AndDiscardsAll()
         {
             for (int i = 0; i < 3; i++)

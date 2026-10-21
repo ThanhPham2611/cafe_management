@@ -92,7 +92,7 @@ namespace Cafe
         {
             ReadyShelf shelf = Game.Shelf;
             if (shelf == null || shelf.Count == 0) return;
-            shelf.Prune(IsWaiting);
+            shelf.Prune(IsWaiting, o => OrderPicker.SameRecipeWaiting(Game.Orders.Items, o.recipe, IsWaiting));
             Vector3 point = default(Vector3);
             ReadyShelf.Drink drink;
             bool taken = shelf.TryTake(worker, o => IsWaiting(o) && o.customer.Seat.TryGetApproachPoint(worker.transform.position, out point), out drink);

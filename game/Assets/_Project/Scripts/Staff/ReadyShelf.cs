@@ -48,14 +48,21 @@ namespace Cafe
             return true;
         }
 
-        /// Bỏ các ly mà khách không còn chờ (isWaiting = false). Trả về số ly bỏ.
-        public int Prune(Func<Order, bool> isWaiting)
+        /// Bỏ các ly mà khách không còn chờ (isWaiting = false). replacement: tìm khách khác đang chờ cùng món để giữ ly lại
+        /// (null = không có thì bỏ). Trả về số ly bỏ.
+        public int Prune(Func<Order, bool> isWaiting, Func<Order, Order> replacement = null)
         {
             int removed = 0;
             for (int i = items.Count - 1; i >= 0; i--)
             {
                 if (isWaiting != null && isWaiting(items[i].order)) continue;
                 items[i].order.Release(this);
+                Order alt = replacement != null ? replacement(items[i].order) : null;
+                if (alt != null && alt.TryClaim(this))
+                {
+                    items[i] = new Drink { order = alt, quality = items[i].quality };
+                    continue;
+                }
                 items.RemoveAt(i);
                 removed++;
                 if (discard != null) discard();

@@ -132,6 +132,16 @@ namespace Cafe.Tests
         }
 
         [Test]
+        public void WalkAwayDelta_IsCappedByTheDaysServiceRp()
+        {
+            Assert.That(GameBalance.WalkAwayDelta(0f, 0f), Is.Zero, "chưa kiếm được RP thì chưa trừ");
+            Assert.That(GameBalance.WalkAwayDelta(100f, 0f), Is.EqualTo(GameBalance.WalkAwayRp), "còn dư trần: trừ nguyên");
+            float cap = GameBalance.WalkAwayDailyCap * 100f;
+            Assert.That(GameBalance.WalkAwayDelta(100f, cap), Is.EqualTo(0f).Within(1e-4f), "đã chạm trần ngày");
+            Assert.That(GameBalance.WalkAwayDelta(100f, cap - 0.4f), Is.EqualTo(-0.4f).Within(1e-4f), "chỉ trừ phần còn lại của trần");
+        }
+
+        [Test]
         public void Capacity_Tier3UsesRestaurantTurnsAndSmallerStaffBonus()
         {
             Assert.That(GameBalance.CapacityFor(3, 30, 0), Is.EqualTo(150));

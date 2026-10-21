@@ -14,8 +14,13 @@ namespace Cafe
         private int curDay;
         private int curStars;
         private RegularDefinition scheduledRegular;
-        private float delay;          // thời gian lịch đã bị dời vì nghẽn
         private float lastSpawnClock = -100f;
+        // ArrivalPacer: khách đến hạn xếp ngoài cửa (thời điểm đến hạn), tốc độ phục vụ đo được và cấp quán của nó
+        private readonly Queue<float> waiting = new Queue<float>();
+        private float mu = -1f;
+        private int muTier;
+        private int servedSinceTick;
+        private float gap;
 
         /// Bot tắt để so sánh A/B nhịp khách.
         public static bool ThrottleEnabled = true;
@@ -29,11 +34,18 @@ namespace Cafe
         {
             game = g;
             GameEvents.CustomerLeft += OnCustomerLeft;
+            GameEvents.CustomerServed += OnCustomerServed;
         }
 
         private void OnDestroy()
         {
             GameEvents.CustomerLeft -= OnCustomerLeft;
+            GameEvents.CustomerServed -= OnCustomerServed;
+        }
+
+        private void OnCustomerServed(Customer c)
+        {
+            servedSinceTick++;
         }
 
         private int TargetCount(int seatCount)
@@ -82,8 +94,9 @@ namespace Cafe
             if (count > 0 && day == 1) schedule[0] = Mathf.Min(schedule[0], 2f); // FTUE: khách đầu tiên đến sớm
 
             next = 0;
-            delay = 0f;
             lastSpawnClock = -100f;
+            waiting.Clear();
+            gap = 0f;
             forceTimer = 0f;
             active.Clear();
             scheduledRegular = null;
@@ -134,20 +147,9 @@ namespace Cafe
             if (game.Day.CurrentPhase == DayCycle.Phase.Open)
             {
                 float t = game.Day.Elapsed;
-                // Chặn sinh khách chỉ ở cấp 1-2 (chủ quán pha một mình): ở cấp 3 bot đo kém đi (economy §24.3)
-                bool throttled = ThrottleEnabled && !TutorialGate.Active && game.Tier != null && game.Tier.Current < 3;
-                if (throttled && next < schedule.Length && schedule[next] <= t - delay)
+                if (ThrottleEnabled && !TutorialGate.Active) { TickPaced(t); return; }
+                while (next < schedule.Length && TutorialGate.SpawnIsDue(next, schedule[next], t))
                 {
-                    // Quán nghẽn: khách tiếp theo chờ ngoài cửa (dời lịch, tối đa ThrottleMaxDelay)
-                    if (delay < GameBalance.ThrottleMaxDelay && IsCongested())
-                    {
-                        delay = Mathf.Min(GameBalance.ThrottleMaxDelay, delay + Time.deltaTime);
-                        return;
-                    }
-                }
-                while (next < schedule.Length && TutorialGate.SpawnIsDue(next, schedule[next], t - (throttled ? delay : 0f)))
-                {
-                    if (throttled && t - lastSpawnClock < GameBalance.MinSpawnGapSeconds) break;
                     Spawn();
                     lastSpawnClock = t;
                     next++;
@@ -164,17 +166,42 @@ namespace Cafe
             }
         }
 
-        private bool IsCongested()
+        /// ArrivalPacer: khách đến hạn xếp ngoài cửa, chỉ vào khi quán còn dưới mức tải (docs/customer_pacing_plan_2026-10-19.md §4).
+        private void TickPaced(float t)
         {
-            int seatWait = 0, service = 0;
+            int tier = game.Tier != null ? game.Tier.Current : 1;
+            if (mu < 0f || tier != muTier) { mu = ArrivalPacer.Prior(tier); muTier = tier; }
+            int inFlight = InFlight();
+            if (inFlight > 0) mu = ArrivalPacer.UpdateMu(mu, ArrivalPacer.Prior(tier), servedSinceTick, Time.deltaTime);
+            servedSinceTick = 0;
+
+            while (next < schedule.Length && schedule[next] <= t) { waiting.Enqueue(t); next++; }
+            // Đợi ngoài cửa quá lâu / quá đông: khách đi quán khác (không tính mất khách, không trừ RP)
+            while (waiting.Count > 0 && (waiting.Count > ArrivalPacer.PendingMax || t - waiting.Peek() > ArrivalPacer.HoldMax)) waiting.Dequeue();
+            // Quán gần trống mà khách kế sắp tới: cho vào luôn
+            if (waiting.Count == 0 && inFlight <= 1 && next < schedule.Length && schedule[next] - t <= ArrivalPacer.PullForwardSeconds)
+            {
+                waiting.Enqueue(t);
+                next++;
+            }
+            int seats = game.Grid != null ? game.Grid.Seats.Count : 0;
+            if (waiting.Count == 0 || inFlight >= ArrivalPacer.LoadLimit(mu, seats) || t - lastSpawnClock < gap) return;
+            waiting.Dequeue();
+            Spawn();
+            lastSpawnClock = t;
+            gap = ArrivalPacer.MinGap(mu) * Random.Range(0.75f, 1.25f);
+        }
+
+        /// Khách trong quán chưa được phục vụ (đang tìm chỗ, đi tới ghế, ngồi gọi món, chờ món).
+        private int InFlight()
+        {
+            int n = 0;
             for (int i = 0; i < active.Count; i++)
             {
                 Customer c = active[i];
-                if (c == null) continue;
-                if (c.State == CustomerState.FindSeat) seatWait++;
-                else if (c.IsWaitingForDrink) service++;
+                if (c != null && c.State <= CustomerState.WaitOrder) n++;
             }
-            return SpawnThrottle.ShouldHold(seatWait, service, game.Grid != null ? game.Grid.Seats.Count : 0);
+            return n;
         }
 
         private void Spawn()

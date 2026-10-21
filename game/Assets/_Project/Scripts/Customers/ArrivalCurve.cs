@@ -66,13 +66,45 @@ namespace Cafe
         }
     }
 
-    /// Chặn sinh thêm khách khi quán đã nghẽn: nhiều khách đang chờ chỗ hoặc chờ món.
-    public static class SpawnThrottle
+    /// Nhịp khách theo sức phục vụ (docs/customer_pacing_plan_2026-10-19.md §4): khách đến hạn chỉ vào quán khi số khách
+    /// chưa được phục vụ dưới mức tải L, tính từ tốc độ phục vụ đo được (muHat, khách/giây). Người chơi pha chậm thì khách
+    /// vào thưa hơn; quán gần trống thì kéo khách kế tới sớm để không phải ngồi chờ.
+    public static class ArrivalPacer
     {
-        public static bool ShouldHold(int waitingSeat, int waitingService, int seatCount)
+        /// Tốc độ phục vụ giả định lúc đầu ngày / đổi cấp (khách/giây) cho cấp 1..3: ~5,5 / 15 / 20 khách/phút (economy §17-18, §24.4).
+        private static readonly float[] MuPrior = { 0.09f, 0.25f, 0.33f };
+        public const float WaitTarget = 25f;          // hàng chờ dự kiến ≲ 25 s (42% của kiên nhẫn 60 s)
+        public const int WalkBuffer = 2;              // khách đang đi bộ chưa vào hàng
+        public const int MinLoad = 3;                 // không để quán trống
+        public const float HoldMax = 30f;             // đợi ngoài cửa quá lâu thì đi chỗ khác (không tính mất khách, không trừ RP)
+        public const int PendingMax = 3;              // tối đa khách xếp ngoài cửa
+        public const float PullForwardSeconds = 8f;   // quán gần trống: khách kế còn ≤ 8 s thì cho vào luôn
+        public const float EwmaTau = 45f;
+
+        public static float Prior(int tier)
         {
-            int serviceLimit = Mathf.Max(GameBalance.ThrottleSeatWait, seatCount / 2);
-            return waitingSeat >= GameBalance.ThrottleSeatWait || waitingService >= serviceLimit;
+            return MuPrior[Mathf.Clamp(tier, 1, MuPrior.Length) - 1];
+        }
+
+        /// Số khách chưa được phục vụ tối đa trong quán.
+        public static int LoadLimit(float mu, int seatCount)
+        {
+            int cap = Mathf.Max(MinLoad, Mathf.CeilToInt(0.6f * seatCount));
+            return Mathf.Clamp(Mathf.CeilToInt(mu * WaitTarget) + WalkBuffer, MinLoad, cap);
+        }
+
+        /// Khoảng cách tối thiểu giữa hai khách vào quán (giây, chưa nhân nhiễu).
+        public static float MinGap(float mu)
+        {
+            return Mathf.Clamp(0.6f / Mathf.Max(mu, 0.01f), 1.5f, 8f);
+        }
+
+        /// EWMA tốc độ phục vụ: served = số khách phục vụ xong trong dt. Chỉ gọi khi quán đang bận (tránh tụt vì nhàn rỗi);
+        /// kẹp trong [0,5; 3] × prior để một đoạn xui không kéo nhịp xuống mãi.
+        public static float UpdateMu(float mu, float prior, int served, float dt)
+        {
+            mu += (served - mu * dt) / EwmaTau;
+            return Mathf.Clamp(mu, 0.5f * prior, 3f * prior);
         }
     }
 }
