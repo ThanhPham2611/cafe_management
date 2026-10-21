@@ -62,10 +62,13 @@ namespace Cafe
         private void TryStart()
         {
             if (Time.time < retryAt || Game.Orders == null || Game.Station == null) return;
-            Game.Shelf.Prune(IsWaiting); // ly của khách đã bỏ đi: trả ly sạch về kho
+            Game.Shelf.Prune(IsWaiting, o => OrderPicker.SameRecipeWaiting(Game.Orders.Items, o.recipe, IsWaiting)); // ly của khách đã bỏ đi: trả ly sạch về kho
             BrewStation st = Game.Station;
+            float timeFactor = Game.BrewTimeFactor * StationRules.BrewFactor(worker.HasBrewSpot);
             Order pick = OrderPicker.NextForBrewer(Game.Orders.Items, st.Selected,
-                st.State == BrewStation.Phase.Ready ? st.Recipe : null, IsWaiting);
+                st.State == BrewStation.Phase.Ready ? st.Recipe : null, IsWaiting,
+                o => o.recipe != null && o.customer != null &&
+                     BrewerRules.CanFinish(o.customer.PatienceSecondsLeft, BrewerRules.BrewSeconds(o.recipe.brewSeconds, Data.level, timeFactor)));
             if (pick == null || pick.recipe == null) { Block("khôngCóĐơn"); retryAt = Time.time + 0.4f; return; }
 
             RecipeDef recipe = pick.recipe;
@@ -75,7 +78,7 @@ namespace Cafe
 
             holdsCup = true;
             Game.Wallet.Spend(recipe.ingredientCost);
-            if (Game.Day.Summary != null) Game.Day.Summary.ingredientCost += recipe.ingredientCost;
+            if (Game.Day.Summary != null) { Game.Day.Summary.ingredientCost += recipe.ingredientCost; Game.Day.Summary.brewedStaff++; }
 
             order = pick;
             elapsed = 0f;
@@ -101,9 +104,9 @@ namespace Cafe
 
         private void TickBrewing()
         {
-            if (!OrderStillValid())
+            if (!OrderStillValid() && !RetargetSameRecipe())
             {
-                worker.StopWork(); // khách bỏ đi giữa chừng: mất nguyên liệu, ly sạch về kho
+                worker.StopWork(); // khách bỏ đi giữa chừng, không ai chờ cùng món: mất nguyên liệu, ly sạch về kho
                 return;
             }
             elapsed += Time.deltaTime;
@@ -178,6 +181,17 @@ namespace Cafe
                 agent.ResetPath();
                 BeginState(WorkerState.Idle);
             }
+        }
+
+        /// Khách của ly đang pha bỏ đi: chuyển ly cho khách khác đang chờ cùng món (giữ nguyên tiến độ pha).
+        private bool RetargetSameRecipe()
+        {
+            Order alt = order != null ? OrderPicker.SameRecipeWaiting(Game.Orders.Items, order.recipe, IsWaiting) : null;
+            if (alt == null || !alt.TryClaim(worker)) return false;
+            ReleaseClaim();
+            order = alt;
+            GameEvents.RaiseOrderClaimChanged(alt);
+            return true;
         }
 
         private void ReleaseClaim()

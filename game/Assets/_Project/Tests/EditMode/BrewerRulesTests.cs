@@ -116,6 +116,42 @@ namespace Cafe.Tests
         }
 
         [Test]
+        public void NextForBrewer_SkipsOrdersThatCannotFinishInTime()
+        {
+            var doomed = NewOrder(1, NewRecipe());
+            var ok = NewOrder(2, NewRecipe());
+            var list = new List<Order> { doomed, ok };
+
+            Order pick = OrderPicker.NextForBrewer(list, null, null, o => true, o => o != doomed);
+
+            Assert.That(pick, Is.SameAs(ok), "đơn cũ nhất sắp hết kiên nhẫn thì nhường đơn kế còn kịp");
+        }
+
+        [Test]
+        public void SameRecipeWaiting_FindsOldestUnclaimedSameDrink()
+        {
+            RecipeDef latte = NewRecipe();
+            var other = NewOrder(1, NewRecipe());
+            var claimed = NewOrder(2, latte);
+            claimed.TryClaim(new object());
+            var special = NewOrder(3, latte);
+            special.ownerOnly = true;
+            var ok = NewOrder(4, latte);
+            var list = new List<Order> { other, claimed, special, ok };
+
+            Assert.That(OrderPicker.SameRecipeWaiting(list, latte, o => true), Is.SameAs(ok));
+            Assert.That(OrderPicker.SameRecipeWaiting(list, latte, o => o != ok), Is.Null);
+        }
+
+        [Test]
+        public void CanFinish_NeedsBrewTimePlusDeliveryMargin()
+        {
+            Assert.That(BrewerRules.CanFinish(20f, 10f), Is.True);
+            Assert.That(BrewerRules.CanFinish(10f + BrewerRules.DeliveryMargin, 10f), Is.False);
+            Assert.That(BrewerRules.CanFinish(3f, 10f), Is.False);
+        }
+
+        [Test]
         public void NextForBrewer_ReturnsNull_WhenNothingIsAvailable()
         {
             var a = NewOrder(1, NewRecipe());

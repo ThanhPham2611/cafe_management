@@ -244,6 +244,7 @@ namespace Cafe
                       $"tip {s.tips}, nguyên liệu {s.ingredientCost}, phí {s.fee}, lãi {s.NetProfit}, " +
                       $"RP +{s.rpGained:0.0}, hài lòng TB {s.AverageSatisfaction:0.00}, ★{s.stars}");
             Debug.Log($"[AutoPilot] MẤT KHÁCH ngày {s.day}: hết chỗ {s.lostNoSeat}, hết kiên nhẫn {s.lostPatience}, quán bẩn {s.lostDirty}, khác {s.lost - s.lostNoSeat - s.lostPatience - s.lostDirty}");
+            Debug.Log($"[AutoPilot] LY PHA ngày {s.day}: chủ {s.brewedOwner}, NV {s.brewedStaff}, phục vụ {s.served}, bỏ trên quầy giao {s.shelfDiscards}");
             var tg = GameBootstrap.Instance;
             int tierNow = tg != null && tg.Tier != null ? tg.Tier.Current : 1;
             Debug.Log($"[AutoPilot] TIER={tierNow}");

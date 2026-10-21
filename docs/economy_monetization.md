@@ -1099,3 +1099,49 @@ Cùng cấu hình 24.2, thêm `-nothrottle` (vẫn có đường cong khách đ�
 | Ngày 81–100: phục vụ / lãi / RP | 72,7 / 4.545 / +48 | 61,0 / 2.867 / +35 | 66,2 / 3.387 / +27 |
 
 Kết luận: chặn sinh khách gây khoảng một nửa phần tụt ở cấp 3 (≈ −5 khách, −520 Xu/ngày); cấp 1–2 không khác biệt đáng kể. **Đã chỉnh:** chặn sinh khách chỉ áp ở cấp 1–2 (`CustomerSpawner`). Phần tụt còn lại (≈ −6,5 khách, −1.160 Xu/ngày so với mốc cũ) chưa tách được giữa đường cong khách đến, `NoSeatSeconds` 20 và nhiễu một lần chạy; nếu muốn khép lại thì chạy tiếp một lần với đường cong phẳng (`ArrivalDensity` toàn 1) hoặc `NoSeatSeconds` = 10.
+
+## 25. Cấp 3: bớt phí nguyên liệu, trần trừ RP, level dày hơn — 2026-10-20
+
+Bot 100 ngày trên `main` mới (sau decor-paint): từ cấp 3, RP/ngày tụt +91 → ~+40, lãi đi ngang ~3.700, nguyên liệu 55–60% doanh thu (mức thiết kế ~30%), ngày 100 mới Lv24.
+
+**Đã đổi:**
+- `OrderPicker.NextForBrewer(..., canFinish)` + `BrewerRules.CanFinish`: Pha chế bỏ qua đơn mà khách không còn đủ kiên nhẫn cho thời gian pha + 5 s giao (`Customer.PatienceSecondsLeft`). Trước đây nhận đơn CŨ NHẤT = khách sắp bỏ về → pha xong khách đã đi, mất nguyên liệu.
+- `GameBalance.WalkAwayDelta` / `WalkAwayDailyCap` = 0,4: khách bỏ về (hết kiên nhẫn / bẩn) trừ tối đa 40% RP kiếm từ khách phục vụ trong ngày (`DaySummary.rpFromService` / `rpWalkAway`). Hết chỗ vẫn 0.
+- `LevelRules`: hạng ★3→★4 độ lồi 1,35 → 1,15 (bước lớn nhất ≤ 700 RP thay vì ~800). Các hạng khác giữ nguyên.
+
+**Đo (bot `-cheatt3 -days 40`, cờ như §23.7, mỗi bản một lần, nhiễu ±2.000 Xu/ngày):**
+
+| Ngày 21–40 | Trước | Sau |
+|---|---|---|
+| Phục vụ / ngày | 64,2 | 66,1 |
+| Mất (hết chỗ / hết kiên nhẫn) | 122 (41 / 80) | 120 (40 / 78) |
+| Lãi / ngày | 3.533 | **4.344** (+23%) |
+| Nguyên liệu / doanh thu | 55% | 50% |
+| RP / ngày | +42 | **+74** |
+| Level ngày 40 | Lv22 (5.613 RP) | Lv22 (6.140 RP) |
+
+Chưa đạt mục tiêu §21 (RP ≥ +100/ngày); nguyên liệu vẫn ~50% → xử lý ở §25.1.
+
+### 25.1 Không đổ ly, khách vào theo sức phục vụ (`ArrivalPacer`)
+
+Bot chẩn đoán (đếm `brewedOwner` / `brewedStaff` / `shelfDiscards`, in "[AutoPilot] LY PHA"): cấp 3 ngày 21–30 pha 128 ly/ngày, phục vụ 77 → **39% ly bị đổ**, trong đó ~22 ly/ngày nằm trên quầy giao khi khách đã đi.
+
+**Đã đổi:**
+- `OrderPicker.SameRecipeWaiting`: ly trên quầy giao (`ReadyShelf.Prune(..., replacement)`) và ly Pha chế đang pha dở (`BrewerBehaviour.RetargetSameRecipe`) chuyển cho khách khác đang chờ cùng món thay vì đổ.
+- `ArrivalPacer` (thay `SpawnThrottle`, cả 3 cấp, tắt khi hướng dẫn / `-nothrottle`): khách đến hạn đợi ngoài cửa, chỉ vào khi số khách chưa phục vụ < `L = clamp(ceil(mu·25 s)+2, 3, ceil(0,6·ghế))`; `mu` = EWMA tốc độ phục vụ đo được (τ 45 s, kẹp [0,5; 3]×prior 0,09 / 0,25 / 0,33 khách/s theo cấp) nên người chơi pha chậm thì khách thưa hơn. Cách nhau ≥ `clamp(0,6/mu, 1,5, 8)` s ± 25%. Quán gần trống (≤ 1 khách) mà khách kế còn ≤ 8 s thì cho vào luôn. Đợi ngoài cửa > 30 s hoặc > 3 người thì đi quán khác (không tính mất, không trừ RP).
+
+**Đo cấp 3 (`-cheatt3 -days 40`, ngày 21–40, một lần chạy):** phục vụ 66 → 54, mất 120 → **1**, lãi 4.344 → **4.602**, nguyên liệu 50% → **27%**, RP +74 → **+140**, Lv22 → Lv25 ở ngày 40.
+
+**Đo 100 ngày từ đầu (cờ như §24.2, một lần chạy, so với bot 100 ngày trước §25):**
+
+| | Trước | Sau |
+|---|---|---|
+| Lên Mặt bằng / Nhà hàng sau ngày | 7 / 46 | 7 / **51** |
+| ★2 / ★3 / ★4 vào ngày | 4 / 28 / — | 4 / 27 / **95** |
+| Ngày 26–45 (cấp 2): lãi / RP | 3.462 / +91 | 2.778 / +89 |
+| Ngày 81–100: phục vụ / mất / lãi / RP | 66 / 222 / 3.170 / +30 | 56 / **0** / **4.560** / **+149** |
+| Nguyên liệu / doanh thu ngày 81–100 | 56% | 27% |
+| Level ngày 100 | Lv24 | **Lv31 (★4)** |
+| Exception | 0 | 0 |
+
+Nhận xét: khách gần như không còn bỏ về; cấp 3 và ★4 tiến đều. Đổi lại cấp 2 ít khách hơn nên gom tiền mua nhà chậm ~5 ngày (lãi cấp 2 −20%). Nếu thấy cấp 2 dài: tăng prior cấp 2 (0,25 → 0,3) hoặc `WaitTarget` 25 → 30 s. ★4 ở ngày 95 sớm hơn đích §21 (120–130); nếu chơi thật thấy nhanh: `WalkAwayDailyCap` 0,4 → 0,5. Chưa đo người thật; chưa có chỉ báo "Quán đang đông" / báo giờ cao điểm trong HUD.

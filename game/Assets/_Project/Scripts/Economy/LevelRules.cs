@@ -13,13 +13,15 @@ namespace Cafe
         /// Hạt thưởng khi đạt ★1..★5 (economy §4.2); ★1 là mức khởi đầu nên không có.
         private static readonly int[] StarGems = { 0, 50, 100, 200, 400 };
 
+        /// Độ lồi của bậc trong từng hạng sao: vị trí = (i / n)^độ lồi. Level đầu hạng sao cách mốc sao rất gần, bước dãn dần.
+        /// Hạng ★3→★4 (9.000 RP) lồi nhẹ hơn (1,15): bước cuối ~650 RP thay vì ~800 (bot cấp 3: ~20 ngày/level là quá chậm).
+        // khai báo trước Thresholds: static khởi tạo theo thứ tự trong file
+        private static readonly double[] Curves = { 1.35, 1.35, 1.15, 1.35 };
+
         /// RP bắt đầu của từng level (chỉ số 0 = level 1).
         public static readonly int[] Thresholds = Build();
 
         public static int MaxLevel { get { return Thresholds.Length; } }
-
-        /// Độ lồi của bậc trong hạng sao: vị trí = (i / n)^1,35. Level đầu hạng sao cách mốc sao rất gần, bước dãn dần.
-        private const double Curve = 1.35;
 
         private static int[] Build()
         {
@@ -33,7 +35,7 @@ namespace Cafe
                     int rp = th[s];
                     if (i > 0)
                     {
-                        double x = (th[s + 1] - th[s]) * System.Math.Pow(i / (double)n, Curve);
+                        double x = (th[s + 1] - th[s]) * System.Math.Pow(i / (double)n, Curves[s]);
                         rp += (int)(System.Math.Round(x / 5.0) * 5.0);          // làm tròn 5 cho dễ đọc
                         if (rp <= list[list.Count - 1]) rp = list[list.Count - 1] + 5;
                     }

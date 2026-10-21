@@ -63,6 +63,17 @@ namespace Cafe
             get { return Mathf.Clamp01(1f - patienceUsed / PatienceLimit); }
         }
 
+        /// Giây kiên nhẫn còn lại (ghế êm làm thanh giảm chậm nên kéo dài thêm); hướng dẫn đang tạm dừng thì coi như vô hạn.
+        public float PatienceSecondsLeft
+        {
+            get
+            {
+                if (TutorialGate.PatiencePaused) return float.MaxValue;
+                float comfort = seat != null ? seat.Def.comfort : 0f;
+                return Mathf.Max(0f, PatienceLimit - patienceUsed) * (1f + 0.05f * comfort);
+            }
+        }
+
         private static readonly int[] ShirtSwatches = { 26, 28, 30, 58, 59, 60, 61 };
 
         public void Init(GameBootstrap g)
@@ -383,6 +394,7 @@ namespace Cafe
                 sum.tips += tip;
                 sum.served++;
                 sum.rpGained += rp;
+                sum.rpFromService += rp;
                 sum.satisfactionSum += s;
             }
 
@@ -424,11 +436,13 @@ namespace Cafe
             {
                 Audio.Play(Sfx.CustomerAngry, 1f, false);
                 visual.SetPose(CustomerPose.Angry);
-                float delta = reason == LostReason.NoSeat ? GameBalance.WalkAwayRpNoSeat : GameBalance.WalkAwayRp;
+                float delta = reason == LostReason.NoSeat
+                    ? GameBalance.WalkAwayRpNoSeat
+                    : GameBalance.WalkAwayDelta(sum != null ? sum.rpFromService : 0f, sum != null ? sum.rpWalkAway : 0f);
                 if (delta != 0f)
                 {
                     float rp = game.Reputation.Add(delta);
-                    if (sum != null) sum.rpGained += rp;
+                    if (sum != null) { sum.rpGained += rp; sum.rpWalkAway -= delta; }
                 }
             }
             BeginLeaving();

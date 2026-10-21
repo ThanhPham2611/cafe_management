@@ -16,6 +16,11 @@ namespace Cafe
         public int lostPatience;    // chờ món hết kiên nhẫn
         public int lostDirty;       // quán bẩn (CI < 60) quay đầu bỏ đi
         public float rpGained;
+        public float rpFromService;  // RP cộng từ khách đã phục vụ trong ngày (chưa trừ khách bỏ về)
+        public float rpWalkAway;
+        public int brewedOwner;      // ly chủ quán bắt đầu pha (đã trừ nguyên liệu)
+        public int brewedStaff;      // ly nhân viên Pha chế bắt đầu pha
+        public int shelfDiscards;    // ly trên quầy giao bị bỏ vì khách đã đi     // RP đã bị trừ vì khách bỏ về (số dương); WalkAwayDelta khống chế theo rpFromService
         public float satisfactionSum;
         public int stars;
         public int levelStart = 1;   // level uy tín lúc mở cửa (tổng kết hiện "Lv a → b")

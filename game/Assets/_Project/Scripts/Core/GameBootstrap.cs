@@ -194,7 +194,7 @@ namespace Cafe
             if (Tier != null) Tier.TierChanged += Recipes.NotifyTierChanged; // lên cấp: mở món thường của cấp mới, làm mới khay/sổ
             Stock.Init(GameBalance.StartCups);
             // ly bị bỏ (khách đi mất) trả ly sạch về kho; sức chứa 6 + 4 mỗi quầy line đang đặt (Grid tạo ngay sau, đọc lúc dùng)
-            Shelf = new ReadyShelf(() => Stock.Return(), () => StationRules.ShelfCapacity(Grid != null ? Grid.ShelfSlotsTotal : 0));
+            Shelf = new ReadyShelf(() => { Stock.Return(); if (Day != null && Day.Summary != null) Day.Summary.shelfDiscards++; }, () => StationRules.ShelfCapacity(Grid != null ? Grid.ShelfSlotsTotal : 0));
             int startDay = hasSave ? Mathf.Max(1, save.day) : 1;
             loadedStartDay = startDay;
             dayStartXu = Wallet.Xu;

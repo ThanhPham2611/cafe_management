@@ -55,6 +55,15 @@ namespace Cafe
         public const float DrinkMinSeconds = 8f;
         public const float DrinkMaxSeconds = 15f;
         public const float WalkAwayRp = -1f;                  // bỏ về vì chờ món quá lâu / quán bẩn: nhẹ hơn 1 khách hài lòng (~+1,5 RP); GDD §3.2 "mất danh tiếng nhẹ"
+        /// Khách bỏ về (hết kiên nhẫn / bẩn) chỉ trừ tối đa tỉ lệ này của RP kiếm được từ khách đã phục vụ trong ngày: quán đông khách
+        /// luôn có người bỏ về, không để chúng triệt tiêu hết RP (bot cấp 3 đo: -87 RP/ngày vs +165, RP/ngày chỉ +40; economy §25).
+        public const float WalkAwayDailyCap = 0.4f;
+        /// RP trừ cho một khách bỏ về (âm hoặc 0): WalkAwayRp, nhưng không vượt trần ngày so với RP đã kiếm từ khách phục vụ.
+        public static float WalkAwayDelta(float gainedFromService, float penaltySoFar)
+        {
+            float room = WalkAwayDailyCap * Mathf.Max(0f, gainedFromService) - Mathf.Max(0f, penaltySoFar);
+            return -Mathf.Clamp(room, 0f, -WalkAwayRp);
+        }
         public const float WalkAwayRpNoSeat = 0f;             // hết chỗ = quán đắt khách, không phải khách bực: không trừ RP (economy §21). Cấp 3 bot mất ~180 khách/ngày vì hết chỗ nên -1 triệt tiêu hết RP kiếm được
         public const float SpawnStartFraction = 0.02f;
         public const float SpawnEndFraction = 0.80f;
@@ -63,9 +72,6 @@ namespace Cafe
         // Nhịp khách đến (economy §24): vào chậm đầu ngày, hai đỉnh cao điểm; chặn sinh thêm khi quán nghẽn
         // Cặp (vị trí trong cửa sổ sinh khách 0..1, mật độ tương đối)
         public static readonly float[] ArrivalDensity = { 0f, 0.35f, 0.15f, 1f, 0.4f, 1.5f, 0.6f, 0.8f, 0.8f, 1.6f, 1f, 0.5f };
-        public const int ThrottleSeatWait = 3;                // >= 3 khách đang tìm chỗ => chưa sinh thêm
-        public const float ThrottleMaxDelay = 45f;            // tổng thời gian lịch có thể bị dời trong một ngày
-        public const float MinSpawnGapSeconds = 1f;           // hai khách liên tiếp cách nhau ít nhất, tránh bùng nổ khi hết nghẽn
 
         // Ly để lại (đơn vị: giây TRONG GAME, tức theo đồng hồ DayCycle)
         // Ghế bị chặn khi ly để quá 30 giây THỰC (economy §3.3), quy ra đồng hồ in-game

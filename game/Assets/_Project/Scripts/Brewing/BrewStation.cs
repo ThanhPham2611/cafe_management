@@ -166,7 +166,7 @@ namespace Cafe
             }
             // Bắt đầu pha: trừ nguyên liệu ngay
             game.Wallet.Spend(Recipe.ingredientCost);
-            if (game.Day.Summary != null) game.Day.Summary.ingredientCost += Recipe.ingredientCost;
+            if (game.Day.Summary != null) { game.Day.Summary.ingredientCost += Recipe.ingredientCost; game.Day.Summary.brewedOwner++; }
             State = Phase.Brewing;
             NextIndex = 0;
             Wrong = 0;
