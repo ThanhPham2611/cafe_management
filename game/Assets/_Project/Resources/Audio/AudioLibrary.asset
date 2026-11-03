@@ -249,6 +249,30 @@ MonoBehaviour:
     pitchMax: 1
     cooldown: 1
     priority: 2
+  - id: 26
+    clips:
+    - {fileID: 8300000, guid: f0e78d463b69bf94a83e88c35236314d, type: 3}
+    volume: 0.4
+    pitchMin: 1
+    pitchMax: 1
+    cooldown: 0.1
+    priority: 1
+  - id: 27
+    clips:
+    - {fileID: 8300000, guid: 14431455b693c8b4383457639b64f779, type: 3}
+    volume: 0.65
+    pitchMin: 1
+    pitchMax: 1
+    cooldown: 0.5
+    priority: 1
+  - id: 28
+    clips:
+    - {fileID: 8300000, guid: 3cd5601c24354b640a1cb3ad60526ea0, type: 3}
+    volume: 0.35
+    pitchMin: 1
+    pitchMax: 1
+    cooldown: 0.5
+    priority: 2
   bgm:
   - id: 1
     clip: {fileID: 8300000, guid: efb7518a94f5b4b2db5dd6f2231481d8, type: 3}

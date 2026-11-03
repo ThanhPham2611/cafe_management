@@ -54,11 +54,11 @@ namespace Cafe.Tests
         [Test]
         public void Capped_NeverExceedsDailyCap()
         {
-            int cap = ComboRules.DailyCap(1000); // 60 + 50
-            Assert.That(cap, Is.EqualTo(110));
+            int cap = ComboRules.DailyCap(1000); // 30 + 40
+            Assert.That(cap, Is.EqualTo(70));
             Assert.That(ComboRules.Capped(30, 0, 1000), Is.EqualTo(30));
-            Assert.That(ComboRules.Capped(30, 100, 1000), Is.EqualTo(10));
-            Assert.That(ComboRules.Capped(30, 110, 1000), Is.EqualTo(0));
+            Assert.That(ComboRules.Capped(30, 60, 1000), Is.EqualTo(10));
+            Assert.That(ComboRules.Capped(30, 70, 1000), Is.EqualTo(0));
             Assert.That(ComboRules.Capped(30, 500, 1000), Is.EqualTo(0));
             Assert.That(ComboRules.Capped(0, 0, 1000), Is.EqualTo(0));
         }

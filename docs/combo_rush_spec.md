@@ -38,7 +38,8 @@ Thưởng là **tip combo cộng ngay khi pha xong ly**, kèm hiệu ứng xu ba
 | ≥ 10 | "Barista!" | 30% (trần) |
 
 - Trong **giờ đông** (mục 2), hệ số được ×1,5 (trần 45%).
-- **Trần cả ngày**: tổng tip combo ≤ `ComboDailyCapFraction` (5%) × doanh thu dự kiến của ngày. Chạm trần thì vẫn hiện số combo nhưng không cộng thêm xu, và ghi rõ "đã đạt trần thưởng combo".
+- **Trần cả ngày**: tổng tip combo ≤ `ComboRules.DailyCapFloor` (30 Xu) + `DailyCapFraction` (4%) × doanh thu đồ uống tới lúc đó. Chạm trần thì vẫn hiện số combo nhưng không cộng thêm xu (hiện "Đã chạm trần thưởng combo" một lần mỗi ngày); trần tăng dần theo doanh thu nên các ly sau vẫn có thể được thưởng tiếp.
+  - Đo bot (2026-11-03, cấp 1, 5 ngày, bot pha 3 sao gần như mọi ly, combo max 16–30): với 60 + 5% thì tip combo = 6,5–7,9% doanh thu, vượt mục tiêu; đã hạ còn 30 + 4%.
 - **Đơn đặc biệt** (cấp 3) được +1 combo như ly thường. Bản thân đơn này đã x2 tiền, nên không thưởng chồng thêm.
 - Ước lượng (cần bot xác nhận): ở cấp 1, khoảng 40% ly đạt 3 sao trong chuỗi ≥ 3. Tip combo ≈ 40% × 15% × doanh thu ≈ **3–6% doanh thu**, sát trần.
 

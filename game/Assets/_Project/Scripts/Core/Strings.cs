@@ -131,7 +131,7 @@ namespace Cafe
         public const string ComboPerfectFmt = "Chuẩn vị! +2 · x{0}";
         public const string ComboBonusFmt = "+{0} Xu combo";
         public const string ComboBrokenFmt = "Đứt combo (x{0})";
-        public const string ComboCapped = "Đã đạt trần thưởng combo hôm nay";
+        public const string ComboCapped = "Đã chạm trần thưởng combo";
         public const string SumScrap = "Thu ly";
         public const string SumIngredients = "Nguyên liệu";
         public const string SumFee = "Phí vỉa hè";

@@ -15,8 +15,9 @@ namespace Cafe
         private static readonly float[] Rates = { 0f, 0.10f, 0.20f, 0.30f };
 
         /// Trần tip combo của cả ngày = Floor + Fraction × doanh thu đồ uống tới lúc đó (giữ tổng ≲ 5% doanh thu, §1.2).
-        public const int DailyCapFloor = 60;
-        public const float DailyCapFraction = 0.05f;
+        /// Bot pha 3 sao gần như mọi ly: 60 + 5% cho 6,5–7,9% doanh thu ở cấp 1 (2026-11-03), nên hạ còn 30 + 4% (≈ 5,7% ở 1.800 Xu/ngày).
+        public const int DailyCapFloor = 30;
+        public const float DailyCapFraction = 0.04f;
 
         /// Badge combo chỉ hiện từ mức này (x1 dễ gây rối mắt).
         public const int ShowAt = 2;
