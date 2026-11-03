@@ -31,7 +31,7 @@ namespace Cafe
         /// Số bước rót đã xong của ly đang pha / số lần trong đó đạt "Chuẩn!".
         public int PourSteps { get; private set; }
         public int PerfectPours { get; private set; }
-        /// Ly đang cầm là ly "chuẩn vị" (mọi bước rót đều Chuẩn + 3 sao). Để sau: Customer.Serve cộng tip.
+        /// Ly đang cầm là ly "chuẩn vị" (mọi bước rót đều Chuẩn + 3 sao): combo +2 (ComboTracker).
         public bool HeldPerfect { get; private set; }
 
         /// Đang ở chế độ thử pha tự do (State vẫn là Idle khi chưa có nguyên liệu nào, Brewing khi đã thêm).
@@ -247,6 +247,7 @@ namespace Cafe
                 return TapResult.Wrong;
             }
             Wrong++;
+            if (game.Combo != null) game.Combo.Break();
             if (Wrong >= 2)
             {
                 Ruin();
@@ -270,12 +271,33 @@ namespace Cafe
             Selected = null;
             GameEvents.RaiseToast(Strings.BrewDone);
             Audio.Play(Sfx.BrewDone);
+            RecordCombo();
             Raise();
+        }
+
+        /// Ly chủ quán vừa pha xong vào combo (docs/combo_rush_spec.md §1); tip combo cộng ngay, tính vào tip của ngày.
+        /// Ngày hướng dẫn không tính.
+        private void RecordCombo()
+        {
+            if (game.Combo == null || TutorialGate.Active || Recipe == null) return;
+            DaySummary sum = game.Day != null ? game.Day.Summary : null;
+            game.Combo.OnDrink(HeldQuality, HeldPerfect, Recipe.price, sum != null ? sum.revenue : 0, 1f, PayComboBonus);
+            if (sum != null && game.Combo.Max > sum.maxCombo) sum.maxCombo = game.Combo.Max;
+        }
+
+        private void PayComboBonus(int bonus)
+        {
+            game.Wallet.Earn(bonus);
+            DaySummary sum = game.Day != null ? game.Day.Summary : null;
+            if (sum == null) return;
+            sum.tips += bonus;
+            sum.comboTips += bonus;
         }
 
         private void Ruin()
         {
             // Mất nguyên liệu, ly sạch được giữ lại
+            if (game.Combo != null) game.Combo.Break();
             game.Stock.Return();
             GameEvents.RaiseToast(Strings.Ruined);
             Audio.Play(Sfx.Ruin);
@@ -313,6 +335,7 @@ namespace Cafe
             }
             else if (State == Phase.Ready)
             {
+                if (game.Combo != null) game.Combo.Break(); // đổ ly đã pha
                 game.Stock.Return();
                 State = Phase.Idle;
                 Recipe = null;

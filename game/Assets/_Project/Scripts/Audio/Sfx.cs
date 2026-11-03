@@ -28,6 +28,9 @@ namespace Cafe
         Fanfare = 23,
         DayOpen = 24,
         DayClose = 25,
+        ComboUp = 26,
+        ComboTier = 27,
+        ComboBreak = 28,
     }
 
     /// Nhạc nền. CHỈ THÊM Ở CUỐI.

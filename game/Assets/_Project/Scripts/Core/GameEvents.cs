@@ -66,6 +66,13 @@ namespace Cafe
         public static void RaiseCustomerLeft(Customer c) { if (CustomerLeft != null) CustomerLeft(c); }
         public static void RaiseToast(string msg) { if (Toast != null) Toast(msg); }
 
+        /// Combo pha chuẩn (ComboTracker): count, tier, gain (+1 / +2), bonus (tip combo đã cộng), tierUp (vừa lên bậc).
+        public static event Action<int, int, int, int, bool> ComboChanged;
+        /// Combo đứt; tham số là combo trước khi đứt.
+        public static event Action<int> ComboBroken;
+        public static void RaiseComboChanged(int count, int tier, int gain, int bonus, bool tierUp) { if (ComboChanged != null) ComboChanged(count, tier, gain, bonus, tierUp); }
+        public static void RaiseComboBroken(int prev) { if (ComboBroken != null) ComboBroken(prev); }
+
         // Tắt Domain Reload vẫn sạch event cũ.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
@@ -86,6 +93,8 @@ namespace Cafe
             CustomerServed = null;
             CustomerLeft = null;
             Toast = null;
+            ComboChanged = null;
+            ComboBroken = null;
         }
     }
 }

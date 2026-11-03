@@ -49,6 +49,9 @@ namespace Cafe.EditorTools
             { Sfx.Fanfare, new Def(1.00f, 1.00f, 1.00f, 1.00f, 0) },
             { Sfx.DayOpen, new Def(0.60f, 1.00f, 1.00f, 1.00f, 2) },
             { Sfx.DayClose, new Def(0.55f, 1.00f, 1.00f, 1.00f, 2) },
+            { Sfx.ComboUp, new Def(0.40f, 1.00f, 1.00f, 0.10f, 1) },
+            { Sfx.ComboTier, new Def(0.65f, 1.00f, 1.00f, 0.50f, 1) },
+            { Sfx.ComboBreak, new Def(0.35f, 1.00f, 1.00f, 0.50f, 2) },
         };
 
         private static readonly Regex SfxName = new Regex(@"^AU_Sfx_([A-Za-z0-9]+?)(?:_(\d+))?$");

@@ -354,6 +354,34 @@ def sfx_DayClose(v):
     return y
 
 
+def sfx_ComboUp(v):
+    # Combo +1: hai nốt kalimba nảy lên (A5 -> D6), ngắn để không lấn BrewDone
+    y = np.zeros(int(0.45 * SR))
+    for i, f in enumerate([A5, D6]):
+        t = tt(0.3)
+        place(y, (sine(f, t) + 0.3 * sine(2 * f, t)) * env_exp(t, 12) * (0.8 + 0.2 * i), 0.06 * i)
+    return y
+
+
+def sfx_ComboTier(v):
+    # Lên bậc combo: đàn tranh rải 3 nốt + chuông
+    y = np.zeros(int(1.0 * SR))
+    for i, f in enumerate([F5s, A5, D6]):
+        n = pluck(f, 0.7, decay=0.998, rng=np.random.default_rng(170 + i)) * env_exp(tt(0.7), 3.0)
+        place(y, n, 0.07 * i)
+    place(y, bell(F6s, 0.7, decay=4.0, amp=0.3), 0.22)
+    return y
+
+
+def sfx_ComboBreak(v):
+    # Đứt combo: hai nốt đi xuống, mềm (không phạt như StepWrong)
+    y = np.zeros(int(0.6 * SR))
+    for i, f in enumerate([A4, F4s]):
+        t = tt(0.35)
+        place(y, sine(f, t) * env_exp(t, 9) * 0.7, 0.12 * i)
+    return lowpass(y, 3000)
+
+
 # Id -> (hàm sinh, số biến thể). Phải khớp enum Sfx trong Scripts/Audio/Sfx.cs.
 SFX = {
     "UiTap": (sfx_UiTap, 3), "UiBack": (sfx_UiBack, 3), "DoorChime": (sfx_DoorChime, 3), "OrderNew": (sfx_OrderNew, 3),
@@ -363,6 +391,7 @@ SFX = {
     "ScrapCoin": (sfx_ScrapCoin, 3), "WipeDone": (sfx_WipeDone, 3), "BuildPlace": (sfx_BuildPlace, 2),
     "Sell": (sfx_Sell, 1), "Purchase": (sfx_Purchase, 2), "LevelUp": (sfx_LevelUp, 1), "Claim": (sfx_Claim, 3),
     "Chest": (sfx_Chest, 1), "Fanfare": (sfx_Fanfare, 1), "DayOpen": (sfx_DayOpen, 1), "DayClose": (sfx_DayClose, 1),
+    "ComboUp": (sfx_ComboUp, 1), "ComboTier": (sfx_ComboTier, 1), "ComboBreak": (sfx_ComboBreak, 1),
 }
 
 

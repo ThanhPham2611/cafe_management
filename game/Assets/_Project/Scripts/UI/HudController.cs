@@ -108,6 +108,7 @@ namespace Cafe
         private bool hudHidden;
 
         private BrewPanel brewPanel;
+        private ComboBadge comboBadge;
         private SummaryPanel summaryPanel;
         private ShopPanel shopPanel;
         private RecipeBookPanel recipeBook;
@@ -204,6 +205,7 @@ namespace Cafe
             BuildOrderColumn(safe);
             upgradePanel = UpgradePanel.Create(game, safe); // viên thuốc / thẻ "Thuê mặt bằng" (cấp 1) / dòng tiền thuê (cấp 2) + hộp xác nhận + màn tối chuyển cấp
             brewPanel = new BrewPanel(game, safe);
+            comboBadge = new ComboBadge(game, this, safe, brewPanel); // "x7 Pha như gió" trên mép phải bàn pha
             shopPanel = new ShopPanel(game, safe);
             recipeBook = new RecipeBookPanel(game, safe, brewPanel); // nút "Sổ công thức" trên mép bàn pha + bảng
             CleaningHud.Create(game, safe); // chip độ sạch (CI%) + nút "Lau sàn"; chỉ hiện khi CleaningRules.Enabled
@@ -287,6 +289,7 @@ namespace Cafe
                 if (game.Stock != null) game.Stock.Changed -= OnCups;
             }
             if (brewPanel != null) brewPanel.Dispose();
+            if (comboBadge != null) comboBadge.Dispose();
             if (shopPanel != null) shopPanel.Dispose();
             if (recipeBook != null) recipeBook.Dispose();
             if (staffPanel != null) staffPanel.Dispose();
@@ -944,10 +947,19 @@ namespace Cafe
             // Xu bay từ khách tới đĩa coin; đồng cuối chạm mới cộng số (tắt khi "Giảm chuyển động")
             int amount = c.LastPay + c.LastTip;
             Camera cam = Camera.main;
-            if (amount <= 0 || cam == null || coinIcon == null) return;
-            if (coinFly == null) coinFly = CoinFly.Create(hudCanvasGo.transform, HudBuilder.T.iconCoin);
+            if (amount <= 0 || cam == null) return;
             Vector3 sp = cam.WorldToScreenPoint(c.transform.position + new Vector3(0f, 1.6f, 0f));
             if (sp.z <= 0.1f) return;
+            FlyXu(new Vector2(sp.x, sp.y), amount);
+        }
+
+        /// Xu bay từ điểm màn hình (pixel) tới đĩa coin; số Xu trên chip chỉ cộng khi đồng cuối chạm.
+        /// Gọi SAU khi tiền đã vào ví (Wallet.Earn) như khách trả tiền, hoặc trước cũng được: RetargetXu tính lại đích.
+        public void FlyXu(Vector2 screenFrom, int amount)
+        {
+            if (amount <= 0 || coinIcon == null) return;
+            if (coinFly == null) coinFly = CoinFly.Create(hudCanvasGo.transform, HudBuilder.T.iconCoin);
+            Vector2 sp = screenFrom;
             int coins = Mathf.Clamp(3 + amount / 60, 3, 5);
             xuPending += amount;
             if (!coinFly.Fly(new Vector2(sp.x, sp.y), coinIcon.rectTransform, coins, () => { xuPending -= amount; RetargetXu(); }))
@@ -1095,6 +1107,7 @@ namespace Cafe
             if (hudHidden) return;
             TickCompactHud();
             brewPanel.Tick();
+            comboBadge.Tick(dt);
             UiFx.ToastScreenY = brewPanel.ToastScreenY();
             recipeBook.Tick();
             summaryPanel.Tick();

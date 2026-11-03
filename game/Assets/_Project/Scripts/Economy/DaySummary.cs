@@ -34,6 +34,10 @@ namespace Cafe
         public int debt;           // nợ còn lại sau khi trả
         public int staffWages;     // lương nhân viên thực trả trong ngày
 
+        // Combo pha chuẩn (docs/combo_rush_spec.md §1). comboTips đã nằm trong tips.
+        public int maxCombo;
+        public int comboTips;
+
         public int NetProfit
         {
             get { return revenue + tips + scrap - ingredientCost - fee - rent - debtPaid - staffWages; }

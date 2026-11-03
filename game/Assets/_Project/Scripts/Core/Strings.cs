@@ -122,6 +122,16 @@ namespace Cafe
         public const string SummaryTitleFmt = "Tổng kết ngày {0}";
         public const string SumRevenue = "Doanh thu";
         public const string SumTips = "Tiền tip";
+        public const string SumTipsComboFmt = "Tiền tip · combo x{0}";
+
+        // Combo pha chuẩn (docs/combo_rush_spec.md §1.3)
+        public const string ComboTier1 = "Khéo tay!";
+        public const string ComboTier2 = "Pha như gió!";
+        public const string ComboTier3 = "Barista!";
+        public const string ComboPerfectFmt = "Chuẩn vị! +2 · x{0}";
+        public const string ComboBonusFmt = "+{0} Xu combo";
+        public const string ComboBrokenFmt = "Đứt combo (x{0})";
+        public const string ComboCapped = "Đã đạt trần thưởng combo hôm nay";
         public const string SumScrap = "Thu ly";
         public const string SumIngredients = "Nguyên liệu";
         public const string SumFee = "Phí vỉa hè";

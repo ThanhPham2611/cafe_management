@@ -198,6 +198,7 @@ namespace Cafe
             title.text = string.Format(Strings.SummaryTitleFmt, s.day) + "  ·  " + Strings.TierShortName(s.tier);
             SetMoney(rowRevenue, s.revenue, true);
             SetMoney(rowTips, s.tips, true);
+            rowTips.label.text = s.maxCombo >= ComboRules.Tier1At ? string.Format(Strings.SumTipsComboFmt, s.maxCombo) : Strings.SumTips;
             SetMoney(rowScrap, s.scrap, true);
             SetMoney(rowIngredients, -s.ingredientCost, true);
             SetMoney(rowFee, -s.fee, true);

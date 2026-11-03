@@ -51,6 +51,8 @@ namespace Cafe
         /// Quầy giao: ly Pha chế đã pha xong chờ nhân viên Phục vụ mang đi.
         public ReadyShelf Shelf { get; private set; }
         public BrewStation Station { get; private set; }
+        /// Combo pha chuẩn trong ngày (docs/combo_rush_spec.md §1).
+        public ComboTracker Combo { get; private set; }
         public GridSystem Grid { get; private set; }
         public DayCycle Day { get; private set; }
         public CustomerSpawner Spawner { get; private set; }
@@ -170,6 +172,7 @@ namespace Cafe
             Stock = new CupStock();
             Orders = new OrderQueue();
             Station = new BrewStation(this);
+            Combo = new ComboTracker();
 
             Wallet.Init(hasSave ? save.xu : GameBalance.StartXu);
             Reputation.Init(hasSave ? save.rp : 0f, hasSave ? save.levelRewarded : 0);
@@ -429,6 +432,7 @@ namespace Cafe
             dayStartXu = Wallet.Xu;
             dayStartRp = Reputation.RP;
             Spawner.BeginDay(day, Reputation.Stars, Grid.Seats.Count);
+            Combo.Reset();
             GameEvents.RaiseDayStarted(day);
         }
 

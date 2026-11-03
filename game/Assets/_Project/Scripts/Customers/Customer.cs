@@ -430,6 +430,8 @@ namespace Cafe
                 else if (reason == LostReason.Patience) sum.lostPatience++;
                 else if (reason == LostReason.Dirty) sum.lostDirty++;
             }
+            // Khách bỏ về vì chờ lâu làm đứt combo; ở nhà hàng (cấp 3) đơn chờ là việc của nhân viên nên không tính
+            if (reason == LostReason.Patience && game.Combo != null && game.Tier != null && game.Tier.Current < 3) game.Combo.Break();
             if (reason == LostReason.Patience) Bark("leaving_angry", 0.7f);
             else if (reason == LostReason.NoSeat) Bark("leaving_angry", 0.3f);
             if (penalty)

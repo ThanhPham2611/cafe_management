@@ -243,6 +243,7 @@ namespace Cafe
             Debug.Log($"[AutoPilot] KẾT THÚC NGÀY {s.day}: phục vụ {s.served}, mất {s.lost}, doanh thu {s.revenue}, " +
                       $"tip {s.tips}, nguyên liệu {s.ingredientCost}, phí {s.fee}, lãi {s.NetProfit}, " +
                       $"RP +{s.rpGained:0.0}, hài lòng TB {s.AverageSatisfaction:0.00}, ★{s.stars}");
+            Debug.Log($"[AutoPilot] COMBO ngày {s.day}: max={s.maxCombo}, tip combo={s.comboTips} ({(s.revenue > 0 ? 100f * s.comboTips / s.revenue : 0f):0.0}% doanh thu)");
             Debug.Log($"[AutoPilot] MẤT KHÁCH ngày {s.day}: hết chỗ {s.lostNoSeat}, hết kiên nhẫn {s.lostPatience}, quán bẩn {s.lostDirty}, khác {s.lost - s.lostNoSeat - s.lostPatience - s.lostDirty}");
             Debug.Log($"[AutoPilot] LY PHA ngày {s.day}: chủ {s.brewedOwner}, NV {s.brewedStaff}, phục vụ {s.served}, bỏ trên quầy giao {s.shelfDiscards}");
             var tg = GameBootstrap.Instance;

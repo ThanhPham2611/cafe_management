@@ -85,6 +85,7 @@ namespace Cafe
                 case Sfx.Purchase:
                 case Sfx.Claim:
                 case Sfx.Chest:
+                case Sfx.ComboTier:
                     return HapticKind.Light;
                 case Sfx.StepWrong:
                 case Sfx.Ruin:
